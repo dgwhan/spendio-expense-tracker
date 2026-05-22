@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:spend_io_app/core/services/database_service.dart';
 
 import 'app.dart';
 
-void main() async {
+/// application entry point
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await DatabaseService.init();
-
-  runApp(const SpendIOApp());
+  runApp(
+    const SpendIOApp(),
+  );
 }

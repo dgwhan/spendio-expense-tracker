@@ -1,14 +1,46 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
-import '../../../../core/constants/app_colors.dart';
+import '../../../onboarding/presentation/screens/onboarding_screen.dart';
 
-class SplashScreen extends StatelessWidget {
+/// initial splash screen
+class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+
+  @override
+  void initState() {
+    super.initState();
+
+    startApp();
+  }
+
+  /// navigate to onboarding
+  void startApp() {
+    Timer(
+      const Duration(seconds: 2),
+          () {
+        Navigator.pushReplacement(
+          context,
+
+          MaterialPageRoute(
+            builder: (_) => const OnboardingScreen(),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.lightBackground,
+      backgroundColor: const Color(0xFF5B5FEF),
 
       body: Center(
         child: Column(
@@ -16,47 +48,31 @@ class SplashScreen extends StatelessWidget {
 
           children: [
             Container(
-              width: 100,
-              height: 100,
+              width: 120,
+              height: 120,
 
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.12),
                 shape: BoxShape.circle,
-
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.gradientStart,
-                    AppColors.gradientEnd,
-                  ],
-                ),
               ),
 
               child: const Icon(
                 Icons.account_balance_wallet_rounded,
-                size: 50,
+                size: 60,
                 color: Colors.white,
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
 
             const Text(
               'Spend IO',
 
               style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: AppColors.lightTitle,
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            const Text(
-              'Smart Finance Tracker',
-
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColors.lightBody,
+                fontSize: 34,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+                letterSpacing: 1,
               ),
             ),
           ],
