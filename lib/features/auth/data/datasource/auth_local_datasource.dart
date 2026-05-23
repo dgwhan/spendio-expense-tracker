@@ -21,6 +21,7 @@ class AuthLocalDatasource {
 
       return true;
     } catch (e) {
+      print('register error: $e');
       return false;
     }
   }

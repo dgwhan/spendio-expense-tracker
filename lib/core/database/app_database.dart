@@ -17,19 +17,13 @@ class AppDatabase {
   }
 
   /// initialize sqlite database
-  static Future<Database>
-      _initializeDatabase() async {
-    final databasePath =
-        await getDatabasesPath();
-
-    final path = join(
-      databasePath,
-      'spendio.db',
-    );
+  static Future<Database> _initializeDatabase() async {
+    
+    const path = 'spendio.db';
 
     return openDatabase(
       path,
-      version: 1,
+      version: 2,
 
       onCreate: _onCreate,
     );
