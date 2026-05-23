@@ -1,20 +1,28 @@
 import 'package:flutter/material.dart';
 
+import 'core/routes/app_router.dart';
 import 'core/theme/app_theme.dart';
-import 'features/splash/presentation/screens/splash_screen.dart';
 
+/// root application widget
 class SpendIOApp extends StatelessWidget {
-  const SpendIOApp({super.key});
+  const SpendIOApp({
+    Key? key,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Spend IO',
       debugShowCheckedModeBanner: false,
+
+      title: 'Spend IO',
+
       theme: AppTheme.light,
+
       darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system,
-      home: const SplashScreen(),
+
+      themeMode: ThemeMode.light,
+
+      home: const AppRouter(),
     );
   }
 }

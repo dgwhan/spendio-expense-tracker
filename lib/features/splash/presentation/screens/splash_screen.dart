@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../../onboarding/presentation/screens/onboarding_screen.dart';
+import '../../../auth/presentation/screens/start_screen.dart';
 
 /// initial splash screen
 class SplashScreen extends StatefulWidget {
@@ -30,7 +30,7 @@ class _SplashScreenState extends State<SplashScreen> {
           context,
 
           MaterialPageRoute(
-            builder: (_) => const OnboardingScreen(),
+            builder: (_) => const StartScreen(),
           ),
         );
       },
