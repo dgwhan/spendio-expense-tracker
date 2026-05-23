@@ -39,4 +39,6 @@ class AppColors {
   static const Color savings = Color(0xFF06B6D4);
   static const Color investment = Color(0xFF8B5CF6);
   static const Color warning = Color(0xFFF59E0B);
+  static const Color success = Color(0xFF10B981);
+  static const Color error = Color(0xFFEF4444);
 }
