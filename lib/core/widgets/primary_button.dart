@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 /// reusable primary button
 class PrimaryButton extends StatelessWidget {
   final String title;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   const PrimaryButton({
-    Key? key,
+    super.key,
     required this.title,
     required this.onPressed,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

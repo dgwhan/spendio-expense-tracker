@@ -8,28 +8,39 @@ class DarkTheme {
   DarkTheme._();
 
   static ThemeData theme = ThemeData(
+    useMaterial3: true,
     brightness: Brightness.dark,
-    scaffoldBackgroundColor: AppColors.darkBackground,
+
+    scaffoldBackgroundColor: AppColors.backgroundDark,
+
+    fontFamily: GoogleFonts.inter().fontFamily,
 
     colorScheme: const ColorScheme.dark(
       primary: AppColors.primary,
+      secondary: AppColors.gradientEnd,
+      surface: AppColors.surfaceDark,
+      error: AppColors.error,
     ),
 
-    textTheme: GoogleFonts.interTextTheme(),
-
-    cardColor: AppColors.darkSurface,
-
-    appBarTheme: const AppBarTheme(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      centerTitle: false,
+    textTheme: GoogleFonts.interTextTheme().apply(
+      bodyColor: AppColors.textPrimaryDark,
+      displayColor: AppColors.textPrimaryDark,
     ),
 
     cardTheme: CardThemeData(
-      color: AppColors.darkSurface,
+      color: AppColors.surfaceDark,
       elevation: 0,
       shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
+    ),
+
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: AppColors.surfaceSecondaryDark,
+      border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.md),
+        borderSide: BorderSide.none,
       ),
     ),
   );
