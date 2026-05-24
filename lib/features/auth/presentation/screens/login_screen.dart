@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/text_styles.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/auth_textfield.dart';
+import '../viewmodels/login_form_viewmodel.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({
-    Key? key,
-  }) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -19,6 +19,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+
   bool _rememberMe = false;
 
   @override
@@ -38,52 +39,46 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!mounted) return;
 
-    if (success) {
-
-      // TODO: Replace withonboarding navigation 
-
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Login successful!'),
-          backgroundColor: AppColors.success,
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          success ? 'Login successful!' : 'Invalid credentials',
         ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invalid credentials'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    }
+        backgroundColor:
+            success ? AppColors.success : AppColors.error,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
+    final loginVM = context.watch<LoginFormViewModel>();
 
     return Scaffold(
-      backgroundColor: Colors.white, 
+      backgroundColor: AppColors.backgroundLight,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 16,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Circular Back Arrow Button Asset Layout
+              // BACK BUTTON
               GestureDetector(
                 onTap: () => Navigator.pop(context),
                 child: Container(
                   height: 40,
                   width: 40,
                   decoration: const BoxDecoration(
-                    color: Color(0xFFEEEFF3), 
+                    color: AppColors.surfaceSecondaryLight,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.arrow_back,
-                    color: Colors.black,
+                    color: AppColors.textPrimaryLight,
                     size: 20,
                   ),
                 ),
@@ -91,38 +86,68 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 28),
 
-              // Title Headline Matrix
-              const Text(
+              // TITLE
+              Text(
                 'Welcome back',
-                style: TextStyle(
-                  fontSize: 30,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                  letterSpacing: -0.5,
+                style: TextStyles.heading1(
+                  color: AppColors.textPrimaryLight,
                 ),
               ),
 
               const SizedBox(height: 32),
 
-              // Form Components Stack Fields
+              // ================= EMAIL =================
               AuthTextField(
                 controller: emailController,
                 hintText: 'Email address',
                 prefixIcon: Icons.email_outlined,
+                onChanged: (value) {
+                  loginVM.onEmailChanged(value);
+                },
               ),
+
+              const SizedBox(height: 6),
+
+              if (loginVM.isEmailEmpty)
+                const Text(
+                  'Email is required',
+                  style: TextStyle(color: Colors.red, fontSize: 12),
+                )
+              else if (!loginVM.isEmailValidFormat)
+                const Text(
+                  'Invalid email format',
+                  style: TextStyle(color: Colors.red, fontSize: 12),
+                ),
 
               const SizedBox(height: 16),
 
+              // ================= PASSWORD =================
               AuthTextField(
                 controller: passwordController,
                 hintText: 'Password',
                 prefixIcon: Icons.lock_outline_rounded,
                 obscureText: true,
+                onChanged: (value) {
+                  loginVM.onPasswordChanged(value);
+                },
               ),
+
+              const SizedBox(height: 6),
+
+              if (loginVM.isPasswordEmpty)
+                const Text(
+                  'Password is required',
+                  style: TextStyle(color: Colors.red, fontSize: 12),
+                )
+              else if (passwordController.text.length < 6)
+                const Text(
+                  'Minimum 6 characters',
+                  style: TextStyle(color: Colors.red, fontSize: 12),
+                ),
 
               const SizedBox(height: 20),
 
-              // Remember Me & Forgot Password Utilities Row Layout
+              // ================= REMEMBER ME =================
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -145,28 +170,22 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Text(
+                      Text(
                         'Remember me',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.black,
-                          fontWeight: FontWeight.w500,
+                        style: TextStyles.bodyMedium(
+                          color: AppColors.textPrimaryLight,
                         ),
                       ),
                     ],
                   ),
+
                   GestureDetector(
-                    onTap: () {
-
-                      // TODO: Implement password recovery navigation 
-
-                    },
-                    child: const Text(
+                    onTap: () {},
+                    child: Text(
                       'Forgot password?',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold,
+                      style: TextStyles.bodyMedium(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -175,15 +194,20 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 32),
 
-              // High Contrast CTA Button Implementation
+              // ================= BUTTON =================
               PrimaryButton(
-                title: authProvider.isLoading ? 'Processing...' : 'Sign In',
-                onPressed: authProvider.isLoading ? () {} : login,
+                title: authProvider.isLoading
+                    ? 'Processing...'
+                    : 'Sign In',
+                onPressed: (!loginVM.isFormValid ||
+                        authProvider.isLoading)
+                    ? null
+                    : () async => await login(),
               ),
 
               const SizedBox(height: 24),
 
-              // Inline Interactive Redirection Footer Link Elements
+              // ================= FOOTER =================
               Center(
                 child: GestureDetector(
                   onTap: () {
@@ -194,20 +218,20 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     );
                   },
-                  child: RichText(
-                    text: TextSpan(
-                      style: const TextStyle(
-                        fontSize: 15,
-                        color: Colors.black,
-                        fontFamily: 'sans-serif',
-                      ),
+                  child: Text.rich(
+                    TextSpan(
                       children: [
-                        const TextSpan(text: 'Don’t have an account? '),
+                        TextSpan(
+                          text: 'Don’t have an account? ',
+                          style: TextStyles.bodyMedium(
+                            color: AppColors.textSecondaryLight,
+                          ),
+                        ),
                         TextSpan(
                           text: 'Register',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
+                          style: TextStyles.bodyMedium(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
@@ -215,6 +239,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
+
               const Spacer(),
             ],
           ),
