@@ -1,141 +1,65 @@
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sqflite/sqflite.dart';
+//chứa code trực tiếp tương tác với sqlite, có nhiệm vụ thực hiện các câu truy vấn
 
+import 'package:sqflite/sqflite.dart';
 import '../../../../core/database/app_database.dart';
 import '../models/user_model.dart';
 
-/// local authentication datasource
 class AuthLocalDatasource {
-  /// register new user
-  Future<bool> registerUser(
-    UserModel user,
-  ) async {
-    try {
-      final Database database =
-          await AppDatabase.database;
+  Future<bool> registerUser(UserModel user) async {
+    final db = await AppDatabase.database;
 
-      await database.insert(
-        'users',
-        user.toMap(),
-      );
-
-      return true;
-    } catch (e) {
-      print('register error: $e');
-      return false;
-    }
+    await db.insert('users', user.toMap());
+    return true;
   }
 
-  /// login existing user
   Future<UserModel?> loginUser({
     required String email,
     required String password,
   }) async {
-    final Database database =
-        await AppDatabase.database;
+    final db = await AppDatabase.database;
 
-    final result = await database.query(
+    final result = await db.query(
       'users',
-
-      where:
-          'email = ? AND password = ?',
-
-      whereArgs: [
-        email,
-        password,
-      ],
+      where: 'email = ? AND password = ?',
+      whereArgs: [email, password],
     );
 
-    if (result.isEmpty) {
-      return null;
-    }
+    if (result.isEmpty) return null;
 
-    final user =
-        UserModel.fromMap(result.first);
-
-    final preferences =
-        await SharedPreferences
-            .getInstance();
-
-    await preferences.setInt(
-      'current_user_id',
-      user.id!,
-    );
-
-    return user;
+    return UserModel.fromMap(result.first);
   }
 
-  /// get current logged user
-  Future<UserModel?> getCurrentUser()
-      async {
-    final preferences =
-        await SharedPreferences
-            .getInstance();
+  Future<List<UserModel>> getAllUsers() async {
+    final db = await AppDatabase.database;
 
-    final userId = preferences.getInt(
-      'current_user_id',
-    );
+    final result = await db.query('users');
 
-    if (userId == null) {
-      return null;
-    }
-
-    final Database database =
-        await AppDatabase.database;
-
-    final result = await database.query(
-      'users',
-
-      where: 'id = ?',
-
-      whereArgs: [userId],
-    );
-
-    if (result.isEmpty) {
-      return null;
-    }
-
-    return UserModel.fromMap(
-      result.first,
-    );
+    return result.map((e) => UserModel.fromMap(e)).toList();
   }
 
-  /// logout current user
-  Future<void> logout() async {
-    final preferences =
-        await SharedPreferences
-            .getInstance();
-
-    await preferences.remove(
-      'current_user_id',
-    );
+  Future<UserModel?> getCurrentUser() async {
+    return null; // implement sau
   }
 
-  /// update onboarding data
+  Future<void> logout() async {}
+
   Future<void> updateOnboarding({
     required int userId,
     required String occupation,
     required String financialGoal,
     required String currency,
   }) async {
-    final Database database =
-        await AppDatabase.database;
+    final db = await AppDatabase.database;
 
-    await database.update(
+    await db.update(
       'users',
       {
         'occupation': occupation,
-
-        'financial_goal':
-            financialGoal,
-
+        'financial_goal': financialGoal,
         'currency': currency,
-
         'onboarding_completed': 1,
       },
-
       where: 'id = ?',
-
       whereArgs: [userId],
     );
   }

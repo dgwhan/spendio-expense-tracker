@@ -1,4 +1,5 @@
-/// application user model
+// lớp kế thừa từ user_enity (domain/enitines) 
+
 class UserModel {
   final int? id;
 
