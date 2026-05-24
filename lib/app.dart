@@ -6,8 +6,8 @@ import 'core/theme/app_theme.dart';
 /// root application widget
 class SpendIOApp extends StatelessWidget {
   const SpendIOApp({
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
