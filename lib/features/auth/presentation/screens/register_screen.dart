@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:spend_io_app/features/auth/presentation/screens/login_screen.dart';
+import 'package:spend_io_app/features/onboarding/presentation/screens/onboarding_flow_screen.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/primary_button.dart';
@@ -38,9 +40,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final authProvider = context.read<AuthProvider>();
+    final emailText = emailController.text.trim();
 
     final success = await authProvider.register(
-      email: emailController.text.trim(),
+      email: emailText,
       password: passwordController.text.trim(),
     );
 
@@ -54,11 +57,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
       );
 
-      Navigator.pop(context);
-      return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => OnboardingFlowScreen(
+            userEmail: emailText,
+          ),
+        ),
+        (route) => false,
+      );
+    } else {
+      await AppDialogs.emailExists(context);
     }
-
-    await AppDialogs.emailExists(context);
   }
 
   @override
@@ -132,8 +142,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       'Email already exists',
                       style: TextStyle(color: Colors.red),
                     )
-                  else if (formVM.isEmailValidFormat &&
-                      !formVM.isEmailTaken)
+                  else if (formVM.isEmailValidFormat && !formVM.isEmailTaken)
                     const Text(
                       'Email available',
                       style: TextStyle(color: Colors.green),
@@ -195,8 +204,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       onPressed: () {
                         setState(() {
-                          _obscureConfirmPassword =
-                              !_obscureConfirmPassword;
+                          _obscureConfirmPassword = !_obscureConfirmPassword;
                         });
                       },
                     ),
@@ -210,12 +218,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   if (formVM.passwordMatchMessage != null)
                     Text(
                       formVM.passwordMatchMessage!,
-                      style: const TextStyle(
-                        color: AppColors.error,
-                        fontSize: 12
-                      ),
+                      style:
+                          const TextStyle(color: AppColors.error, fontSize: 12),
                     )
-
                   else if (formVM.isPasswordMatch)
                     const Text(
                       "Passwords match",
@@ -228,11 +233,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                   // ================= BUTTON =================
                   PrimaryButton(
-                    title: authProvider.isLoading
-                        ? 'Processing...'
-                        : 'Sign Up',
-                    onPressed: (!formVM.isFormValid ||
-                            authProvider.isLoading)
+                    title: authProvider.isLoading ? 'Processing...' : 'Sign Up',
+                    onPressed: (!formVM.isFormValid || authProvider.isLoading)
                         ? null
                         : () async => await register(),
                   ),
@@ -242,7 +244,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   // FOOTER
                   Center(
                     child: GestureDetector(
-                      onTap: () => Navigator.pop(context),
+                      onTap: () {
+                        Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const LoginScreen(),
+                            ));
+                      },
                       child: Text.rich(
                         TextSpan(
                           children: [

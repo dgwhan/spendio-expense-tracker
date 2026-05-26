@@ -1,6 +1,5 @@
 //chứa code trực tiếp tương tác với sqlite, có nhiệm vụ thực hiện các câu truy vấn
 
-import 'package:sqflite/sqflite.dart';
 import '../../../../core/database/app_database.dart';
 import '../models/user_model.dart';
 

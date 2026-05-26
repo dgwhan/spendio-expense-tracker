@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:spend_io_app/features/onboarding/presentation/screens/onboarding_shell_screen.dart';
+import 'package:spend_io_app/features/onboarding/presentation/screens/phases/identity_phase_screen.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/text_styles.dart';
@@ -32,6 +34,8 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> login() async {
     final authProvider = context.read<AuthProvider>();
 
+    final emailText = emailController.text.trim();
+
     final success = await authProvider.login(
       email: emailController.text.trim(),
       password: passwordController.text.trim(),
@@ -39,13 +43,53 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          success ? 'Login successful!' : 'Invalid credentials',
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Login successful!'),
+          backgroundColor: AppColors.success,
         ),
-        backgroundColor:
-            success ? AppColors.success : AppColors.error,
+      );
+
+      final user = authProvider.currentUser;
+      if (user == null ||
+          user.financialGoal == null ||
+          user.onboardingCompleted == 0) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OnboardingShellScreen(
+              currentStep: 0,
+              totalSteps: 4,
+              onBack: null,
+              onNext: () {
+                // Logic sang step 2
+              },
+              child: IdentityPhaseScreen(userEmail: emailText),
+            ),
+          ),
+          (route) => false,
+        );
+      } else {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const Scaffold(
+                body: Center(
+                    child:
+                        Text('Home Screen'))), // Thay bằng HomeScreen() của bạn
+          ),
+          (route) => false,
+        );
+      }
+      return;
+    }
+
+    //login fail
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Invalid credentials'),
+        backgroundColor: AppColors.error,
       ),
     );
   }
@@ -178,7 +222,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ],
                   ),
-
                   GestureDetector(
                     onTap: () {},
                     child: Text(
@@ -196,11 +239,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // ================= BUTTON =================
               PrimaryButton(
-                title: authProvider.isLoading
-                    ? 'Processing...'
-                    : 'Sign In',
-                onPressed: (!loginVM.isFormValid ||
-                        authProvider.isLoading)
+                title: authProvider.isLoading ? 'Processing...' : 'Sign In',
+                onPressed: (!loginVM.isFormValid || authProvider.isLoading)
                     ? null
                     : () async => await login(),
               ),

@@ -19,11 +19,8 @@ class StartScreen extends StatelessWidget {
           child: Column(
             children: [
               const Spacer(flex: 3),
-
               _buildIllustration(),
-
               const SizedBox(height: 32),
-
               Text(
                 'Smart finance\nmade simple',
                 textAlign: TextAlign.center,
@@ -31,9 +28,7 @@ class StartScreen extends StatelessWidget {
                   color: AppColors.textPrimaryLight,
                 ),
               ),
-
               const SizedBox(height: 12),
-
               Text(
                 'Clean finance, clear mind.',
                 textAlign: TextAlign.center,
@@ -41,13 +36,9 @@ class StartScreen extends StatelessWidget {
                   color: AppColors.textSecondaryLight,
                 ),
               ),
-
               const Spacer(flex: 2),
-
               const _PageIndicator(),
-
               const Spacer(flex: 2),
-
               PrimaryButton(
                 title: 'Register',
                 onPressed: () {
@@ -59,11 +50,8 @@ class StartScreen extends StatelessWidget {
                   );
                 },
               ),
-
               const SizedBox(height: 12),
-
               _buildLoginButton(context),
-
               const SizedBox(height: 24),
             ],
           ),
@@ -82,7 +70,7 @@ class StartScreen extends StatelessWidget {
           return Container(
             padding: const EdgeInsets.all(28),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.12),
+              color: AppColors.primary.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -110,7 +98,7 @@ class StartScreen extends StatelessWidget {
           );
         },
         style: TextButton.styleFrom(
-          backgroundColor: AppColors.primary.withOpacity(0.12),
+          backgroundColor: AppColors.primary.withValues(alpha: 0.12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
