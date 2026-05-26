@@ -8,7 +8,7 @@ class AppDialogs {
     return showDialog(
       context: context,
       barrierDismissible: true,
-      barrierColor: Colors.black.withOpacity(0.4),
+      barrierColor: Colors.black.withValues(alpha: 0.5),
       builder: (_) {
         return Dialog(
           backgroundColor: Colors.white,
@@ -24,7 +24,7 @@ class AppDialogs {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: AppColors.warning.withOpacity(0.12),
+                    color: AppColors.warning.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(

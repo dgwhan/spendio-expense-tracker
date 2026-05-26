@@ -110,7 +110,7 @@ class LightTheme {
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: AppColors.primary,
-        backgroundColor: AppColors.primary.withOpacity(0.12),
+        backgroundColor: AppColors.primary.withValues(alpha: 0.12),
         minimumSize: const Size(double.infinity, 56),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
