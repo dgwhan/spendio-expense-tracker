@@ -35,6 +35,10 @@ class OnboardingViewModel extends ChangeNotifier {
 
   bool get isLoading => _isLoading;
 
+  //error if null field
+  bool _hasError = false;
+  bool get hasError => _hasError;
+
   // onboarding data
 
   String? _displayName;
@@ -61,7 +65,7 @@ class OnboardingViewModel extends ChangeNotifier {
 
   void nextStep() {
     _currentStep++;
-
+    _hasError = false;
     notifyListeners();
   }
 
@@ -71,25 +75,33 @@ class OnboardingViewModel extends ChangeNotifier {
     }
 
     _currentStep--;
+    _hasError = false;
+    notifyListeners();
+  }
 
+  void setError(bool value) {
+    _hasError = value;
     notifyListeners();
   }
 
   // update methods
 
-  void updateDisplayName(
-    String value,
-  ) {
+  void updateDisplayName(String value) {
+    if (_displayName == value) return;
+
     _displayName = value;
 
-    notifyListeners();
+    if (_hasError) {
+      _hasError = false;
+      notifyListeners();
+    } else {
+      notifyListeners();
+    }
   }
 
-  void updateOccupation(
-    String value,
-  ) {
+  void updateOccupation(String value) {
     _occupation = value;
-
+    _hasError = false;
     notifyListeners();
   }
 
@@ -101,23 +113,19 @@ class OnboardingViewModel extends ChangeNotifier {
     } else {
       _goals.add(goal);
     }
-
+    _hasError = false;
     notifyListeners();
   }
 
-  void updateCurrency(
-    String value,
-  ) {
+  void updateCurrency(String value) {
     _currencyCode = value;
-
+    _hasError = false;
     notifyListeners();
   }
 
-  void updateInitialBalance(
-    double value,
-  ) {
+  void updateInitialBalance(double value) {
     _initialBalance = value;
-
+    _hasError = false;
     notifyListeners();
   }
 
@@ -126,7 +134,7 @@ class OnboardingViewModel extends ChangeNotifier {
   bool canContinue() {
     switch (_currentStep) {
       case 0:
-        return (_displayName ?? '').trim().isNotEmpty;
+        return true;
 
       case 1:
         return _occupation != null;
@@ -214,7 +222,7 @@ class OnboardingViewModel extends ChangeNotifier {
       _currencyCode = onboarding.currencyCode;
 
       _initialBalance = onboarding.initialBalance;
-
+      _hasError = false;
       notifyListeners();
     } finally {
       _setLoading(false);

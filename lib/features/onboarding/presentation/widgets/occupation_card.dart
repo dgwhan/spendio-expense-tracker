@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:spend_io_app/features/onboarding/presentation/viewmodels/onboarding_viewmodel.dart';
 
 class OccupationCard extends StatelessWidget {
   final String title;
@@ -16,6 +18,9 @@ class OccupationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final viewModel = context.watch<OnboardingViewModel>();
+    final bool isError = viewModel.hasError;
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -27,7 +32,11 @@ class OccupationCard extends StatelessWidget {
               : const Color(0xFFE5E7EB),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: selected ? const Color(0xFF6366F1) : Colors.transparent,
+            color: selected
+                ? const Color(0xFF6366F1) //nếu dc chọn
+                : (isError
+                    ? Colors.red.withValues(alpha: 0.8)
+                    : Colors.transparent), //nếu chưa chọn, cảnh báo viền đỏ
             width: 1.5,
           ),
         ),
