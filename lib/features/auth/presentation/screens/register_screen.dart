@@ -123,6 +123,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     hintText: 'Email address',
                     prefixIcon: Icons.email_outlined,
                     keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
                     onChanged: (value) {
                       formVM.onEmailChanged(value);
                     },
@@ -156,6 +157,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     hintText: 'Password',
                     prefixIcon: Icons.lock_outline_rounded,
                     obscureText: _obscurePassword,
+                    textInputAction: TextInputAction.next,
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword
@@ -195,6 +197,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     hintText: 'Confirm password',
                     prefixIcon: Icons.lock_outline_rounded,
                     obscureText: _obscureConfirmPassword,
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) => FocusScope.of(context).unfocus(),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscureConfirmPassword

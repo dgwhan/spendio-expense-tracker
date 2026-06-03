@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
-import '../../data/datasource/auth_local_datasource.dart';
 import '../../data/models/user_model.dart';
+import '../../domain/entities/user_entity.dart';
+import '../../domain/repositories/auth_repository.dart';
 
 /// Authentication state provider
 class AuthProvider extends ChangeNotifier {
-  final AuthLocalDatasource _datasource = AuthLocalDatasource();
+  final AuthRepository repository;
 
   bool isLoading = false;
   UserModel? currentUser;
+
+  AuthProvider({
+    required this.repository,
+  });
 
   /// Register new account
   Future<bool> register({
@@ -18,30 +23,23 @@ class AuthProvider extends ChangeNotifier {
       isLoading = true;
       notifyListeners();
 
-      // Debug xem email thực tế truyền vào hàm này là gì
       debugPrint("===> AuthProvider nhận email đăng ký: $email");
 
-      final emailName = email.split('@').first;
-      final displayName = emailName.isEmpty
-          ? 'User'
-          : emailName[0].toUpperCase() + emailName.substring(1);
-
-      final user = UserModel(
+      final userEntity = UserEntity(
         email: email,
         password: password,
-        displayName: displayName,
-        createdAt: DateTime.now(),
+        onboardingCompleted: false,
       );
 
-      // Gọi xuống datasource local để lưu
-      final success = await _datasource.registerUser(user);
+      final success = await repository.register(userEntity);
 
       isLoading = false;
       notifyListeners();
 
       return success;
     } catch (e) {
-      debugPrint("===> Lỗi tại AuthProvider.register: $e");
+      //demo tạm thời
+      debugPrint("Lỗi tại AuthProvider.register: $e");
       isLoading = false;
       notifyListeners();
       return false;
@@ -53,31 +51,55 @@ class AuthProvider extends ChangeNotifier {
     required String email,
     required String password,
   }) async {
-    isLoading = true;
-    notifyListeners();
+    try {
+      isLoading = true;
+      notifyListeners();
 
-    final result = await _datasource.loginUser(
-      email: email,
-      password: password,
-    );
+      final result = await repository.login(email, password);
 
-    currentUser = result;
-    isLoading = false;
-    notifyListeners();
+      if (result != null) {
+        currentUser = UserModel(
+          id: result.id,
+          email: result.email,
+          password: result.password,
+          displayName: result.email.split('@').first,
+          occupation: result.occupation,
+          financialGoal: result.financialGoal,
+          currency: result.currency,
+          onboardingCompleted: result.onboardingCompleted,
+          createdAt: DateTime.now(),
+        );
+      } else {
+        currentUser = null;
+      }
 
-    return result != null;
+      isLoading = false;
+      notifyListeners();
+
+      return result != null;
+    } catch (e) {
+      debugPrint("===> Lỗi tại AuthProvider.login: $e");
+      currentUser = null;
+      isLoading = false;
+      notifyListeners();
+      return false;
+    }
   }
 
   /// Load current user session
   Future<void> loadSession() async {
-    currentUser = await _datasource.getCurrentUser();
     notifyListeners();
   }
 
   /// Logout current session
   Future<void> logout() async {
-    await _datasource.logout();
+    isLoading = true;
+    notifyListeners();
+
+    await repository.logout();
     currentUser = null;
+
+    isLoading = false;
     notifyListeners();
   }
 }

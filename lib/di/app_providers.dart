@@ -3,6 +3,7 @@ import 'package:provider/single_child_widget.dart';
 
 // ONBOARDING LAYER
 import '../../../features/onboarding/data/datasources/onboarding_local_datasource.dart';
+import '../../../features/onboarding/data/datasources/onboarding_remote_datasource.dart';
 import '../../../features/onboarding/data/repositories/onboarding_repository_impl.dart';
 import '../../../features/onboarding/domain/usecases/save_onboarding_usecase.dart';
 import '../../../features/onboarding/domain/usecases/get_onboarding_usecase.dart';
@@ -12,6 +13,7 @@ import '../../../features/onboarding/presentation/viewmodels/onboarding_viewmode
 
 // AUTH LAYER
 import '../../../features/auth/data/datasource/auth_local_datasource.dart';
+import '../../../features/auth/data/datasource/auth_remote_datasource.dart';
 import '../../../features/auth/data/repositories/auth_repository_impl.dart';
 import '../../../features/auth/domain/usecases/check_email_usecase.dart';
 import '../../../features/auth/presentation/viewmodels/register_form_viewmodel.dart';
@@ -29,17 +31,25 @@ class AppProviders {
           create: (_) => AuthLocalDatasource(),
         ),
 
+        Provider<AuthRemoteDatasource>(
+          create: (_) => AuthRemoteDatasource(),
+        ),
+
         Provider<OnboardingLocalDataSource>(
           create: (_) => OnboardingLocalDataSourceImpl(),
         ),
 
-        ProxyProvider<AuthLocalDatasource, AuthRepositoryImpl>(
-          update: (_, datasource, __) => AuthRepositoryImpl(datasource),
+        Provider<OnboardingRemoteDataSource>(
+          create: (_) => OnboardingRemoteDataSource(),
         ),
 
-        ProxyProvider<OnboardingLocalDataSource, OnboardingRepositoryImpl>(
-          update: (_, datasource, __) =>
-              OnboardingRepositoryImpl(localDataSource: datasource),
+        ProxyProvider2<AuthLocalDatasource, AuthRemoteDatasource, AuthRepositoryImpl>(
+          update: (_, local, remote, __) => AuthRepositoryImpl(local, remote),
+        ),
+
+        ProxyProvider2<OnboardingLocalDataSource, OnboardingRemoteDataSource, OnboardingRepositoryImpl>(
+          update: (_, local, remote, __) =>
+              OnboardingRepositoryImpl(localDataSource: local, remoteDataSource: remote),
         ),
 
         // ==============================================================
@@ -105,8 +115,12 @@ class AppProviders {
         ),
 
         // Auth Action Provider
-        ChangeNotifierProvider(
-          create: (_) => AuthProvider(),
+        ChangeNotifierProxyProvider<AuthRepositoryImpl, AuthProvider>(
+          create: (context) => AuthProvider(
+            repository: context.read<AuthRepositoryImpl>(),
+          ),
+          update: (_, repo, provider) =>
+              provider ?? AuthProvider(repository: repo),
         ),
       ];
 }
