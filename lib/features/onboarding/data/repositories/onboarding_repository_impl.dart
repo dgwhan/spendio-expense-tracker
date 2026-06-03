@@ -1,16 +1,17 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../domain/entities/onboarding_entity.dart';
-
 import '../../domain/repositories/onboarding_repository.dart';
-
 import '../datasources/onboarding_local_datasource.dart';
-
+import '../datasources/onboarding_remote_datasource.dart';
 import '../models/onboarding_model.dart';
 
 class OnboardingRepositoryImpl implements OnboardingRepository {
   final OnboardingLocalDataSource localDataSource;
+  final OnboardingRemoteDataSource remoteDataSource;
 
   const OnboardingRepositoryImpl({
     required this.localDataSource,
+    required this.remoteDataSource,
   });
 
   @override
@@ -27,10 +28,23 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
       onboardingCompleted: entity.onboardingCompleted,
     );
 
+    // Lưu cục bộ ở SQLite để offline
     await localDataSource.saveOnboarding(
       email: email,
       model: model,
     );
+
+    // Đồng bộ hóa lên Cloud Firestore nếu người dùng đã đăng nhập Firebase
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      // Chạy bất đồng bộ ngầm để tránh làm nghẽn quá trình chuyển bước trên UI
+      remoteDataSource.saveOnboarding(
+        uid: uid,
+        model: model,
+      ).catchError((e) {
+        // Bỏ qua lỗi đồng bộ khi offline hoặc lỗi Firestore
+      });
+    }
   }
 
   @override
@@ -46,6 +60,28 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
   Future<OnboardingEntity?> getOnboarding({
     required String email,
   }) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+
+    if (uid != null) {
+      try {
+        // Lấy dữ liệu mới nhất từ Firestore để cập nhật cache SQLite
+        final remoteModel = await remoteDataSource.getOnboarding(uid: uid);
+        if (remoteModel != null) {
+          await localDataSource.saveOnboarding(email: email, model: remoteModel);
+          return OnboardingEntity(
+            displayName: remoteModel.displayName,
+            occupation: remoteModel.occupation,
+            goals: remoteModel.goals,
+            currencyCode: remoteModel.currencyCode,
+            initialBalance: remoteModel.initialBalance,
+            onboardingCompleted: remoteModel.onboardingCompleted,
+          );
+        }
+      } catch (_) {
+        //bỏ qua lỗi khi kh có mạng
+      }
+    }
+
     final model = await localDataSource.getOnboarding(
       email: email,
     );
