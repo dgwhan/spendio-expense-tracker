@@ -30,8 +30,14 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
+        await MigrationV1.run(db);
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        await db.execute('DROP TABLE IF EXISTS users');
+        await db.execute('DROP TABLE IF EXISTS wallets');
+        await db.execute('DROP TABLE IF EXISTS financial_goals');
         await MigrationV1.run(db);
       },
       onOpen: (db) async {
