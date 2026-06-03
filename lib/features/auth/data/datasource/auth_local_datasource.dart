@@ -46,7 +46,7 @@ class AuthLocalDatasource {
     required int userId,
     required String occupation,
     required String financialGoal,
-    required String currency,
+    required String currencyCode,
   }) async {
     final db = await AppDatabase.database;
 
@@ -55,7 +55,7 @@ class AuthLocalDatasource {
       {
         'occupation': occupation,
         'financial_goal': financialGoal,
-        'currency': currency,
+        'currency_code': currencyCode,
         'onboarding_completed': 1,
       },
       where: 'id = ?',

@@ -53,7 +53,7 @@ class UserModel {
       'financial_goal':
           financialGoal,
 
-      'currency': currency,
+      'currency_code': currency,
 
       'onboarding_completed':
           onboardingCompleted
@@ -90,7 +90,7 @@ class UserModel {
           map['financial_goal'],
 
       currency:
-          map['currency'],
+          map['currency_code'],
 
       onboardingCompleted:
           map['onboarding_completed'] ==

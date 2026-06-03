@@ -71,10 +71,10 @@ class AuthRepositoryImpl implements AuthRepository {
     required String currency,
   }) async {
     await localDatasource.updateOnboarding(
-      userId: userId,
-      occupation: occupation,
-      financialGoal: financialGoal,
-      currency: currency,
-    );
+       userId: userId,
+       occupation: occupation,
+       financialGoal: financialGoal,
+       currencyCode: currency,
+     );
   }
 }

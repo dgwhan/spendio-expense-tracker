@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:spend_io_app/features/onboarding/presentation/screens/onboarding_shell_screen.dart';
-import 'package:spend_io_app/features/onboarding/presentation/screens/phases/identity_phase_screen.dart';
+import 'package:spend_io_app/features/onboarding/presentation/screens/onboarding_flow_screen.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/text_styles.dart';
@@ -54,18 +53,12 @@ class _LoginScreenState extends State<LoginScreen> {
       final user = authProvider.currentUser;
       if (user == null ||
           user.financialGoal == null ||
-          user.onboardingCompleted == 0) {
+          user.onboardingCompleted == false) {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
-            builder: (_) => OnboardingShellScreen(
-              currentStep: 0,
-              totalSteps: 4,
-              onBack: null,
-              onNext: () {
-                // Logic sang step 2
-              },
-              child: IdentityPhaseScreen(userEmail: emailText),
+            builder: (_) => OnboardingFlowScreen(
+              userEmail: emailText,
             ),
           ),
           (route) => false,
@@ -77,7 +70,7 @@ class _LoginScreenState extends State<LoginScreen> {
             builder: (_) => const Scaffold(
                 body: Center(
                     child:
-                        Text('Home Screen'))), // Thay bằng HomeScreen() của bạn
+                        Text('Home Screen'))), 
           ),
           (route) => false,
         );
