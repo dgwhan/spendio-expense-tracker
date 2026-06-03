@@ -187,9 +187,18 @@ class OnboardingViewModel extends ChangeNotifier {
     _setLoading(true);
 
     try {
-      await completeOnboardingUseCase(
-        email: email,
+      final entity = OnboardingEntity(
+        displayName: _displayName,
+        occupation: _occupation,
+        goals: _goals,
+        currencyCode: _currencyCode,
+        initialBalance: _initialBalance,
+        onboardingCompleted: true,
       );
+
+      await saveOnboardingUseCase(email: email, entity: entity);
+
+      await completeOnboardingUseCase(email: email);
     } finally {
       _setLoading(false);
     }
@@ -239,11 +248,9 @@ class OnboardingViewModel extends ChangeNotifier {
     );
   }
 
-  void _setLoading(
-    bool value,
-  ) {
+  void _setLoading(bool value) {
+    if (_isLoading == value) return;
     _isLoading = value;
-
     notifyListeners();
   }
 }

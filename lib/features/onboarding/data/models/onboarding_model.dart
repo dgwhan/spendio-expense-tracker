@@ -41,8 +41,8 @@ class OnboardingModel {
         map['goals'] ?? [],
       ),
       currencyCode: map['currency_code'],
-      initialBalance: map['initial_balance'],
-      onboardingCompleted: map['onboarding_completed'] ?? false,
+      initialBalance: null,
+      onboardingCompleted: map['onboarding_completed'] == 1 ? true : false,
     );
   }
 

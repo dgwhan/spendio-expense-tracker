@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:spend_io_app/core/widgets/shake_widget.dart';
+import 'package:spend_io_app/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:spend_io_app/features/onboarding/presentation/screens/onboarding_shell_screen.dart';
 import 'package:spend_io_app/features/onboarding/presentation/screens/phases/balance_phase_screen.dart';
 import 'package:spend_io_app/features/onboarding/presentation/screens/phases/currency_phase_screen.dart';
@@ -56,13 +57,20 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
               viewModel.setError(false);
               viewModel.previousStep();
             },
-      onNext: () {
+      onNext: () async {
         if (viewModel.canContinue()) {
           viewModel.setError(false);
+          await viewModel.saveOnboarding(email: widget.userEmail);
           if (currentStep < totalSteps - 1) {
             viewModel.nextStep();
           } else {
-            viewModel.completeOnboarding(email: widget.userEmail);
+            await viewModel.completeOnboarding(email: widget.userEmail);
+            if (!context.mounted) return;
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (context) => const DashboardScreen(),
+              ),
+            );
           }
         } else {
           viewModel.setError(true);
@@ -72,18 +80,14 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
       nextButtonText:
           currentStep == totalSteps - 1 ? 'Get Started' : 'Continue',
       child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 350),
+        duration: const Duration(milliseconds: 250),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
         transitionBuilder: (Widget child, Animation<double> animation) {
-          final inAnimation = Tween<Offset>(
-            begin: const Offset(1.0, 0.0),
-            end: Offset.zero,
-          ).animate(
-              CurvedAnimation(parent: animation, curve: Curves.easeInOutCubic));
-
-          return SlideTransition(
-            position: inAnimation,
-            child: FadeTransition(
-              opacity: animation,
+          return FadeTransition(
+            opacity: animation,
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 0.98, end: 1.0).animate(animation),
               child: child,
             ),
           );
@@ -97,5 +101,13 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<OnboardingViewModel>().loadOnboarding(email: widget.userEmail);
+    });
   }
 }

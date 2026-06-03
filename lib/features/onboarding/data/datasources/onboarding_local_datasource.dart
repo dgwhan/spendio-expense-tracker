@@ -30,11 +30,13 @@ class OnboardingLocalDataSourceImpl implements OnboardingLocalDataSource {
   }) async {
     final db = await _db;
 
+    // Cập nhật thông tin User
     await db.update(
       UsersTable.tableName,
       {
-        'display_name': model.displayName,
+        'display_name': model.displayName ?? email.split('@').first,
         'occupation': model.occupation,
+        'financial_goal': model.goals.join(','),
         'currency_code': model.currencyCode,
         'onboarding_completed': model.onboardingCompleted ? 1 : 0,
         'updated_at': DateTime.now().toIso8601String(),
@@ -42,6 +44,49 @@ class OnboardingLocalDataSourceImpl implements OnboardingLocalDataSource {
       where: 'email = ?',
       whereArgs: [email],
     );
+
+    // Lấy ID của User để liên kết ví
+    final userResult = await db.query(
+      UsersTable.tableName,
+      columns: ['id'],
+      where: 'email = ?',
+      whereArgs: [email],
+      limit: 1,
+    );
+
+    if (userResult.isNotEmpty) {
+      final userId = userResult.first['id'] as int;
+
+      // Kiểm tra xem ví chính đã tồn tại chưa
+      final walletResult = await db.query(
+        'wallets',
+        where: 'user_id = ?',
+        whereArgs: [userId],
+        limit: 1,
+      );
+
+      if (walletResult.isEmpty) {
+        // Tạo ví mới với số dư ban đầu
+        await db.insert('wallets', {
+          'user_id': userId,
+          'wallet_name': 'Main Wallet',
+          'balance': model.initialBalance ?? 0.0,
+          'currency_code': model.currencyCode ?? 'VND',
+          'created_at': DateTime.now().toIso8601String(),
+        });
+      } else {
+        // Cập nhật ví hiện tại
+        await db.update(
+          'wallets',
+          {
+            'balance': model.initialBalance ?? 0.0,
+            'currency_code': model.currencyCode ?? 'VND',
+          },
+          where: 'user_id = ?',
+          whereArgs: [userId],
+        );
+      }
+    }
   }
 
   @override
@@ -70,19 +115,46 @@ class OnboardingLocalDataSourceImpl implements OnboardingLocalDataSource {
   }) async {
     final db = await _db;
 
-    final result = await db.query(
+    final userResult = await db.query(
       UsersTable.tableName,
       where: 'email = ?',
       whereArgs: [email],
       limit: 1,
     );
 
-    if (result.isEmpty) {
+    if (userResult.isEmpty) {
       return null;
     }
 
-    return OnboardingModel.fromMap(
-      result.first,
+    final userMap = userResult.first;
+    final userId = userMap['id'] as int;
+
+    // Lấy số dư ví (nếu có)
+    final walletResult = await db.query(
+      'wallets',
+      columns: ['balance'],
+      where: 'user_id = ?',
+      whereArgs: [userId],
+      limit: 1,
+    );
+
+    double? initialBalance;
+    if (walletResult.isNotEmpty) {
+      initialBalance = (walletResult.first['balance'] as num?)?.toDouble();
+    }
+
+    return OnboardingModel(
+      displayName: userMap['display_name'] as String?,
+      occupation: userMap['occupation'] as String?,
+      goals: userMap['financial_goal'] != null
+          ? (userMap['financial_goal'] as String)
+              .split(',')
+              .where((s) => s.isNotEmpty)
+              .toList()
+          : [],
+      currencyCode: userMap['currency_code'] as String?,
+      initialBalance: initialBalance,
+      onboardingCompleted: userMap['onboarding_completed'] == 1,
     );
   }
 }

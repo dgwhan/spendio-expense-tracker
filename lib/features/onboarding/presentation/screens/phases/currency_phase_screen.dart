@@ -1,19 +1,9 @@
-// File: lib/features/onboarding/presentation/screens/phases/currency_phase_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:spend_io_app/features/onboarding/data/models/currency_item.dart';
 import 'package:spend_io_app/features/onboarding/presentation/screens/phases/currency_search_bottom_sheet.dart';
 import 'package:spend_io_app/features/onboarding/presentation/screens/phases/currency_selector_tile.dart';
-
 import '../../viewmodels/onboarding_viewmodel.dart';
-
-const List<CurrencyItem> supportedCurrencies = [
-  CurrencyItem(countryName: 'Vietnamese', code: 'VND', flag: '🇻🇳'),
-  CurrencyItem(countryName: 'United States', code: 'USD', flag: '🇺🇸'),
-  CurrencyItem(countryName: 'Europe', code: 'EUR', flag: '🇪🇺'),
-  CurrencyItem(countryName: 'Japan', code: 'JPY', flag: '🇯🇵'),
-];
 
 class CurrencyPhaseScreen extends StatefulWidget {
   const CurrencyPhaseScreen({super.key});
@@ -23,16 +13,26 @@ class CurrencyPhaseScreen extends StatefulWidget {
 }
 
 class _CurrencyPhaseScreenState extends State<CurrencyPhaseScreen> {
-  CurrencyItem _selectedCurrency = supportedCurrencies.first;
+  late CurrencyItem _selectedCurrency;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context
-          .read<OnboardingViewModel>()
-          .updateCurrency(_selectedCurrency.code);
-    });
+
+    final viewModel = context.read<OnboardingViewModel>();
+    final savedCode = viewModel.currencyCode;
+
+    if (savedCode != null) {
+      _selectedCurrency = supportedCurrencies.firstWhere(
+        (element) => element.code == savedCode,
+        orElse: () => supportedCurrencies.first,
+      );
+    } else {
+      _selectedCurrency = supportedCurrencies.first;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        viewModel.updateCurrency(_selectedCurrency.code);
+      });
+    }
   }
 
   void _openCurrencyBottomSheet(
@@ -58,7 +58,7 @@ class _CurrencyPhaseScreenState extends State<CurrencyPhaseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final viewModel = context.watch<OnboardingViewModel>();
+    final viewModel = context.read<OnboardingViewModel>();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
