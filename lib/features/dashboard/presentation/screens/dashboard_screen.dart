@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
-import 'package:spend_io_app/core/utils/user_name_formatter.dart';
+import 'package:spend_io_app/features/dashboard/presentation/widgets/app_header/app_header.dart';
+import 'package:spend_io_app/features/dashboard/presentation/widgets/balance_summary/balance_summary_card.dart';
+import 'package:spend_io_app/features/dashboard/datasource/mock/dashboard_mock_data.dart';
+import 'package:spend_io_app/features/dashboard/presentation/widgets/budget_categories/budget_categories_grid.dart';
+import 'package:spend_io_app/features/dashboard/presentation/widgets/quick_actions/quick_actions_grid.dart';
+import 'package:spend_io_app/features/dashboard/presentation/widgets/recent_activity/recent_activity_section.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -23,29 +28,15 @@ class DashboardScreen extends StatelessWidget {
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
                 sliver: SliverToBoxAdapter(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Good morning, ',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleLarge
-                                ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.textPrimaryLight),
-                          )
-                        ],
-                      ),
-                      const CircleAvatar(
-                        radius: 20,
-                        backgroundColor: AppColors.surfaceDark,
-                        child: Icon(Icons.person, color: AppColors.disabled),
-                      )
-                    ],
+                  child: AppHeader(
+                    displayName: 'Bunny', //TODO: lấy từ csdl
+                    avatarUrl: '',
+                    onProfileTap: () {
+                      //TODO: điều hướng qua trang Profile
+                    },
+                    onNotificationTap: () {
+                      //TODO: Xử lý chuông tb
+                    },
                   ),
                 ),
               ),
@@ -55,28 +46,8 @@ class DashboardScreen extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 sliver: SliverToBoxAdapter(
-                  child: Container(
-                    height: 180,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.shadow,
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'Component 2: Balance Summary Card',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                            color: AppColors.textPrimaryLight,
-                            fontWeight: FontWeight.bold),
-                      ),
-                    ),
+                  child: const BalanceSummaryCard(
+                    summary: DashboardMockData.summary,
                   ),
                 ),
               ),
@@ -86,20 +57,16 @@ class DashboardScreen extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 sliver: SliverToBoxAdapter(
-                  child: Container(
-                    height: 85,
-                    decoration: BoxDecoration(
-                      color: AppColors.backgroundLight,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.borderLight),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'Component 3: Quick Actions Grid',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: AppColors.textPrimaryLight),
-                      ),
-                    ),
+                  child: QuickActionsGrid(
+                    onTransactionTap: () {
+                      // TODO: chức năng add transaction
+                    },
+                    onBudgetTap: () {
+                      // TODO: chức năng buget
+                    },
+                    onAnalyticsTap: () {
+                      // TODO chức năng xem phân tích
+                    },
                   ),
                 ),
               ),
@@ -109,20 +76,8 @@ class DashboardScreen extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 sliver: SliverToBoxAdapter(
-                  child: Container(
-                    height: 240,
-                    decoration: BoxDecoration(
-                      color: AppColors.backgroundLight,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: AppColors.borderLight),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'Component 4: Spending Categories (Grid 2x3)',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: AppColors.textPrimaryLight),
-                      ),
-                    ),
+                  child: BudgetCategoriesGrid(
+                    categories: DashboardMockData.budgetCategories,
                   ),
                 ),
               ),
@@ -175,23 +130,13 @@ class DashboardScreen extends StatelessWidget {
 
               //Component: recent activity
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0,
-                    40.0), // Đáy đẩy cao 40.0 để tạo khoảng thở an toàn cho BottomNav
+                padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 40.0),
                 sliver: SliverToBoxAdapter(
-                  child: Container(
-                    height: 320,
-                    decoration: BoxDecoration(
-                      color: AppColors.backgroundLight,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: AppColors.borderLight),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'Component 7: Recent Activity List',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: AppColors.textPrimaryLight),
-                      ),
-                    ),
+                  child: RecentActivitySection(
+                    transactions: DashboardMockData.recentTransactions,
+                    onViewAllTap: () {
+                      // TODO: Chuyển sang list chi tiết giao dịch
+                    },
                   ),
                 ),
               ),
