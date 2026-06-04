@@ -47,24 +47,19 @@ class AuthLocalDatasource {
 
   Future<void> logout() async {}
 
-  Future<void> updateOnboarding({
-    required int userId,
-    required String occupation,
-    required String financialGoal,
-    required String currencyCode,
-  }) async {
+  Future<void> updateOnboarding(UserModel user) async {
     final db = await AppDatabase.database;
 
     await db.update(
       'users',
       {
-        'occupation': occupation,
-        'financial_goal': financialGoal,
-        'currency_code': currencyCode,
-        'onboarding_completed': 1,
+        'occupation': user.occupation,
+        'financial_goal': user.financialGoal,
+        'currency_code': user.currency,
+        'onboarding_completed': user.onboardingCompleted ? 1 : 0,
       },
       where: 'id = ?',
-      whereArgs: [userId],
+      whereArgs: [user.id],
     );
   }
 

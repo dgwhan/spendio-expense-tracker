@@ -10,10 +10,5 @@ abstract class AuthRepository {
   Future<UserEntity?> getCurrentUser();
   Future<void> logout();
 
-  Future<void> updateOnboarding({
-    required int userId,
-    required String occupation,
-    required String financialGoal,
-    required String currency,
-  });
+  Future<void> updateOnboarding({required UserEntity user});
 }

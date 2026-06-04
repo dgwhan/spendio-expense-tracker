@@ -19,31 +19,13 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       final displayName = user.email.split('@').first;
 
-      // 1. Tạo tài khoản Firebase Auth & Firestore (giới hạn thời gian chờ 5s)
-      try {
-        final credential = await remoteDatasource.registerUser(
-          email: user.email,
-          password: user.password,
-          displayName: displayName,
-        ).timeout(const Duration(seconds: 5));
-        firebaseUser = credential.user;
-      } on fb.FirebaseAuthException catch (authEx) {
-        if (authEx.code == 'email-already-in-use') {
-          // Auto-heal: Nếu email đã tồn tại trên Firebase, thử đăng nhập bằng password này
-          try {
-            final credential = await remoteDatasource.loginUser(
-              email: user.email,
-              password: user.password,
-            ).timeout(const Duration(seconds: 5));
-            firebaseUser = credential.user;
-          } catch (_) {
-            // Đăng nhập thất bại -> email thuộc người khác hoặc sai mật khẩu, báo trùng email như bình thường
-            rethrow;
-          }
-        } else {
-          rethrow;
-        }
-      }
+      // 1. Tạo tài khoản Firebase Auth & Firestore 
+      final credential = await remoteDatasource.registerUser(
+        email: user.email,
+        password: user.password,
+        displayName: displayName,
+      ).timeout(const Duration(seconds: 5));
+      firebaseUser = credential.user;
 
       // 2. Lưu vào SQLite cục bộ để chạy offline-first
       final model = UserModel(
@@ -186,17 +168,18 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<void> updateOnboarding({
-    required int userId,
-    required String occupation,
-    required String financialGoal,
-    required String currency,
-  }) async {
-    await localDatasource.updateOnboarding(
-       userId: userId,
-       occupation: occupation,
-       financialGoal: financialGoal,
-       currencyCode: currency,
-     );
+  Future<void> updateOnboarding({required UserEntity user}) async {
+    final model = UserModel(
+      id: user.id,
+      email: user.email,
+      password: user.password,
+      occupation: user.occupation,
+      financialGoal: user.financialGoal,
+      currency: user.currency,
+      onboardingCompleted: user.onboardingCompleted,
+      displayName: user.email.split('@').first,
+      createdAt: DateTime.now(),
+    );
+    await localDatasource.updateOnboarding(model);
   }
 }
