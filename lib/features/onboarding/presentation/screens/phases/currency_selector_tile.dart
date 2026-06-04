@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:spend_io_app/features/onboarding/data/models/currency_item.dart';
+import 'package:spend_io_app/features/onboarding/datasource/models/currency_item.dart';
 
 class CurrencySelectorTile extends StatelessWidget {
   final CurrencyItem selectedCurrency;

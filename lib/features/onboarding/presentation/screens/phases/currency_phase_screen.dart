@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:spend_io_app/features/onboarding/data/models/currency_item.dart';
+import 'package:spend_io_app/features/onboarding/datasource/models/currency_item.dart';
 import 'package:spend_io_app/features/onboarding/presentation/screens/phases/currency_search_bottom_sheet.dart';
 import 'package:spend_io_app/features/onboarding/presentation/screens/phases/currency_selector_tile.dart';
 import '../../viewmodels/onboarding_viewmodel.dart';
