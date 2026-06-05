@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
+import 'package:spend_io_app/core/utils/currency_formatter.dart';
 import 'package:spend_io_app/features/dashboard/datasource/models/budget_category_model.dart';
 
 class BudgetCategoryCard extends StatelessWidget {
@@ -62,13 +62,10 @@ class BudgetCategoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = _getCategoryStyle(category.name);
-    final formatter =
-        NumberFormat.currency(locale: 'vi_VN', symbol: '', decimalDigits: 0);
 
-    final String spentText =
-        formatter.format(category.spent).replaceAll(' ', '').trim();
-    final String budgetText =
-        formatter.format(category.budget).replaceAll(' ', '').trim();
+    final String spentText = CurrencyFormatter.compact(category.spent);
+    final String budgetText = CurrencyFormatter.compact(category.budget);
+
     final double safeProgress = category.progress.clamp(0.0, 1.0);
 
     return Container(
@@ -132,7 +129,7 @@ class BudgetCategoryCard extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                '$spentText / $budgetTextđ',
+                '$spentText / $budgetText',
                 style: const TextStyle(
                   color: Colors.black54,
                   fontSize: 10,

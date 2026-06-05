@@ -1,0 +1,31 @@
+import 'package:intl/intl.dart';
+
+class CurrencyFormatter {
+  CurrencyFormatter._();
+
+  static final NumberFormat _currencyFormat = NumberFormat.currency(
+    locale: 'vi_VN',
+    symbol: '',
+    decimalDigits: 0,
+  );
+
+  static String format(double amount) {
+    return '${_currencyFormat.format(amount).replaceAll('\u00A0', '').trim()}đ';
+  }
+
+  static String compact(double amount) {
+    if (amount >= 1000000000) {
+      return '${(amount / 1000000000).toStringAsFixed(1)}B';
+    }
+
+    if (amount >= 1000000) {
+      return '${(amount / 1000000).toStringAsFixed(1)}M';
+    }
+
+    if (amount >= 1000) {
+      return '${(amount / 1000).toStringAsFixed(0)}K';
+    }
+
+    return amount.toStringAsFixed(0);
+  }
+}
