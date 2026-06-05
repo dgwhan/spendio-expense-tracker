@@ -14,7 +14,7 @@ class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
   void _navigateToInsights(BuildContext context) {
-    // TODO(dev): Thực hiện logic chuyển đổi Tab Index sang Tab chi tiết
+    //TODO(dev): Thực hiện logic chuyển đổi Tab Index sang Tab chi tiết
     debugPrint(
         'Hành động: [Spending Breakdown] Chuyển hướng sang tab chi tiết Insights.');
   }
