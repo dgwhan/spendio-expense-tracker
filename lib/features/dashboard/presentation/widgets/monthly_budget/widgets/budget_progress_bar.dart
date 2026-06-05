@@ -46,8 +46,7 @@ class BudgetProgressBar extends StatelessWidget {
           child: LinearProgressIndicator(
             value: progress,
             minHeight: 12,
-            backgroundColor:
-                (AppColors.primary ?? Colors.blue).withOpacity(0.1),
+            backgroundColor: AppColors.primary,
             valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
           ),
         ),
