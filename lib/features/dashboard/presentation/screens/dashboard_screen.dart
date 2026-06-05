@@ -4,6 +4,7 @@ import 'package:spend_io_app/features/dashboard/presentation/widgets/app_header/
 import 'package:spend_io_app/features/dashboard/presentation/widgets/balance_summary/balance_summary_card.dart';
 import 'package:spend_io_app/features/dashboard/datasource/mock/dashboard_mock_data.dart';
 import 'package:spend_io_app/features/dashboard/presentation/widgets/budget_categories/budget_categories_grid.dart';
+import 'package:spend_io_app/features/dashboard/presentation/widgets/monthly_budget/monthly_budget_progress.dart';
 import 'package:spend_io_app/features/dashboard/presentation/widgets/quick_actions/quick_actions_grid.dart';
 import 'package:spend_io_app/features/dashboard/presentation/widgets/recent_activity/recent_activity_section.dart';
 
@@ -87,20 +88,8 @@ class DashboardScreen extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 sliver: SliverToBoxAdapter(
-                  child: Container(
-                    height: 270,
-                    decoration: BoxDecoration(
-                      color: AppColors.backgroundLight,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: AppColors.borderLight),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'Component 5: Financial Pulse',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: AppColors.textPrimaryLight),
-                      ),
-                    ),
+                  child: MonthlyBudgetProgress(
+                    budget: DashboardMockData.monthlyBudget,
                   ),
                 ),
               ),

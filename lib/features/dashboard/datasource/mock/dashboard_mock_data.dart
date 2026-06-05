@@ -1,5 +1,6 @@
 import 'package:spend_io_app/features/dashboard/datasource/models/budget_category_model.dart';
 import 'package:spend_io_app/features/dashboard/datasource/models/dashboard_summary_model.dart';
+import 'package:spend_io_app/features/dashboard/datasource/models/monthly_budget_model.dart';
 import 'package:spend_io_app/features/dashboard/datasource/models/recent_transaction_model.dart';
 
 class DashboardMockData {
@@ -89,4 +90,10 @@ class DashboardMockData {
       icon: '',
     ),
   ];
+
+  static const monthlyBudget = MonthlyBudgetModel(
+    totalBudget: 20000000,
+    totalSpent: 11200000,
+    monthName: 'June',
+  );
 }
