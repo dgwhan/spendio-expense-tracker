@@ -3,16 +3,18 @@ import 'package:spend_io_app/core/constants/app_colors.dart';
 
 class BudgetProgressBar extends StatelessWidget {
   final double progress;
+  final String budgetTitle;
   final String remainingText;
-  final String spentPercentText;
-  final String totalBudgetText;
+  final String usedPercentText;
+  final String limitText;
 
   const BudgetProgressBar({
     super.key,
     required this.progress,
+    required this.budgetTitle,
     required this.remainingText,
-    required this.spentPercentText,
-    required this.totalBudgetText,
+    required this.usedPercentText,
+    required this.limitText,
   });
 
   @override
@@ -21,52 +23,58 @@ class BudgetProgressBar extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
+        //Hàng trên: Tiêu đề và số tiền đã đặt mục tiêu/ tháng
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Monthly Budget',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              budgetTitle,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimaryLight,
                   ),
             ),
             Text(
               remainingText,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimaryLight,
                   ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
+
+        const SizedBox(height: 14),
+
+        // THANH PROGRESS BAR
         ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: LinearProgressIndicator(
             value: progress,
-            minHeight: 12,
-            backgroundColor: AppColors.primary,
+            minHeight: 10,
+            backgroundColor: AppColors.surfaceSecondaryLight,
             valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
           ),
         ),
+
         const SizedBox(height: 10),
+
+        // hàng dưới bao gồm: phần trăm used và limit
         Row(
-          mainAxisAlignment: MainAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              spentPercentText,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              usedPercentText,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimaryLight,
                   ),
             ),
-            const SizedBox(width: 4),
             Text(
-              totalBudgetText,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondaryLight,
-                    fontWeight: FontWeight.w500,
+              limitText,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimaryLight,
                   ),
             ),
           ],

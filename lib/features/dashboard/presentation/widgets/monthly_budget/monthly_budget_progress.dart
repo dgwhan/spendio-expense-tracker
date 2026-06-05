@@ -14,12 +14,20 @@ class MonthlyBudgetProgress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    //Tiêu đề động theo tháng
+    final String budgetTitle = '${budget.monthName} Budget';
+
+    // Định dạng chuỗi theo ảnh mẫu: Remaining
     final String remainingText =
-        '${CurrencyFormatter.format(budget.remaining)} Left';
-    final String spentPercentText =
-        '${(budget.progress * 100).toStringAsFixed(0)}% Spent';
-    final String totalBudgetText =
-        'of ${CurrencyFormatter.format(budget.totalBudget)}';
+        'Remaining ${CurrencyFormatter.format(budget.remaining)}';
+
+    // Định dạng chuỗi dưới lề trái: Used % (đã sd / %)
+    final String usedPercentText =
+        'Used ${(budget.progress * 100).toStringAsFixed(0)}%';
+
+    // Định dạng chuỗi dưới lề phải: Limit (giới hạn số tiền còn lại)
+    final String limitText =
+        'Limit: ${CurrencyFormatter.format(budget.totalBudget)}';
 
     final double safeProgress = budget.progress.clamp(0.0, 1.0);
 
@@ -27,9 +35,10 @@ class MonthlyBudgetProgress extends StatelessWidget {
       padding: const EdgeInsets.all(16.0),
       child: BudgetProgressBar(
         progress: safeProgress,
+        budgetTitle: budgetTitle,
         remainingText: remainingText,
-        spentPercentText: spentPercentText,
-        totalBudgetText: totalBudgetText,
+        usedPercentText: usedPercentText,
+        limitText: limitText,
       ),
     );
   }

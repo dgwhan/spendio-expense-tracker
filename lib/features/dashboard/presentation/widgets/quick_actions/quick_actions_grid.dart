@@ -6,13 +6,14 @@ class QuickActionsGrid extends StatelessWidget {
   final VoidCallback? onTransactionTap;
   final VoidCallback? onBudgetTap;
   final VoidCallback? onAnalyticsTap;
+  final VoidCallback? onSavingGoalTap;
 
-  const QuickActionsGrid({
-    super.key,
-    this.onTransactionTap,
-    this.onBudgetTap,
-    this.onAnalyticsTap,
-  });
+  const QuickActionsGrid(
+      {super.key,
+      this.onTransactionTap,
+      this.onBudgetTap,
+      this.onAnalyticsTap,
+      this.onSavingGoalTap});
 
   @override
   Widget build(BuildContext context) {
@@ -47,6 +48,15 @@ class QuickActionsGrid extends StatelessWidget {
               onTap: onAnalyticsTap,
             ),
           ),
+
+          //Saving Goals
+          Expanded(
+            child: _ActionItem(
+              icon: Icons.savings_outlined,
+              label: 'Budget',
+              onTap: onBudgetTap,
+            ),
+          ),
         ],
       ),
     );
@@ -68,7 +78,7 @@ class _ActionItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      splashColor: AppColors.primary.withOpacity(0.1),
+      splashColor: AppColors.primary.withValues(alpha: 0.1),
       highlightColor: Colors.transparent,
       borderRadius: BorderRadius.circular(12),
       child: Column(
