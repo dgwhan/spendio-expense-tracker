@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:spend_io_app/core/widgets/shake_widget.dart';
 import 'package:spend_io_app/features/home/presentation/screens/dashboard_screen.dart';
+import 'package:spend_io_app/features/navigation/presentation/screens/navigation_entry.dart';
 import 'package:spend_io_app/features/onboarding/presentation/screens/onboarding_shell_screen.dart';
 import 'package:spend_io_app/features/onboarding/presentation/screens/phases/balance_phase_screen.dart';
 import 'package:spend_io_app/features/onboarding/presentation/screens/phases/currency_phase_screen.dart';
@@ -68,7 +69,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
             if (!context.mounted) return;
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
-                builder: (context) => const DashboardScreen(),
+                builder: (context) => const NavigationEntry(),
               ),
             );
           }
@@ -107,7 +108,9 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<OnboardingViewModel>().loadOnboarding(email: widget.userEmail);
+      context
+          .read<OnboardingViewModel>()
+          .loadOnboarding(email: widget.userEmail);
     });
   }
 }

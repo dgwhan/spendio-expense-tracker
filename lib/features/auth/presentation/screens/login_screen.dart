@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:spend_io_app/features/navigation/presentation/screens/navigation_entry.dart';
 import 'package:spend_io_app/features/onboarding/presentation/screens/onboarding_flow_screen.dart';
 
 import '../../../../core/constants/app_colors.dart';
@@ -43,11 +44,12 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Login successful!'),
-          backgroundColor: AppColors.success,
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const NavigationEntry(),
         ),
+        (route) => false,
       );
 
       final user = authProvider.currentUser;
@@ -67,10 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
-            builder: (_) => const Scaffold(
-                body: Center(
-                    child:
-                        Text('Home Screen'))), 
+            builder: (_) => const NavigationEntry(),
           ),
           (route) => false,
         );

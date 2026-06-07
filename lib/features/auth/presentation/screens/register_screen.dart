@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:spend_io_app/features/navigation/presentation/screens/navigation_entry.dart';
 import 'package:spend_io_app/features/auth/presentation/screens/login_screen.dart';
 import 'package:spend_io_app/features/onboarding/presentation/screens/onboarding_flow_screen.dart';
 
@@ -50,11 +51,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!mounted) return;
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Registration successful!'),
-          backgroundColor: AppColors.success,
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const NavigationEntry(),
         ),
+        (route) => false,
       );
 
       Navigator.pushAndRemoveUntil(
