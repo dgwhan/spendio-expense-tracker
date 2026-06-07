@@ -1,0 +1,105 @@
+import 'package:flutter/material.dart';
+import '../../data/models/user_model.dart';
+import '../../domain/entities/user_entity.dart';
+import '../../domain/repositories/auth_repository.dart';
+
+/// Authentication state provider
+class AuthProvider extends ChangeNotifier {
+  final AuthRepository repository;
+
+  bool isLoading = false;
+  UserModel? currentUser;
+
+  AuthProvider({
+    required this.repository,
+  });
+
+  /// Register new account
+  Future<bool> register({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      isLoading = true;
+      notifyListeners();
+
+      debugPrint("===> AuthProvider nhận email đăng ký: $email");
+
+      final userEntity = UserEntity(
+        email: email,
+        password: password,
+        onboardingCompleted: false,
+      );
+
+      final success = await repository.register(userEntity);
+
+      isLoading = false;
+      notifyListeners();
+
+      return success;
+    } catch (e) {
+      //demo tạm thời
+      debugPrint("Lỗi tại AuthProvider.register: $e");
+      isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Login existing account
+  Future<bool> login({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      isLoading = true;
+      notifyListeners();
+
+      final result = await repository.login(email, password);
+
+      if (result != null) {
+        currentUser = UserModel(
+          id: result.id,
+          email: result.email,
+          password: result.password,
+          displayName: result.email.split('@').first,
+          occupation: result.occupation,
+          financialGoal: result.financialGoal,
+          currency: result.currency,
+          onboardingCompleted: result.onboardingCompleted,
+          createdAt: DateTime.now(),
+        );
+      } else {
+        currentUser = null;
+      }
+
+      isLoading = false;
+      notifyListeners();
+
+      return result != null;
+    } catch (e) {
+      debugPrint("===> Lỗi tại AuthProvider.login: $e");
+      currentUser = null;
+      isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Load current user session
+  Future<void> loadSession() async {
+    notifyListeners();
+  }
+
+  /// Logout current session
+  Future<void> logout() async {
+    isLoading = true;
+    notifyListeners();
+
+    await repository.logout();
+    currentUser = null;
+
+    isLoading = false;
+    notifyListeners();
+  }
+}
