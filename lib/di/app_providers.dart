@@ -2,9 +2,9 @@ import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 
 // ONBOARDING LAYER
-import '../features/onboarding/datasource/datasources/onboarding_local_datasource.dart';
-import '../features/onboarding/datasource/datasources/onboarding_remote_datasource.dart';
-import '../features/onboarding/datasource/repositories/onboarding_repository_impl.dart';
+import '../features/onboarding/data/datasources/onboarding_local_datasource.dart';
+import '../features/onboarding/data/datasources/onboarding_remote_datasource.dart';
+import '../features/onboarding/data/repositories/onboarding_repository_impl.dart';
 import '../../../features/onboarding/domain/usecases/save_onboarding_usecase.dart';
 import '../../../features/onboarding/domain/usecases/get_onboarding_usecase.dart';
 import '../../../features/onboarding/domain/usecases/check_onboarding_usecase.dart';

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:spend_io_app/features/wallet/domain/entities/account_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/budget_category_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/quick_action_entity.dart';
+import 'package:spend_io_app/features/wallet/domain/entities/saving_goal_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/wallet_summary_entity.dart';
 
-class WalletMockData {
-  WalletMockData._();
+class WalletLocalDataSource {
+  WalletLocalDataSource._();
 
   /// fake wallet summary
   ///
@@ -62,6 +64,50 @@ class WalletMockData {
       name: 'Bills',
       spent: 80.00,
       budget: 100.00,
+    ),
+  ];
+
+  static const accounts = [
+    AccountEntity(
+      name: 'Cash Wallet',
+      type: AccountType.cash,
+      balance: 320,
+      icon: Icons.wallet,
+    ),
+    AccountEntity(
+      name: 'Vietcombank',
+      type: AccountType.bank,
+      balance: 5800,
+      icon: Icons.account_balance,
+    ),
+    AccountEntity(
+      name: 'Momo',
+      type: AccountType.eWallet,
+      balance: 950,
+      icon: Icons.account_balance_wallet,
+    ),
+    AccountEntity(
+      name: 'Visa Credit',
+      type: AccountType.creditCard,
+      balance: -1200,
+      icon: Icons.credit_card,
+    ),
+  ];
+
+  static final goals = [
+    SavingGoalEntity(
+      name: 'MacBook Pro',
+      currentAmount: 1200,
+      targetAmount: 2500,
+      estimatedDate: DateTime(2026, 12, 1),
+      icon: Icons.laptop_mac,
+    ),
+    SavingGoalEntity(
+      name: 'Japan Trip',
+      currentAmount: 3200,
+      targetAmount: 6000,
+      estimatedDate: DateTime(2027, 3, 1),
+      icon: Icons.flight,
     ),
   ];
 }

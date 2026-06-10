@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:spend_io_app/features/wallet/datasource/mock/wallet_mock_data.dart';
+import 'package:spend_io_app/features/wallet/data/datasource/wallet_local_data_source.dart';
+import 'package:spend_io_app/features/wallet/domain/entities/account_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/budget_category_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/financial_health_status.dart';
+import 'package:spend_io_app/features/wallet/domain/entities/saving_goal_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/wallet_summary_entity.dart';
 
 class WalletViewmodel extends ChangeNotifier {
-  WalletSummaryEntity summary = WalletMockData.summary;
+  WalletSummaryEntity summary = WalletLocalDataSource.summary;
 
-  // 🟢 Danh sách danh mục ngân sách sử dụng chung Entity hệ thống
-  List<BudgetCategoryEntity> categories = WalletMockData.categories;
+  List<BudgetCategoryEntity> categories = WalletLocalDataSource.categories;
+  List<AccountEntity> get accounts => WalletLocalDataSource.accounts;
+  List<SavingGoalEntity> get goals => WalletLocalDataSource.goals;
 
-  // Cấu hình tháng xem báo cáo tài chính
   DateTime selectedMonth = DateTime.now();
 
   /// Tính tổng số tiền đã chi tiêu động từ danh sách Entity dùng chung
