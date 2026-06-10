@@ -4,6 +4,7 @@ import 'package:spend_io_app/features/home/presentation/screens/dashboard_screen
 import 'package:spend_io_app/features/navigation/presentation/providers/navigation_provider.dart';
 import 'package:spend_io_app/features/navigation/presentation/widgets/bottom_navigation_bar.dart';
 import 'package:spend_io_app/features/navigation/presentation/widgets/center_action_button.dart';
+import 'package:spend_io_app/features/wallet/presentation/screen/wallet_screen.dart';
 
 //Nguồn tham khảo ý tưởng cấu trúc:
 /// YouTube Channel: Programming With FlexZ
@@ -59,7 +60,7 @@ class _NavigationShellState extends State<NavigationShell> {
                 rootPage: const DashboardScreen()),
             _buildTabWorkspace(
                 navigatorKey: _navigatorKeys[1],
-                rootPage: const Center(child: Text('Wallet Workspace'))),
+                rootPage: const WalletScreen()),
             _buildTabWorkspace(
                 navigatorKey: _navigatorKeys[2],
                 rootPage: const Center(child: Text('Insights Workspace'))),

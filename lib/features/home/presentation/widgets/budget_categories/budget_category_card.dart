@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
-import 'package:spend_io_app/features/home/datasource/models/budget_category_model.dart';
+import 'package:spend_io_app/features/wallet/domain/entities/budget_category_entity.dart';
 
 class BudgetCategoryCard extends StatelessWidget {
-  final BudgetCategoryModel category;
+  final BudgetCategoryEntity category;
 
   const BudgetCategoryCard({
     super.key,

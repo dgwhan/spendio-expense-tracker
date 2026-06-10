@@ -9,23 +9,53 @@ class CurrencyFormatter {
     decimalDigits: 0,
   );
 
-  static String format(double amount) {
-    return '${_currencyFormat.format(amount).replaceAll('\u00A0', '').trim()}đ';
+  /// Định dạng đầy đủ
+  static String format(
+    double amount, {
+    String locale = 'vi_VN', //Gán mặc định tạm thời
+    String currencyCode = 'VND', //Gán mặc định tạm thời
+    int? decimalDigits,
+  }) {
+    if (locale == 'vi_VN' && currencyCode == 'VND') {
+      return '${_currencyFormat.format(amount).replaceAll('\u00A0', '').trim()}đ';
+    }
+
+    // Luồng chuẩn quốc tế xử lý động (Sẽ dùng sau)
+    final formatter = NumberFormat.currency(
+      locale: locale,
+      name: currencyCode,
+      decimalDigits: decimalDigits,
+    );
+    return formatter.format(amount).replaceAll('\u00A0', ' ').trim();
   }
 
-  static String compact(double amount) {
-    if (amount >= 1000000000) {
-      return '${(amount / 1000000000).toStringAsFixed(1)}B';
+  /// Định dạng viết tắt
+  static String compact(
+    double amount, {
+    String locale = 'vi_VN', // Gán mặc định tạm thời
+    String currencyCode = 'VND', // Gán mặc định tạm thời
+  }) {
+    if (locale == 'vi_VN' && currencyCode == 'VND') {
+      if (amount >= 1000000000) {
+        return '${(amount / 1000000000).toStringAsFixed(1)}B';
+      }
+      if (amount >= 1000000) {
+        return '${(amount / 1000000).toStringAsFixed(1)}M';
+      }
+      if (amount >= 1000) {
+        return '${(amount / 1000).toStringAsFixed(0)}K';
+      }
+      return amount.toStringAsFixed(0);
     }
 
-    if (amount >= 1000000) {
-      return '${(amount / 1000000).toStringAsFixed(1)}M';
-    }
-
-    if (amount >= 1000) {
-      return '${(amount / 1000).toStringAsFixed(0)}K';
-    }
-
-    return amount.toStringAsFixed(0);
+    // Luồng chuẩn quốc tế xử lý động (Sẽ dùng sau)
+    final symbol =
+        NumberFormat.simpleCurrency(locale: locale, name: currencyCode)
+            .currencySymbol;
+    final formatter = NumberFormat.compactCurrency(
+      locale: locale,
+      symbol: symbol,
+    );
+    return formatter.format(amount).replaceAll('\u00A0', ' ').trim();
   }
 }

@@ -4,10 +4,10 @@ import 'package:spend_io_app/features/home/presentation/widgets/shared/dashboard
 import 'package:spend_io_app/features/home/presentation/widgets/budget_categories/budget_category_card.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/budget_category_entity.dart';
 
-class BudgetCategoriesGrid extends StatelessWidget {
+class WalletBudgetCategoriesGrid extends StatelessWidget {
   final List<BudgetCategoryEntity> categories;
 
-  const BudgetCategoriesGrid({
+  const WalletBudgetCategoriesGrid({
     super.key,
     required this.categories,
   });
@@ -35,13 +35,17 @@ class BudgetCategoriesGrid extends StatelessWidget {
             physics: const NeverScrollableScrollPhysics(),
             itemCount: categories.length,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2, //chia ra 2 cột
-              mainAxisSpacing: 12, //khoảng cách hàng dọc
-              crossAxisSpacing: 12, //khoảng cách hàng ngang
-              childAspectRatio: 1.7, //tỷ lệ khung
+              crossAxisCount: 2,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 1.7,
             ),
             itemBuilder: (context, index) {
-              return BudgetCategoryCard(category: categories[index]);
+              final entity = categories[index];
+
+              return BudgetCategoryCard(
+                category: entity as dynamic,
+              );
             },
           ),
         ),
