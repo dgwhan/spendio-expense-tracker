@@ -31,20 +31,22 @@ class AppDatabase {
     return openDatabase(
       path,
       version: 3,
+      onConfigure: (db) async {
+        await db.execute(
+          'PRAGMA foreign_keys = ON',
+        );
+      },
       onCreate: (db, version) async {
         await MigrationV1.run(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        await db.execute('DROP TABLE IF EXISTS users');
+        // Drop child tables first to avoid Foreign Key constraint failures
         await db.execute('DROP TABLE IF EXISTS wallets');
         await db.execute('DROP TABLE IF EXISTS financial_goals');
+        await db.execute('DROP TABLE IF EXISTS users');
         await MigrationV1.run(db);
       },
       onOpen: (db) async {
-        await db.execute(
-          'PRAGMA foreign_keys = ON',
-        );
-
         debugPrint('DB opened at: $path');
       },
     );

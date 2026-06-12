@@ -27,7 +27,9 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    context.read<LoginFormViewModel>().clearForm();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<LoginFormViewModel>().clearForm();
+    });
   }
 
   @override
@@ -50,14 +52,6 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (success) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const NavigationEntry(),
-        ),
-        (route) => false,
-      );
-
       final user = authProvider.currentUser;
       if (user == null ||
           user.financialGoal == null ||
@@ -100,14 +94,15 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 16,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24,
+              vertical: 16,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               // BACK BUTTON
               GestureDetector(
                 onTap: () => Navigator.pop(context),
@@ -271,11 +266,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
 
-              const Spacer(),
+              const SizedBox(height: 24),
             ],
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

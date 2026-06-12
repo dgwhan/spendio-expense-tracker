@@ -16,7 +16,11 @@ class AuthRemoteDatasource {
       password: password,
     );
 
-    final uid = userCredential.user!.uid;
+    final user = userCredential.user;
+    if (user == null) {
+      throw Exception("Failed to register: user session is null");
+    }
+    final uid = user.uid;
 
     // Tạo document người dùng trên Firestore
     await _firestore.collection('users').doc(uid).set({

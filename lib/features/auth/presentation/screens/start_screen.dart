@@ -63,7 +63,7 @@ class StartScreen extends StatelessWidget {
   Widget _buildIllustration() {
     return Center(
       child: Image.asset(
-        'images/wallet.png',
+        'assets/images/wallet.png',
         height: 140,
         fit: BoxFit.contain,
         errorBuilder: (context, error, stackTrace) {

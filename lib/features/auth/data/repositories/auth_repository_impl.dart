@@ -84,8 +84,9 @@ class AuthRepositoryImpl implements AuthRepository {
       );
     }
 
-    // 2. Khi đăng nhập Firebase thành công, tiến hành đồng bộ dữ liệu profile từ Firestore
-    final uid = credential.user!.uid;
+    final user = credential.user;
+    if (user == null) return null;
+    final uid = user.uid;
     Map<String, dynamic> userData = {};
     double? walletBalance;
 

@@ -32,7 +32,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   void initState() {
     super.initState();
-    context.read<RegisterFormViewModel>().clearForm();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<RegisterFormViewModel>().clearForm();
+    });
   }
 
   @override
@@ -57,14 +59,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!mounted) return;
 
     if (success) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const NavigationEntry(),
-        ),
-        (route) => false,
-      );
-
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(

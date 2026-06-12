@@ -33,8 +33,13 @@ class AuthProvider extends ChangeNotifier {
 
       final success = await repository.register(userEntity);
 
-      isLoading = false;
-      notifyListeners();
+      if (success) {
+        // Tự động đăng nhập để thiết lập session
+        await login(email: email, password: password);
+      } else {
+        isLoading = false;
+        notifyListeners();
+      }
 
       return success;
     } catch (e) {
@@ -89,6 +94,30 @@ class AuthProvider extends ChangeNotifier {
   /// Load current user session
   Future<void> loadSession() async {
     notifyListeners();
+  }
+
+  /// Tải lại thông tin User hiện tại từ database
+  Future<void> reloadUser() async {
+    if (currentUser == null) return;
+    try {
+      final result = await repository.login(currentUser!.email, currentUser!.password);
+      if (result != null) {
+        currentUser = UserModel(
+          id: result.id,
+          email: result.email,
+          password: result.password,
+          displayName: result.email.split('@').first,
+          occupation: result.occupation,
+          financialGoal: result.financialGoal,
+          currency: result.currency,
+          onboardingCompleted: result.onboardingCompleted,
+          createdAt: DateTime.now(),
+        );
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint("===> Lỗi tại AuthProvider.reloadUser: $e");
+    }
   }
 
   /// Logout current session

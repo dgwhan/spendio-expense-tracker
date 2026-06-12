@@ -29,9 +29,10 @@ class AppHeader extends StatelessWidget {
           child: CircleAvatar(
             radius: 20,
             backgroundColor: AppColors.dividerLight,
-            backgroundImage:
-                avatarUrl != null ? NetworkImage(avatarUrl!) : null,
-            child: avatarUrl == null
+            backgroundImage: (avatarUrl != null && avatarUrl!.isNotEmpty)
+                ? NetworkImage(avatarUrl!)
+                : null,
+            child: (avatarUrl == null || avatarUrl!.isEmpty)
                 ? const Icon(
                     Icons.person,
                     color: Colors.white,

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
+import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
+import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/app_header/app_header.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/balance_summary/balance_summary_card.dart';
 import 'package:spend_io_app/features/home/data/mock/dashboard_mock_data.dart';
@@ -9,6 +12,7 @@ import 'package:spend_io_app/features/home/presentation/widgets/quick_actions/qu
 import 'package:spend_io_app/features/home/presentation/widgets/recent_activity/recent_activity_section.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/savings_goal/savings_goal_card.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/spending_breakdown/spending_breakdown_section.dart';
+import 'package:spend_io_app/features/home/data/models/dashboard_summary_model.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -21,13 +25,24 @@ class DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+    final walletViewModel = context.watch<WalletViewModel>();
+
+    final displayName = authProvider.currentUser?.displayName ?? 'Guest';
+    final summaryModel = DashboardSummaryModel(
+      balance: walletViewModel.summary.totalAssets,
+      income: DashboardMockData.summary.income,
+      expense: DashboardMockData.summary.expense,
+      savings: walletViewModel.summary.totalSaved,
+    );
+
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       body: SafeArea(
         child: RefreshIndicator(
           color: AppColors.primary,
           onRefresh: () async {
-            await Future.delayed(const Duration(seconds: 1));
+            await walletViewModel.fetchWalletData();
           },
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -37,7 +52,7 @@ class DashboardScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
                 sliver: SliverToBoxAdapter(
                   child: AppHeader(
-                    displayName: 'Bunny', //TODO: lấy từ csdl
+                    displayName: displayName,
                     avatarUrl: '',
                     onProfileTap: () {
                       //TODO: điều hướng qua trang Profile
@@ -54,8 +69,8 @@ class DashboardScreen extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 sliver: SliverToBoxAdapter(
-                  child: const BalanceSummaryCard(
-                    summary: DashboardMockData.summary,
+                  child: BalanceSummaryCard(
+                    summary: summaryModel,
                   ),
                 ),
               ),

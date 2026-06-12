@@ -10,6 +10,7 @@ import 'package:spend_io_app/features/onboarding/presentation/screens/phases/cur
 import 'package:spend_io_app/features/onboarding/presentation/screens/phases/goals_phase_screen.dart';
 import 'package:spend_io_app/features/onboarding/presentation/screens/phases/identity_phase_screen.dart';
 import 'package:spend_io_app/features/onboarding/presentation/screens/phases/profession_phase_screen.dart';
+import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
 import '../viewmodels/onboarding_viewmodel.dart';
 
 class OnboardingFlowScreen extends StatefulWidget {
@@ -65,6 +66,8 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
             viewModel.nextStep();
           } else {
             await viewModel.completeOnboarding(email: widget.userEmail);
+            if (!context.mounted) return;
+            await context.read<AuthProvider>().reloadUser();
             if (!context.mounted) return;
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(

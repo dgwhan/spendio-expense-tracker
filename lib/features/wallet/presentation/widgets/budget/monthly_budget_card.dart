@@ -15,7 +15,7 @@ class MonthlyBudgetCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double progress = (spent / budget).clamp(0.0, 1.0);
+    final double progress = (budget > 0) ? (spent / budget).clamp(0.0, 1.0) : 0.0;
     final double remaining = budget - spent;
 
     return Container(

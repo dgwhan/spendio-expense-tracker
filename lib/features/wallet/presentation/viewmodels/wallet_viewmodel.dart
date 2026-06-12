@@ -23,6 +23,7 @@ class WalletViewModel extends ChangeNotifier {
   UserModel? _currentUser;
   bool _isLoading = false;
   String? _errorMessage;
+  int? _lastUserId;
 
   WalletSummaryEntity _summary = const WalletSummaryEntity(
     totalAssets: 0.0,
@@ -55,10 +56,24 @@ class WalletViewModel extends ChangeNotifier {
 
   /// Cập nhật thông tin User hiện tại từ AuthProvider
   void updateUser(UserModel? user) {
-    if (_currentUser?.id != user?.id || _currentUser?.email != user?.email) {
-      _currentUser = user;
-      fetchWalletData();
-    }
+    // Guard: avoid scheduling fetch when already loading
+    if (_isLoading) return;
+
+    final hasChanged = _currentUser?.id != user?.id ||
+        _currentUser?.email != user?.email ||
+        _currentUser?.onboardingCompleted != user?.onboardingCompleted ||
+        _currentUser?.currency != user?.currency;
+
+    final newUserId = user?.id;
+    if (!hasChanged) return;
+
+    // Additional guard: avoid redundant fetch for same user id
+    if (newUserId != null && _lastUserId == newUserId) return;
+
+    _currentUser = user;
+    _lastUserId = newUserId;
+
+    Future.microtask(() => fetchWalletData());
   }
 
   /// Định dạng hiển thị tháng/năm hiện tại
@@ -73,6 +88,9 @@ class WalletViewModel extends ChangeNotifier {
 
   /// Tải dữ liệu ví thực tế từ database
   Future<void> fetchWalletData() async {
+    final sw = Stopwatch()..start();
+    debugPrint(
+        'WalletViewModel.fetchWalletData: start userId=${_currentUser?.id}');
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -98,8 +116,12 @@ class WalletViewModel extends ChangeNotifier {
       }
     } catch (e) {
       _errorMessage = e.toString();
+      debugPrint('WalletViewModel.fetchWalletData: error: $e');
     } finally {
       _isLoading = false;
+      sw.stop();
+      debugPrint(
+          'WalletViewModel.fetchWalletData: finished in ${sw.elapsedMilliseconds}ms');
       notifyListeners();
     }
   }

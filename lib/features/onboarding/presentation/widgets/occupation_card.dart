@@ -41,6 +41,7 @@ class OccupationCard extends StatelessWidget {
           ),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image.asset(

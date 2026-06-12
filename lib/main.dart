@@ -8,6 +8,8 @@ import 'package:spend_io_app/di/app_providers.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
+import 'dart:io';
+
 import 'app.dart';
 import 'firebase_options.dart';
 
@@ -23,7 +25,7 @@ void main() async {
   // ==================================================================
   if (kIsWeb) {
     databaseFactory = databaseFactoryFfiWeb;
-  } else {
+  } else if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
   }
