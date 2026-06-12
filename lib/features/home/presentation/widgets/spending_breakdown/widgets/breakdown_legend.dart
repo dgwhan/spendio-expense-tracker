@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/shared/widgets/buttons/app_text_button.dart';
-import 'package:spend_io_app/features/home/datasource/models/spending_breakdown_model.dart';
+import 'package:spend_io_app/features/home/data/models/spending_breakdown_model.dart';
 import 'breakdown_legend_item.dart';
 
 class BreakdownLegend extends StatelessWidget {

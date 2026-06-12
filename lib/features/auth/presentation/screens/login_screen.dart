@@ -25,6 +25,12 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _rememberMe = false;
 
   @override
+  void initState() {
+    super.initState();
+    context.read<LoginFormViewModel>().clearForm();
+  }
+
+  @override
   void dispose() {
     emailController.dispose();
     passwordController.dispose();

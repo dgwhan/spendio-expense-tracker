@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
 
 class MonthlyBudgetCard extends StatelessWidget {
@@ -21,17 +20,14 @@ class MonthlyBudgetCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.all(22.0),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(
+          color: const Color(0xFF6200EE).withValues(alpha: 0.3),
+          width: 1.2,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,11 +42,11 @@ class MonthlyBudgetCard extends StatelessWidget {
                     'Spent so far',
                     style: TextStyle(
                       color: Colors.black45,
-                      fontSize: 14,
+                      fontSize: 15,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.baseline,
                     textBaseline: TextBaseline.alphabetic,
@@ -58,8 +54,8 @@ class MonthlyBudgetCard extends StatelessWidget {
                       Text(
                         CurrencyFormatter.format(spent),
                         style: const TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 28,
+                          color: Color(0xFF0038FF),
+                          fontSize: 30,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -67,7 +63,7 @@ class MonthlyBudgetCard extends StatelessWidget {
                         ' / ${CurrencyFormatter.format(budget)}',
                         style: const TextStyle(
                           color: Colors.black38,
-                          fontSize: 14,
+                          fontSize: 15,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -78,40 +74,40 @@ class MonthlyBudgetCard extends StatelessWidget {
               OutlinedButton(
                 onPressed: () {},
                 style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: Colors.blue.shade50, width: 1.5),
+                  side: const BorderSide(color: Color(0xFFE8EEFF), width: 1.5),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                 ),
                 child: const Text(
                   'Manage',
                   style: TextStyle(
-                    color: AppColors.primary,
+                    color: Color(0xFF0038FF),
                     fontWeight: FontWeight.bold,
-                    fontSize: 13,
+                    fontSize: 14,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(100),
             child: LinearProgressIndicator(
               value: progress,
-              backgroundColor: Colors.grey.shade100,
+              backgroundColor: const Color(0xFFF0F2F5),
               valueColor:
-                  const AlwaysStoppedAnimation<Color>(AppColors.primary),
-              minHeight: 8,
+                  const AlwaysStoppedAnimation<Color>(Color(0xFF0038FF)),
+              minHeight: 12,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           Text.rich(
             TextSpan(
               text: 'You have ',
-              style: const TextStyle(color: Colors.black45, fontSize: 13),
+              style: const TextStyle(color: Colors.black54, fontSize: 14),
               children: [
                 TextSpan(
                   text: CurrencyFormatter.format(remaining),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
+import 'package:spend_io_app/core/utils/currency_formatter.dart';
 
 class GoalTargetInfo extends StatelessWidget {
   final double currentAmount;
@@ -14,14 +14,11 @@ class GoalTargetInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormatter =
-        NumberFormat.currency(locale: 'en_US', symbol: '\$', decimalDigits: 0);
-
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          currencyFormatter.format(currentAmount),
+          CurrencyFormatter.format(currentAmount),
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
@@ -29,7 +26,7 @@ class GoalTargetInfo extends StatelessWidget {
           ),
         ),
         Text(
-          'Target ${currencyFormatter.format(targetAmount)}',
+          'Target ${CurrencyFormatter.format(targetAmount)}',
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,

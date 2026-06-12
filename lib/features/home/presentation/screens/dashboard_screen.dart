@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/app_header/app_header.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/balance_summary/balance_summary_card.dart';
-import 'package:spend_io_app/features/home/datasource/mock/dashboard_mock_data.dart';
+import 'package:spend_io_app/features/home/data/mock/dashboard_mock_data.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/financial_pulse/financial_pulse_section.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/monthly_budget/monthly_budget_progress.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/quick_actions/quick_actions_grid.dart';

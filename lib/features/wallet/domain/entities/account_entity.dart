@@ -8,12 +8,18 @@ enum AccountType {
 }
 
 class AccountEntity {
+  final String id;
+
   final String name;
+
   final AccountType type;
+
   final double balance;
+
   final IconData icon;
 
   const AccountEntity({
+    required this.id,
     required this.name,
     required this.type,
     required this.balance,

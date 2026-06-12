@@ -1,86 +1,80 @@
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
-import 'package:spend_io_app/features/wallet/data/datasource/wallet_local_data_source.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/account_entity.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/accounts/account_item_card.dart';
-import 'package:spend_io_app/shared/widgets/buttons/app_text_button.dart';
+import 'package:spend_io_app/shared/headers/app_section_header.dart';
+import 'package:spend_io_app/shared/states/section_empty_state.dart';
 
 class AccountsSection extends StatelessWidget {
-  const AccountsSection({super.key});
+  final List<AccountEntity> accounts;
+  final VoidCallback? onAddAccount;
+  final Function(AccountEntity)? onAccountTap;
+
+  const AccountsSection({
+    super.key,
+    required this.accounts,
+    this.onAddAccount,
+    this.onAccountTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final List<AccountEntity> liveAccounts = WalletLocalDataSource.accounts;
-
-    return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
-      body: SafeArea(
-        top: false,
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            SliverAppBar(
-              expandedHeight: 120.0,
-              floating: false,
-              pinned: true,
-              elevation: 0,
-              backgroundColor: AppColors.backgroundLight,
-              flexibleSpace: FlexibleSpaceBar(
-                centerTitle: false,
-                titlePadding: const EdgeInsetsDirectional.only(
-                  start: AppSizes.md,
-                  bottom: AppSizes.md,
-                ),
-                title: const Text(
-                  'My Accounts',
-                  style: TextStyle(
-                    color: AppColors.textPrimaryLight,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppSectionHeader(
+          title: 'My Accounts',
+          fontSize: 26,
+          trailing: GestureDetector(
+            onTap: onAddAccount,
+            child: Container(
+              padding: const EdgeInsets.all(AppSizes.sm * 1.2),
+              decoration: const BoxDecoration(
+                color: AppColors.primary,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
                   ),
-                ),
+                ],
               ),
-              actions: [
-                Padding(
-                  padding: const EdgeInsets.only(right: AppSizes.sm),
-                  child: AppTextButton(
-                    text: '+ Add',
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    onTap: () {
-                      // TODO: Logic khi nhấn nút thêm tài khoản ở đây
-                    },
-                  ),
-                ),
-              ],
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.all(AppSizes.md),
-              sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: AppSizes.md,
-                  crossAxisSpacing: AppSizes.md,
-                  childAspectRatio: 0.85,
-                ),
-                delegate: SliverChildBuilderDelegate(
-                  (BuildContext context, int index) {
-                    final account = liveAccounts[index];
-                    return AccountItemCard(
-                      account: account,
-                      onTap: () {
-                        // TODO: Xem chi tiết tài khoản
-                      },
-                    );
-                  },
-                  childCount: liveAccounts.length,
-                ),
+              child: const Icon(
+                Icons.add,
+                color: Colors.white,
+                size: 20,
               ),
             ),
-          ],
+          ),
         ),
-      ),
+        const SizedBox(height: AppSizes.lg),
+        accounts.isEmpty
+            ? SectionEmptyState(
+                title: 'No Accounts Yet',
+                subtitle: 'Add your first account\nto start tracking money.',
+                icon: Icons.account_balance_wallet_outlined,
+                actionLabel: 'Add Your First Account',
+                onActionTap: onAddAccount,
+              )
+            : ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: EdgeInsets.zero,
+                itemCount: accounts.length,
+                itemBuilder: (context, index) {
+                  final account = accounts[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: AppSizes.md),
+                    child: AccountItemCard(
+                      account: account,
+                      onTap: () => onAccountTap?.call(account),
+                    ),
+                  );
+                },
+              ),
+      ],
     );
   }
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
-import 'package:spend_io_app/features/home/datasource/models/financial_pulse_model.dart';
+import 'package:spend_io_app/features/home/data/models/financial_pulse_model.dart';
 import 'pulse_day_item.dart';
 
 class PulseHeatmap extends StatelessWidget {

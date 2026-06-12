@@ -4,10 +4,9 @@ import 'package:spend_io_app/core/constants/app_radius.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/saving_goal_entity.dart';
 
-// Import sub-widgets
-import 'widgets/goal_estimated_date.dart';
-import 'widgets/goal_progress_info.dart';
-import 'widgets/goal_target_info.dart';
+import 'package:spend_io_app/features/wallet/presentation/widgets/goals/widgets/goal_estimated_date.dart';
+import 'package:spend_io_app/features/wallet/presentation/widgets/goals/widgets/goal_progress_info.dart';
+import 'package:spend_io_app/features/wallet/presentation/widgets/goals/widgets/goal_target_info.dart';
 
 class SavingGoalCard extends StatelessWidget {
   final SavingGoalEntity goal;
@@ -19,6 +18,7 @@ class SavingGoalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    //Tính % tiến độ: Tránh chia cho 0 và giới hạn giá trị trong khoảng [0.0 - 1.0] (0% - 100%) bằng .clamp
     final double progress = (goal.targetAmount > 0)
         ? (goal.currentAmount / goal.targetAmount).clamp(0.0, 1.0)
         : 0.0;

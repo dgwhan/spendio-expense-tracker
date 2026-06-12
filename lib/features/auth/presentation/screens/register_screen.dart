@@ -30,6 +30,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscureConfirmPassword = true;
 
   @override
+  void initState() {
+    super.initState();
+    context.read<RegisterFormViewModel>().clearForm();
+  }
+
+  @override
   void dispose() {
     emailController.dispose();
     passwordController.dispose();

@@ -42,4 +42,14 @@ class LoginFormViewModel extends ChangeNotifier {
         !isPasswordEmpty &&
         password.length >= 6;
   }
+
+  void clearForm() {
+    email = '';
+    password = '';
+    isEmailValidFormat = false;
+    isEmailEmpty = true;
+    isPasswordEmpty = true;
+    isFormValid = false;
+    notifyListeners();
+  }
 }

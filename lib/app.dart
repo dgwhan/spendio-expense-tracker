@@ -20,12 +20,12 @@ class SpendIOApp extends StatelessWidget {
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
 
-      // home: const SplashScreen(),
+      home: const SplashScreen(),
 
-      home: ChangeNotifierProvider(
-        create: (_) => NavigationProvider(),
-        child: const NavigationShell(),
-      ),
+      // home: ChangeNotifierProvider(
+      //   create: (_) => NavigationProvider(),
+      //   child: const NavigationShell(),
+      // ),
     );
   }
 }

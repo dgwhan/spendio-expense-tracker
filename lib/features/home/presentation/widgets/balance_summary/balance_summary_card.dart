@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/extensions/string_extension.dart';
-import 'package:spend_io_app/features/home/datasource/models/dashboard_summary_model.dart';
+import 'package:spend_io_app/features/home/data/models/dashboard_summary_model.dart';
 import 'package:spend_io_app/shared/cards/summary_card.dart';
 
 class BalanceSummaryCard extends StatefulWidget {

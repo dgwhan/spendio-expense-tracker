@@ -1,5 +1,4 @@
-//bản thực thi của auth_repository (domain), chuyển đổi từ model -> enity rồi trả về domain
-
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
@@ -46,6 +45,7 @@ class AuthRepositoryImpl implements AuthRepository {
       }
       return true;
     } catch (e) {
+      debugPrint("===> Lỗi đăng ký tại AuthRepositoryImpl: $e");
       // Rollback nếu có lỗi xảy ra sau khi Firebase đã tạo xong tài khoản
       if (firebaseUser != null) {
         await remoteDatasource.rollbackUser(user: firebaseUser);

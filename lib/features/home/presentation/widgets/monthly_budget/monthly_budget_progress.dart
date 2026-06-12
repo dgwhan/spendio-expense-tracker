@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
-import 'package:spend_io_app/features/home/datasource/models/monthly_budget_model.dart';
+import 'package:spend_io_app/features/home/data/models/monthly_budget_model.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/shared/dashboard_section_container.dart';
 import 'widgets/budget_progress_bar.dart';
 

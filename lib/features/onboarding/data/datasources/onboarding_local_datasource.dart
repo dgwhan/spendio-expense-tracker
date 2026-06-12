@@ -1,3 +1,5 @@
+import 'dart:math';
+import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../../../../core/database/app_database.dart';
@@ -67,12 +69,18 @@ class OnboardingLocalDataSourceImpl implements OnboardingLocalDataSource {
 
       if (walletResult.isEmpty) {
         // Tạo ví mới với số dư ban đầu
+        final walletId = 'wallet_main_${userId}_${DateTime.now().millisecondsSinceEpoch}';
         await db.insert('wallets', {
+          'id': walletId,
           'user_id': userId,
           'wallet_name': 'Main Wallet',
+          'wallet_type': 'cash',
           'balance': model.initialBalance ?? 0.0,
           'currency_code': model.currencyCode ?? 'VND',
+          'icon_code_point': Icons.wallet.codePoint,
+          'icon_font_family': 'MaterialIcons',
           'created_at': DateTime.now().toIso8601String(),
+          'updated_at': DateTime.now().toIso8601String(),
         });
       } else {
         // Cập nhật ví hiện tại

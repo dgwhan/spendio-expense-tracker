@@ -54,4 +54,11 @@ class AppColors {
 
   // shadow
   static const Color shadow = Color(0x14000000);
+
+  //account card colors
+  static const Color creditCardAccount = Color(0xFFE57373);
+  static const Color cashAccount = Color(0xFF81C784);
+  static const Color eWalletAccount = Color(0xFF64B5F6);
+  static const Color defaultAccount = Color(0xFFFFB74D);
+  static const Color surfaceCardLight = Color(0xFFF9FAFB);
 }

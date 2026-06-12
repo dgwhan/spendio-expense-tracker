@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
-import 'package:spend_io_app/features/home/datasource/models/savings_goal_model.dart';
+import 'package:spend_io_app/features/home/data/models/savings_goal_model.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/shared/dashboard_section_container.dart';
 
 import 'widgets/goal_icon.dart';

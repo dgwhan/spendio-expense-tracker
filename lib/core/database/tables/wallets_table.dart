@@ -3,17 +3,25 @@ class WalletsTable {
 
   static const createTable = '''
     CREATE TABLE wallets(
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id TEXT PRIMARY KEY,
 
       user_id INTEGER,
 
       wallet_name TEXT,
 
+      wallet_type TEXT,
+
       balance REAL DEFAULT 0,
 
       currency_code TEXT,
 
+      icon_code_point INTEGER,
+
+      icon_font_family TEXT,
+
       created_at TEXT,
+
+      updated_at TEXT,
 
       FOREIGN KEY(user_id)
       REFERENCES users(id)

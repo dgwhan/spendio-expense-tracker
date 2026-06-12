@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/shared/dashboard_section_container.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/recent_activity/transaction_tile.dart';
-import 'package:spend_io_app/features/home/datasource/models/recent_transaction_model.dart';
+import 'package:spend_io_app/features/home/data/models/recent_transaction_model.dart';
 
 class RecentActivitySection extends StatelessWidget {
   final List<RecentTransactionModel> transactions;

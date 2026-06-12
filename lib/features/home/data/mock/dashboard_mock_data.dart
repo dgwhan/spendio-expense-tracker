@@ -1,10 +1,10 @@
-import 'package:spend_io_app/features/home/datasource/models/budget_category_model.dart';
-import 'package:spend_io_app/features/home/datasource/models/dashboard_summary_model.dart';
-import 'package:spend_io_app/features/home/datasource/models/financial_pulse_model.dart';
-import 'package:spend_io_app/features/home/datasource/models/monthly_budget_model.dart';
-import 'package:spend_io_app/features/home/datasource/models/recent_transaction_model.dart';
-import 'package:spend_io_app/features/home/datasource/models/savings_goal_model.dart';
-import 'package:spend_io_app/features/home/datasource/models/spending_breakdown_model.dart';
+import 'package:spend_io_app/features/home/data/models/budget_category_model.dart';
+import 'package:spend_io_app/features/home/data/models/dashboard_summary_model.dart';
+import 'package:spend_io_app/features/home/data/models/financial_pulse_model.dart';
+import 'package:spend_io_app/features/home/data/models/monthly_budget_model.dart';
+import 'package:spend_io_app/features/home/data/models/recent_transaction_model.dart';
+import 'package:spend_io_app/features/home/data/models/savings_goal_model.dart';
+import 'package:spend_io_app/features/home/data/models/spending_breakdown_model.dart';
 
 class DashboardMockData {
   static const summary = DashboardSummaryModel(

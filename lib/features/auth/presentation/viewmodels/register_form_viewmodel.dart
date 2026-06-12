@@ -90,6 +90,18 @@ class RegisterFormViewModel extends ChangeNotifier {
     ).hasMatch(email);
   }
 
+  void clearForm() {
+    email = '';
+    password = '';
+    confirmPassword = '';
+    isEmailValidFormat = false;
+    isEmailChecking = false;
+    isEmailTaken = false;
+    passwordStrength = '';
+    _debounce?.cancel();
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _debounce?.cancel();

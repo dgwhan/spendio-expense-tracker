@@ -11,15 +11,10 @@ class TotalAssetsCard extends StatelessWidget {
   final WalletSummaryEntity summary;
   final FinancialHealthStatus healthStatus;
 
-  final String locale;
-  final String currencyCode;
-
   const TotalAssetsCard({
     super.key,
     required this.summary,
     required this.healthStatus,
-    this.locale = 'en_US',
-    this.currencyCode = 'USD',
   });
 
   @override
@@ -36,7 +31,7 @@ class TotalAssetsCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
+            color: AppColors.primary.withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -60,8 +55,7 @@ class TotalAssetsCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSizes.sm),
           Text(
-            CurrencyFormatter.format(summary.totalAssets,
-                locale: locale, currencyCode: currencyCode),
+            CurrencyFormatter.format(summary.totalAssets),
             style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                   color: AppColors.textPrimaryDark,
                   fontWeight: FontWeight.bold,
@@ -69,9 +63,11 @@ class TotalAssetsCard extends StatelessWidget {
                 ),
           ),
           const SizedBox(height: AppSizes.lg),
+
+          //đường kẻ phân mảnh
           Container(
             height: 1,
-            color: AppColors.surfaceLight.withOpacity(0.15),
+            color: AppColors.surfaceLight.withValues(alpha: 0.15),
           ),
           const SizedBox(height: AppSizes.md),
           Row(
@@ -80,16 +76,14 @@ class TotalAssetsCard extends StatelessWidget {
               Expanded(
                 child: StatisticsRow(
                   title: 'Monthly Budget',
-                  value: CurrencyFormatter.compact(summary.monthlyBudget,
-                      locale: locale, currencyCode: currencyCode),
+                  value: CurrencyFormatter.compact(summary.monthlyBudget),
                   isOverDarkBackground: true,
                 ),
               ),
               Expanded(
                 child: StatisticsRow(
                   title: 'Total Saved',
-                  value: CurrencyFormatter.compact(summary.totalSaved,
-                      locale: locale, currencyCode: currencyCode),
+                  value: CurrencyFormatter.compact(summary.totalSaved),
                   isOverDarkBackground: true,
                 ),
               ),

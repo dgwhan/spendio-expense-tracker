@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:spend_io_app/features/home/datasource/models/spending_breakdown_model.dart';
+import 'package:spend_io_app/features/home/data/models/spending_breakdown_model.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/spending_breakdown/helpers/breakdown_color_helper.dart';
 import 'package:spend_io_app/shared/charts/donut_chart.dart';
 import 'breakdown_center_info.dart';

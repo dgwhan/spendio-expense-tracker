@@ -1,52 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; // 1. IMPORT PROVIDER ĐỂ DÙNG CONSUMER
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
-import 'package:spend_io_app/features/wallet/data/datasource/wallet_local_data_source.dart';
-import 'package:spend_io_app/features/wallet/data/viewmodels/wallet_viewmodel.dart';
-import 'package:spend_io_app/features/wallet/presentation/widgets/accounts/account_item_card.dart';
-
-import 'package:spend_io_app/features/wallet/presentation/widgets/budget/wallet_budget_categories_grid.dart';
+import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
+import 'package:spend_io_app/features/wallet/presentation/widgets/accounts/accounts_section.dart';
+import 'package:spend_io_app/features/wallet/presentation/widgets/budget/budget_section.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/goals/goals_section.dart';
-import 'package:spend_io_app/features/wallet/presentation/widgets/hero/total_assets_card.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/header/wallet_header.dart';
+import 'package:spend_io_app/features/wallet/presentation/widgets/hero/total_assets_card.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/quick_actions/quick_actions_section.dart';
-import 'package:spend_io_app/features/wallet/presentation/widgets/budget/budget_header.dart';
-import 'package:spend_io_app/features/wallet/presentation/widgets/budget/monthly_budget_card.dart';
-import 'package:spend_io_app/shared/widgets/buttons/app_text_button.dart';
 
-class WalletScreen extends StatefulWidget {
+class WalletScreen extends StatelessWidget {
   const WalletScreen({super.key});
 
-  @override
-  State<WalletScreen> createState() => _WalletScreenState();
-}
-
-class _WalletScreenState extends State<WalletScreen> {
-  late final WalletViewmodel _viewmodel;
-
-  @override
-  void initState() {
-    super.initState();
-    _viewmodel = WalletViewmodel();
-    _viewmodel.addListener(_onViewModelUpdated);
-  }
-
-  @override
-  void dispose() {
-    _viewmodel.removeListener(_onViewModelUpdated);
-    _viewmodel.dispose();
-    super.dispose();
-  }
-
-  void _onViewModelUpdated() {
-    setState(() {});
-  }
-
-  void _handleGenerateReport() {
+  void _handleGenerateReport(BuildContext context, WalletViewModel viewModel) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-            'Generating report for ${_viewmodel.selectedMonth.month}/${_viewmodel.selectedMonth.year}...'),
+          'Generating report for ${viewModel.selectedMonth.month}/${viewModel.selectedMonth.year}...',
+        ),
         backgroundColor: AppColors.primary,
       ),
     );
@@ -54,128 +26,84 @@ class _WalletScreenState extends State<WalletScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final String currentLocale = Localizations.localeOf(context).toString();
-    final String currentCurrency =
-        currentLocale.startsWith('vi') ? 'VND' : 'USD';
-    final liveAccounts = WalletLocalDataSource.accounts;
-
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
-      body: SafeArea(
-        top: false,
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(
-                  AppSizes.md, AppSizes.xl * 1.5, AppSizes.md, 0),
-              sliver: SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header (Wallet Title & Generate Report)
-                    WalletHeader(
-                      selectedMonth: _viewmodel.selectedMonth,
-                      onGenerateReport: _handleGenerateReport,
-                    ),
-                    const SizedBox(height: AppSizes.lg),
+      body: Consumer<WalletViewModel>(
+        builder: (context, viewModel, child) {
+          return SafeArea(
+            top: false,
+            child: CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                // Phase 01: Toàn bộ phần đầu & Khối Quản lý Ngân sách (Budget)
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSizes.md,
+                    AppSizes.xl * 1.5,
+                    AppSizes.md,
+                    0,
+                  ),
+                  sliver: SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        WalletHeader(
+                          selectedMonth: viewModel.selectedMonth,
+                          onGenerateReport: () =>
+                              _handleGenerateReport(context, viewModel),
+                        ),
+                        const SizedBox(height: AppSizes.lg),
 
-                    // Card Tổng tài sản
-                    TotalAssetsCard(
-                      summary: _viewmodel.summary,
-                      healthStatus: _viewmodel.healthStatus,
-                      locale: currentLocale,
-                      currencyCode: currentCurrency,
-                    ),
-                    const SizedBox(height: AppSizes.xl),
+                        // CARD hiển thị tổng tài sản
+                        TotalAssetsCard(
+                          summary: viewModel.summary,
+                          healthStatus: viewModel.healthStatus,
+                        ),
+                        const SizedBox(height: AppSizes.xl),
+                        const QuickActionsSection(),
+                        const SizedBox(height: AppSizes.xl),
 
-                    // Thanh hành động nhanh (Quick Actions)
-                    const QuickActionsSection(),
-                    const SizedBox(height: AppSizes.xl),
-
-                    // Header phân đoạn ngân sách
-                    const BudgetHeader(
-                      title: 'June Budget',
-                      statusLabel: 'SAFE',
+                        // BUDGET hiển thị chi tiêu động từ viewModel
+                        BudgetSection(
+                          totalSpent: viewModel.totalSpent,
+                          totalBudget: viewModel.totalBudget,
+                          daysLeft: viewModel.daysLeft,
+                          categories: viewModel.categories,
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: AppSizes.md),
-
-                    // Card tiến độ chi tiêu tổng
-                    MonthlyBudgetCard(
-                      spent: _viewmodel.totalSpent,
-                      budget: _viewmodel.totalBudget,
-                      daysLeft: _viewmodel.daysLeft,
-                    ),
-                    const SizedBox(height: AppSizes.md),
-
-                    // Lưới danh mục chi tiêu ngân sách chi tiết
-                    WalletBudgetCategoriesGrid(
-                      categories: _viewmodel.categories,
-                    ),
-                    const SizedBox(height: AppSizes.xl),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
-              sliver: SliverToBoxAdapter(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'My Accounts',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimaryLight,
-                      ),
-                    ),
-                    AppTextButton(
-                      text: 'Add',
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      onTap: () {
+
+                // Phase 02: My Accounts (Hiển thị danh sách tài khoản)
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
+                  sliver: SliverToBoxAdapter(
+                    child: AccountsSection(
+                      accounts: viewModel.accounts,
+                      onAddAccount: () {
                         // Handle add account logic
                       },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.all(AppSizes.md),
-              sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: AppSizes.md,
-                  crossAxisSpacing: AppSizes.md,
-                  childAspectRatio: 0.85,
-                ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final account = liveAccounts[index];
-                    return AccountItemCard(
-                      account: account,
-                      onTap: () {
+                      onAccountTap: (account) {
                         // TODO: Xem chi tiết lịch sử giao dịch tài khoản
                       },
-                    );
-                  },
-                  childCount: liveAccounts.length,
+                    ),
+                  ),
                 ),
-              ),
+
+                // Phase 03: Savings Goals (Đặt mục tiêu tiết kiệm)
+                const SliverPadding(
+                  padding: EdgeInsets.fromLTRB(
+                      AppSizes.md, AppSizes.lg, AppSizes.md, 0),
+                  sliver: SliverToBoxAdapter(
+                    child: GoalsSection(),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: AppSizes.xl)),
+              ],
             ),
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(
-                  AppSizes.md, AppSizes.lg, AppSizes.md, 0),
-              sliver: const SliverToBoxAdapter(
-                child: GoalsSection(),
-              ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: AppSizes.xl))
-          ],
-        ),
+          );
+        },
       ),
     );
   }

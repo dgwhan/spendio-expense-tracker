@@ -36,14 +36,8 @@ class CurrencyFormatter {
     String currencyCode = 'VND', // Gán mặc định tạm thời
   }) {
     if (locale == 'vi_VN' && currencyCode == 'VND') {
-      if (amount >= 1000000000) {
-        return '${(amount / 1000000000).toStringAsFixed(1)}B';
-      }
-      if (amount >= 1000000) {
-        return '${(amount / 1000000).toStringAsFixed(1)}M';
-      }
       if (amount >= 1000) {
-        return '${(amount / 1000).toStringAsFixed(0)}K';
+        return _currencyFormat.format(amount).replaceAll('\u00A0', '').trim();
       }
       return amount.toStringAsFixed(0);
     }
