@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
+import 'package:flutter/cupertino.dart';
 
 class AuthRemoteDatasource {
   final fb.FirebaseAuth _auth = fb.FirebaseAuth.instance;
@@ -26,14 +27,14 @@ class AuthRemoteDatasource {
     await _firestore.collection('users').doc(uid).set({
       'email': email,
       'display_name': displayName,
-      'onboarding_completed': 0, 
+      'onboarding_completed': 0,
       'created_at': DateTime.now().toIso8601String(),
     });
 
     return userCredential;
   }
 
-  /// Đăng nhập Firebase  
+  /// Đăng nhập Firebase
   Future<fb.UserCredential> loginUser({
     required String email,
     required String password,
@@ -92,10 +93,43 @@ class AuthRemoteDatasource {
   }) async {
     final uid = user.uid;
     try {
-      await _firestore.collection('users').doc(uid).delete().timeout(const Duration(seconds: 2));
+      await _firestore
+          .collection('users')
+          .doc(uid)
+          .delete()
+          .timeout(const Duration(seconds: 2));
     } catch (_) {}
     try {
       await user.delete().timeout(const Duration(seconds: 2));
     } catch (_) {}
+  }
+
+  /// Kiểm tra xem email có dữ liệu ví trong Firestore không
+  Future<bool> checkWalletExists({required String email}) async {
+    try {
+      // Lấy uid từ email
+      final usersQuery = await _firestore
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+
+      if (usersQuery.docs.isEmpty) return false;
+
+      final uid = usersQuery.docs.first.id;
+
+      // Kiểm tra xem có ví nào không
+      final walletsQuery = await _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('wallets')
+          .limit(1)
+          .get();
+
+      return walletsQuery.docs.isNotEmpty;
+    } catch (e) {
+      debugPrint("Error checking wallet existence: $e");
+      return false;
+    }
   }
 }

@@ -18,12 +18,14 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       final displayName = user.email.split('@').first;
 
-      // 1. Tạo tài khoản Firebase Auth & Firestore 
-      final credential = await remoteDatasource.registerUser(
-        email: user.email,
-        password: user.password,
-        displayName: displayName,
-      ).timeout(const Duration(seconds: 5));
+      // 1. Tạo tài khoản Firebase Auth & Firestore
+      final credential = await remoteDatasource
+          .registerUser(
+            email: user.email,
+            password: user.password,
+            displayName: displayName,
+          )
+          .timeout(const Duration(seconds: 5));
       firebaseUser = credential.user;
 
       // 2. Lưu vào SQLite cục bộ để chạy offline-first
@@ -50,6 +52,10 @@ class AuthRepositoryImpl implements AuthRepository {
       if (firebaseUser != null) {
         await remoteDatasource.rollbackUser(user: firebaseUser);
       }
+      // Cleanup: Xóa dữ liệu SQLite khi đăng ký thất bại
+      try {
+        await localDatasource.deleteUserByEmail(user.email);
+      } catch (_) {}
       return false;
     }
   }
@@ -60,10 +66,12 @@ class AuthRepositoryImpl implements AuthRepository {
 
     try {
       // 1. Đăng nhập qua Firebase Authentication (chờ tối đa 5s)
-      credential = await remoteDatasource.loginUser(
-        email: email,
-        password: password,
-      ).timeout(const Duration(seconds: 5));
+      credential = await remoteDatasource
+          .loginUser(
+            email: email,
+            password: password,
+          )
+          .timeout(const Duration(seconds: 5));
     } catch (e) {
       // Offline fallback: Nếu đăng nhập Firebase Auth thất bại, thử đăng nhập bằng SQLite cục bộ
       final localResult = await localDatasource.loginUser(
@@ -119,7 +127,8 @@ class AuthRepositoryImpl implements AuthRepository {
           : DateTime.now(),
     );
 
-    await localDatasource.syncUserFromFirebase(localModel, walletBalance: walletBalance);
+    await localDatasource.syncUserFromFirebase(localModel,
+        walletBalance: walletBalance);
 
     // 4. Trả về thực thể UserEntity với id chính xác từ SQLite
     final dbUsers = await localDatasource.getAllUsers();
@@ -138,19 +147,17 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<bool> checkEmailExists(String email) async {
-    // 1. Kiểm tra nhanh ở SQLite local
-    final users = await localDatasource.getAllUsers();
-    final existsLocal = users.any((e) => e.email == email);
-    if (existsLocal) return true;
-
-    // 2. Kiểm tra online trên Firestore thông qua remoteDatasource (chỉ đọc, tránh bị treo UI nhờ timeout 2 giây)
+    // 1. Kiểm tra Firebase TRƯỚC TIÊN (source of truth)
     try {
-      return await remoteDatasource
+      final firebaseResult = await remoteDatasource
           .checkEmailExists(email: email)
           .timeout(const Duration(seconds: 2));
-    } catch (_) {
-      // Fallback nếu không có mạng, bị chặn quyền truy cập hoặc timeout
-      return false;
+      return firebaseResult;
+    } catch (e) {
+      // 2. Fallback: Nếu Firebase không khả dụng, kiểm tra SQLite cục bộ (offline mode)
+      debugPrint("Firebase email check failed: $e, falling back to local");
+      final users = await localDatasource.getAllUsers();
+      return users.any((u) => u.email == email);
     }
   }
 
@@ -182,5 +189,17 @@ class AuthRepositoryImpl implements AuthRepository {
       createdAt: DateTime.now(),
     );
     await localDatasource.updateOnboarding(model);
+  }
+
+  @override
+  Future<bool> checkWalletExists(String email) async {
+    try {
+      return await remoteDatasource
+          .checkWalletExists(email: email)
+          .timeout(const Duration(seconds: 3));
+    } catch (e) {
+      debugPrint("Error checking wallet exists: $e");
+      return false;
+    }
   }
 }

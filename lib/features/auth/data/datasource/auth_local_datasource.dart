@@ -8,7 +8,7 @@ class AuthLocalDatasource {
     final db = await AppDatabase.database;
 
     await db.insert(
-      'users', 
+      'users',
       user.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -63,7 +63,8 @@ class AuthLocalDatasource {
   }
 
   /// Đồng bộ dữ liệu người dùng và số dư ví từ Firestore về SQLite cục bộ khi đăng nhập
-  Future<void> syncUserFromFirebase(UserModel userModel, {double? walletBalance}) async {
+  Future<void> syncUserFromFirebase(UserModel userModel,
+      {double? walletBalance}) async {
     final db = await AppDatabase.database;
 
     final userResult = await db.query(
@@ -102,7 +103,8 @@ class AuthLocalDatasource {
       );
 
       if (walletResult.isEmpty) {
-        final walletId = 'wallet_main_${userId}_${DateTime.now().millisecondsSinceEpoch}';
+        final walletId =
+            'wallet_main_${userId}_${DateTime.now().millisecondsSinceEpoch}';
         await db.insert('wallets', {
           'id': walletId,
           'user_id': userId,
@@ -127,5 +129,15 @@ class AuthLocalDatasource {
         );
       }
     }
+  }
+
+  /// Xóa người dùng khỏi SQLite bằng email (dùng khi đăng ký thất bại)
+  Future<void> deleteUserByEmail(String email) async {
+    final db = await AppDatabase.database;
+    await db.delete(
+      'users',
+      where: 'email = ?',
+      whereArgs: [email],
+    );
   }
 }

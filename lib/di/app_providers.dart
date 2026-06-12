@@ -1,6 +1,7 @@
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
+import '../../../features/auth/domain/usecases/check_wallet_usecase.dart';
 
 // ONBOARDING LAYER
 import '../features/onboarding/data/datasources/onboarding_local_datasource.dart';
@@ -86,6 +87,10 @@ class AppProviders {
           update: (_, repo, __) => CheckEmailUseCase(repo),
         ),
 
+        ProxyProvider<AuthRepositoryImpl, CheckWalletUseCase>(
+          update: (_, repo, __) => CheckWalletUseCase(repo),
+        ),
+
         ProxyProvider<OnboardingRepositoryImpl, SaveOnboardingUseCase>(
           update: (_, repo, __) => SaveOnboardingUseCase(repository: repo),
         ),
@@ -166,7 +171,7 @@ class AppProviders {
               provider ?? AuthProvider(repository: repo),
         ),
 
-        // Wallet VM 
+        // Wallet VM
         ChangeNotifierProxyProvider<AuthProvider, WalletViewModel>(
           create: (context) => WalletViewModel(
             getWalletSummaryUseCase: context.read<GetWalletSummaryUseCase>(),
@@ -176,13 +181,15 @@ class AppProviders {
             addGoalUseCase: context.read<AddGoalUseCase>(),
           ),
           update: (context, authProvider, vm) {
-            final activeVm = vm ?? WalletViewModel(
-              getWalletSummaryUseCase: context.read<GetWalletSummaryUseCase>(),
-              getAccountsUseCase: context.read<GetAccountsUseCase>(),
-              getGoalsUseCase: context.read<GetGoalsUseCase>(),
-              addAccountUseCase: context.read<AddAccountUseCase>(),
-              addGoalUseCase: context.read<AddGoalUseCase>(),
-            );
+            final activeVm = vm ??
+                WalletViewModel(
+                  getWalletSummaryUseCase:
+                      context.read<GetWalletSummaryUseCase>(),
+                  getAccountsUseCase: context.read<GetAccountsUseCase>(),
+                  getGoalsUseCase: context.read<GetGoalsUseCase>(),
+                  addAccountUseCase: context.read<AddAccountUseCase>(),
+                  addGoalUseCase: context.read<AddGoalUseCase>(),
+                );
             activeVm.updateUser(authProvider.currentUser);
             return activeVm;
           },
