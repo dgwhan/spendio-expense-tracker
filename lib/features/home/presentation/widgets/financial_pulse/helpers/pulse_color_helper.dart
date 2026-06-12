@@ -8,6 +8,6 @@ class PulseColorHelper {
     if (ratio <= 0.1) return AppColors.surfaceSecondaryLight;
 
     final double safeAlpha = ratio.clamp(0.25, 1.0);
-    return AppColors.primary.withOpacity(safeAlpha);
+    return AppColors.primary.withValues(alpha: safeAlpha);
   }
 }

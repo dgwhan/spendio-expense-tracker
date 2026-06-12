@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:spend_io_app/features/navigation/presentation/providers/navigation_provider.dart';
-import 'package:spend_io_app/features/navigation/presentation/screens/navigation_shell.dart';
 import 'package:spend_io_app/features/splash/presentation/screens/splash_screen.dart';
 import 'core/theme/app_theme.dart';
 

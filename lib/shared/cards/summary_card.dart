@@ -22,13 +22,13 @@ class SummaryCard extends StatelessWidget {
   final Widget? trailingIcon;
 
   const SummaryCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.mainBalance,
     required this.items,
     this.statusLabel,
     this.trailingIcon,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

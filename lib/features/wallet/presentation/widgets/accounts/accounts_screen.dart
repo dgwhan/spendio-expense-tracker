@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; 
+import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
@@ -7,27 +7,14 @@ import 'package:spend_io_app/core/constants/app_radius.dart';
 import 'package:spend_io_app/core/utils/account_type_ext.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/account_entity.dart';
+import 'package:spend_io_app/features/wallet/presentation/widgets/accounts/account_item_card.dart';
+import 'package:spend_io_app/shared/widgets/buttons/app_text_button.dart';
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
-import 'package:spend_io_app/features/wallet/presentation/widgets/accounts/accounts_section.dart';
-import 'package:spend_io_app/features/wallet/presentation/widgets/budget/budget_section.dart';
-import 'package:spend_io_app/features/wallet/presentation/widgets/goals/goals_section.dart';
-import 'package:spend_io_app/features/wallet/presentation/widgets/header/wallet_header.dart';
-import 'package:spend_io_app/features/wallet/presentation/widgets/hero/total_assets_card.dart';
-import 'package:spend_io_app/features/wallet/presentation/widgets/quick_actions/quick_actions_section.dart';
 
-class WalletScreen extends StatelessWidget {
-  const WalletScreen({super.key});
+class AccountsScreen extends StatelessWidget {
+  final List<AccountEntity> accounts;
 
-  void _handleGenerateReport(BuildContext context, WalletViewModel viewModel) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Generating report for ${viewModel.selectedMonth.month}/${viewModel.selectedMonth.year}...',
-        ),
-        backgroundColor: AppColors.primary,
-      ),
-    );
-  }
+  const AccountsScreen({super.key, required this.accounts});
 
   // Generates simulated/mock transactions specific to this account's type
   List<Map<String, dynamic>> _getSimulatedTransactions(AccountEntity account) {
@@ -474,8 +461,8 @@ class WalletScreen extends StatelessWidget {
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(AppRadius.cardRadiusLg),
               topRight: Radius.circular(AppRadius.cardRadiusLg),
-            ),
-          ),
+                ),
+              ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -768,84 +755,75 @@ class WalletScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final viewModel = Provider.of<WalletViewModel>(context, listen: false);
+
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
-      body: Consumer<WalletViewModel>(
-        builder: (context, viewModel, child) {
-          return SafeArea(
-            top: false,
-            child: CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                // Phase 01: Toàn bộ phần đầu & Khối Quản lý Ngân sách (Budget)
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSizes.md,
-                    AppSizes.xl * 1.5,
-                    AppSizes.md,
-                    0,
-                  ),
-                  sliver: SliverToBoxAdapter(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        WalletHeader(
-                          selectedMonth: viewModel.selectedMonth,
-                          onGenerateReport: () =>
-                              _handleGenerateReport(context, viewModel),
-                        ),
-                        const SizedBox(height: AppSizes.lg),
-
-                        // CARD hiển thị tổng tài sản
-                        TotalAssetsCard(
-                          summary: viewModel.summary,
-                          healthStatus: viewModel.healthStatus,
-                        ),
-                        const SizedBox(height: AppSizes.xl),
-                        const QuickActionsSection(),
-                        const SizedBox(height: AppSizes.xl),
-
-                        // BUDGET hiển thị chi tiêu động từ viewModel
-                        BudgetSection(
-                          totalSpent: viewModel.totalSpent,
-                          totalBudget: viewModel.totalBudget,
-                          daysLeft: viewModel.daysLeft,
-                          categories: viewModel.categories,
-                        ),
-                      ],
-                    ),
+      body: SafeArea(
+        top: false,
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 120.0,
+              floating: false,
+              pinned: true,
+              elevation: 0,
+              backgroundColor: AppColors.backgroundLight,
+              flexibleSpace: FlexibleSpaceBar(
+                centerTitle: false,
+                titlePadding: const EdgeInsetsDirectional.only(
+                  start: AppSizes.md,
+                  bottom: AppSizes.md,
+                ),
+                title: const Text(
+                  'My Accounts',
+                  style: TextStyle(
+                    color: AppColors.textPrimaryLight,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
                   ),
                 ),
-
-                // Phase 02: My Accounts (Hiển thị danh sách tài khoản)
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
-                  sliver: SliverToBoxAdapter(
-                    child: AccountsSection(
-                      accounts: viewModel.accounts,
-                      onAddAccount: () {
-                        _showAddAccountDialog(context, viewModel);
-                      },
-                      onAccountTap: (account) {
-                        _showAccountDetailsDialog(context, account);
-                      },
-                    ),
+              ),
+              actions: [
+                Padding(
+                  padding: const EdgeInsets.only(right: AppSizes.sm),
+                  child: AppTextButton(
+                    text: 'Add',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    onTap: () {
+                      _showAddAccountDialog(context, viewModel);
+                    },
                   ),
                 ),
-
-                // Phase 03: Savings Goals (Đặt mục tiêu tiết kiệm)
-                const SliverPadding(
-                  padding: EdgeInsets.fromLTRB(
-                      AppSizes.md, AppSizes.lg, AppSizes.md, 0),
-                  sliver: SliverToBoxAdapter(
-                    child: GoalsSection(),
-                  ),
-                ),
-                const SliverToBoxAdapter(child: SizedBox(height: AppSizes.xl)),
               ],
             ),
-          );
-        },
+            SliverPadding(
+              padding: const EdgeInsets.all(AppSizes.md),
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: AppSizes.md,
+                  crossAxisSpacing: AppSizes.md,
+                  childAspectRatio: 0.85,
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  (BuildContext context, int index) {
+                    final account = accounts[index];
+                    return AccountItemCard(
+                      account: account,
+                      onTap: () {
+                        _showAccountDetailsDialog(context, account);
+                      },
+                    );
+                  },
+                  childCount: accounts.length,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

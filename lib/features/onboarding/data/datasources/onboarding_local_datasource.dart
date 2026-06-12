@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -69,7 +68,8 @@ class OnboardingLocalDataSourceImpl implements OnboardingLocalDataSource {
 
       if (walletResult.isEmpty) {
         // Tạo ví mới với số dư ban đầu
-        final walletId = 'wallet_main_${userId}_${DateTime.now().millisecondsSinceEpoch}';
+        final walletId =
+            'wallet_main_${userId}_${DateTime.now().millisecondsSinceEpoch}';
         await db.insert('wallets', {
           'id': walletId,
           'user_id': userId,

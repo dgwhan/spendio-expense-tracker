@@ -27,11 +27,7 @@ class DashboardScreen extends StatelessWidget {
         child: RefreshIndicator(
           color: AppColors.primary,
           onRefresh: () async {
-            debugPrint(
-                'Hành động: [RefreshIndicator] Đang làm mới dữ liệu Dashboard...');
             await Future.delayed(const Duration(seconds: 1));
-            debugPrint(
-                'Hành động: [RefreshIndicator] Làm mới dữ liệu hoàn tất.');
           },
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -44,13 +40,9 @@ class DashboardScreen extends StatelessWidget {
                     displayName: 'Bunny', //TODO: lấy từ csdl
                     avatarUrl: '',
                     onProfileTap: () {
-                      debugPrint(
-                          'Hành động: [AppHeader] Chạm vào Avatar -> Mở màn hình Profile.');
                       //TODO: điều hướng qua trang Profile
                     },
                     onNotificationTap: () {
-                      debugPrint(
-                          'Hành động: [AppHeader] Chạm vào Chuông -> Mở danh sách thông báo.');
                       //TODO: Xử lý chuông tb
                     },
                   ),

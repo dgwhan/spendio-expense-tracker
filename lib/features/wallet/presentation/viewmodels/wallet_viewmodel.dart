@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:spend_io_app/features/auth/data/models/user_model.dart';
-import 'package:spend_io_app/features/wallet/data/datasource/wallet_local_data_source.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/account_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/budget_category_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/financial_health_status.dart';
@@ -25,7 +24,12 @@ class WalletViewModel extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
 
-  WalletSummaryEntity _summary = WalletLocalDataSource.summary;
+  WalletSummaryEntity _summary = const WalletSummaryEntity(
+    totalAssets: 0.0,
+    monthlyBudget: 0.0,
+    totalSaved: 0.0,
+    activeGoals: 0,
+  );
   List<AccountEntity> _accounts = [];
   List<SavingGoalEntity> _goals = [];
   DateTime selectedMonth = DateTime.now();
@@ -37,9 +41,8 @@ class WalletViewModel extends ChangeNotifier {
     required this.addAccountUseCase,
     required this.addGoalUseCase,
   }) {
-    // Tải dữ liệu mặc định (mock) khi bắt đầu
-    _accounts = List.from(WalletLocalDataSource.accounts);
-    _goals = List.from(WalletLocalDataSource.goals);
+    _accounts = [];
+    _goals = [];
   }
 
   bool get isLoading => _isLoading;
@@ -48,7 +51,7 @@ class WalletViewModel extends ChangeNotifier {
   WalletSummaryEntity get summary => _summary;
   List<AccountEntity> get accounts => _accounts;
   List<SavingGoalEntity> get goals => _goals;
-  List<BudgetCategoryEntity> get categories => WalletLocalDataSource.categories;
+  List<BudgetCategoryEntity> get categories => [];
 
   /// Cập nhật thông tin User hiện tại từ AuthProvider
   void updateUser(UserModel? user) {
@@ -84,10 +87,14 @@ class WalletViewModel extends ChangeNotifier {
         _goals = await getGoalsUseCase(localId, remoteUid);
         _summary = await getWalletSummaryUseCase(localId);
       } else {
-        // Fallback sang dữ liệu mock nếu chưa đăng nhập
-        _summary = WalletLocalDataSource.summary;
-        _accounts = List.from(WalletLocalDataSource.accounts);
-        _goals = List.from(WalletLocalDataSource.goals);
+        _summary = const WalletSummaryEntity(
+          totalAssets: 0.0,
+          monthlyBudget: 0.0,
+          totalSaved: 0.0,
+          activeGoals: 0,
+        );
+        _accounts = [];
+        _goals = [];
       }
     } catch (e) {
       _errorMessage = e.toString();
@@ -162,10 +169,34 @@ class WalletViewModel extends ChangeNotifier {
     return lastDayOfMonth.difference(now).inDays;
   }
 
-  /// Tính toán sức khỏe tài chính dựa trên tỷ lệ tích lũy
+  // Tính toán sức khỏe tài chính dựa trên tỷ lệ tích lũy
+  //
+  // Công thức: Tổng tích lũy (Goals) / Tổng tài sản (Assets)
+  // Ý nghĩa: Đánh giá tỷ lệ phần trăm tài sản được phân bổ cho mục tiêu dài hạn.
+  //
+  // Phân bậc điều kiện:
+  // >= 0.40: Xuất sắc (Excellent) -> Tích lũy ở mức lý tưởng.
+  // >= 0.25: Tốt (Good)          -> Đạt chuẩn quản lý tài chính lành mạnh.
+  // >= 0.10: Cảnh báo (Warning)  -> Tích lũy thấp, cần tối ưu lại chi tiêu.
+  // < 0.10 : Nguy kịch (Critical)
   FinancialHealthStatus get healthStatus {
-    if (summary.totalAssets == 0) return FinancialHealthStatus.warning;
+    if (summary.totalAssets < 0) {
+      return FinancialHealthStatus.critical;
+    }
 
+    //set mặc định cho user mới
+    if (summary.totalAssets > 0 &&
+        summary.totalSaved == 0 &&
+        summary.monthlyBudget == 0) {
+      return FinancialHealthStatus.good;
+    }
+
+    //nếu tài sản bằng 0 tròn trĩnh
+    if (summary.totalAssets == 0) {
+      return FinancialHealthStatus.good;
+    }
+
+    //luồng tính toán tỷ lệ khi đã có dữ liệu tích lũy
     final ratio = summary.totalSaved / summary.totalAssets;
 
     if (ratio >= 0.40) {
@@ -177,6 +208,7 @@ class WalletViewModel extends ChangeNotifier {
     if (ratio >= 0.10) {
       return FinancialHealthStatus.warning;
     }
+
     return FinancialHealthStatus.critical;
   }
 }
