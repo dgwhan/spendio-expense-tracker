@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:spend_io_app/features/auth/presentation/screens/login_screen.dart';
 import '../../../../core/constants/app_colors.dart';
 
 class AppDialogs {
@@ -60,8 +61,13 @@ class AppDialogs {
                   height: 48,
                   child: ElevatedButton(
                     onPressed: () {
+                      // Tắt pop-up dialog trước
                       Navigator.pop(context);
-                      Navigator.pop(context);
+                      // Điều hướng an toàn bằng pushReplacement sang thẳng màn Login
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
@@ -85,7 +91,9 @@ class AppDialogs {
                   width: double.infinity,
                   height: 44,
                   child: TextButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
                     style: TextButton.styleFrom(
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),

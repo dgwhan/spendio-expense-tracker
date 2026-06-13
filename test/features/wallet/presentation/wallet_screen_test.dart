@@ -96,6 +96,8 @@ class FakeAuthRepository implements AuthRepository {
   Future<UserEntity?> getCurrentUser() async => null;
   @override
   Future<void> updateOnboarding({required UserEntity user}) async {}
+  @override
+  Future<bool> checkWalletExists(String email) async => false;
 }
 
 void main() {
