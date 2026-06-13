@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
 
 class MonthlyBudgetCard extends StatelessWidget {
@@ -15,17 +16,26 @@ class MonthlyBudgetCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final double progress = (budget > 0) ? (spent / budget).clamp(0.0, 1.0) : 0.0;
     final double remaining = budget - spent;
+
+    final backgroundColor = isDark ? AppColors.surfaceDark : Colors.white;
+    final borderColor = isDark ? AppColors.borderDark : const Color(0xFF6200EE).withValues(alpha: 0.3);
+    final titleTextColor = isDark ? AppColors.textMutedDark : Colors.black45;
+    final budgetLimitColor = isDark ? AppColors.textSecondaryDark : Colors.black38;
+    final detailTextColor = isDark ? AppColors.textSecondaryDark : Colors.black54;
+    final boldTextColor = isDark ? AppColors.textPrimaryDark : Colors.black;
+    final buttonBorderColor = isDark ? AppColors.borderDark : const Color(0xFFE8EEFF);
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(22.0),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: const Color(0xFF6200EE).withValues(alpha: 0.3),
+          color: borderColor,
           width: 1.2,
         ),
       ),
@@ -38,10 +48,10 @@ class MonthlyBudgetCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Spent so far',
                     style: TextStyle(
-                      color: Colors.black45,
+                      color: titleTextColor,
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
                     ),
@@ -61,8 +71,8 @@ class MonthlyBudgetCard extends StatelessWidget {
                       ),
                       Text(
                         ' / ${CurrencyFormatter.format(budget)}',
-                        style: const TextStyle(
-                          color: Colors.black38,
+                        style: TextStyle(
+                          color: budgetLimitColor,
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
                         ),
@@ -74,7 +84,7 @@ class MonthlyBudgetCard extends StatelessWidget {
               OutlinedButton(
                 onPressed: () {},
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Color(0xFFE8EEFF), width: 1.5),
+                  side: BorderSide(color: buttonBorderColor, width: 1.5),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
@@ -97,7 +107,7 @@ class MonthlyBudgetCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(100),
             child: LinearProgressIndicator(
               value: progress,
-              backgroundColor: const Color(0xFFF0F2F5),
+              backgroundColor: isDark ? AppColors.surfaceSecondaryDark : const Color(0xFFF0F2F5),
               valueColor:
                   const AlwaysStoppedAnimation<Color>(Color(0xFF0038FF)),
               minHeight: 12,
@@ -107,12 +117,12 @@ class MonthlyBudgetCard extends StatelessWidget {
           Text.rich(
             TextSpan(
               text: 'You have ',
-              style: const TextStyle(color: Colors.black54, fontSize: 14),
+              style: TextStyle(color: detailTextColor, fontSize: 14),
               children: [
                 TextSpan(
                   text: CurrencyFormatter.format(remaining),
-                  style: const TextStyle(
-                    color: Colors.black,
+                  style: TextStyle(
+                    color: boldTextColor,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

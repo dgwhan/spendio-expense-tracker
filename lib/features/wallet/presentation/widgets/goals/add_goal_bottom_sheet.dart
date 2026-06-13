@@ -2,43 +2,41 @@ import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/core/constants/app_radius.dart';
-import 'package:spend_io_app/core/utils/account_type_ext.dart';
-import 'package:spend_io_app/features/wallet/domain/entities/account_entity.dart';
+import 'package:spend_io_app/features/wallet/domain/entities/saving_goal_entity.dart';
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
 
-class AddAccountBottomSheet extends StatefulWidget {
+class AddGoalBottomSheet extends StatefulWidget {
   final WalletViewModel viewModel;
 
-  const AddAccountBottomSheet({super.key, required this.viewModel});
+  const AddGoalBottomSheet({super.key, required this.viewModel});
 
   @override
-  State<AddAccountBottomSheet> createState() => _AddAccountBottomSheetState();
+  State<AddGoalBottomSheet> createState() => _AddGoalBottomSheetState();
 }
 
-class _AddAccountBottomSheetState extends State<AddAccountBottomSheet> {
+class _AddGoalBottomSheetState extends State<AddGoalBottomSheet> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _balanceController = TextEditingController();
-  AccountType _selectedType = AccountType.cash;
+  final _targetAmountController = TextEditingController();
+  final _currentAmountController = TextEditingController();
+  DateTime _estimatedDate = DateTime.now().add(const Duration(days: 90));
+  IconData _selectedIcon = Icons.savings;
+
+  final List<IconData> _icons = [
+    Icons.savings,
+    Icons.directions_car,
+    Icons.home,
+    Icons.flight,
+    Icons.school,
+    Icons.laptop,
+  ];
 
   @override
   void dispose() {
     _nameController.dispose();
-    _balanceController.dispose();
+    _targetAmountController.dispose();
+    _currentAmountController.dispose();
     super.dispose();
-  }
-
-  IconData _getDefaultIcon(AccountType type) {
-    switch (type) {
-      case AccountType.cash:
-        return Icons.wallet;
-      case AccountType.bank:
-        return Icons.account_balance;
-      case AccountType.eWallet:
-        return Icons.account_balance_wallet;
-      case AccountType.creditCard:
-        return Icons.credit_card;
-    }
   }
 
   @override
@@ -51,7 +49,7 @@ class _AddAccountBottomSheetState extends State<AddAccountBottomSheet> {
     final mutedTextColor = isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
     final inputFillColor = isDark ? AppColors.surfaceSecondaryDark : Colors.grey.shade50;
     final borderColor = isDark ? AppColors.borderDark : Colors.grey.shade300;
-    final itemBgColor = isDark ? AppColors.surfaceDark : Colors.white;
+    final containerColor = isDark ? AppColors.surfaceDark : Colors.white;
 
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -87,7 +85,7 @@ class _AddAccountBottomSheetState extends State<AddAccountBottomSheet> {
               ),
               const SizedBox(height: AppSizes.lg),
               Text(
-                'Create New Account',
+                'Create Saving Goal',
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -96,21 +94,21 @@ class _AddAccountBottomSheetState extends State<AddAccountBottomSheet> {
               ),
               const SizedBox(height: AppSizes.md),
               Text(
-                'Add a new wallet to track your expenses and balances.',
+                'Define a financial goal you want to save for.',
                 style: TextStyle(
                   fontSize: 14,
                   color: mutedTextColor,
                 ),
               ),
               const SizedBox(height: AppSizes.lg),
-              
+
               // Name input
               TextFormField(
                 controller: _nameController,
                 style: TextStyle(color: primaryTextColor),
                 decoration: InputDecoration(
-                  labelText: 'Account Name',
-                  hintText: 'e.g. My Savings, Daily Cash',
+                  labelText: 'Goal Name',
+                  hintText: 'e.g. Vacation, New Laptop, Car Deposit',
                   labelStyle: TextStyle(color: mutedTextColor),
                   hintStyle: TextStyle(color: mutedTextColor.withValues(alpha: 0.7)),
                   border: OutlineInputBorder(
@@ -125,20 +123,53 @@ class _AddAccountBottomSheetState extends State<AddAccountBottomSheet> {
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter account name';
+                    return 'Please enter goal name';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: AppSizes.md),
 
-              // Balance input
+              // Target Amount input
               TextFormField(
-                controller: _balanceController,
+                controller: _targetAmountController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 style: TextStyle(color: primaryTextColor),
                 decoration: InputDecoration(
-                  labelText: 'Initial Balance',
+                  labelText: 'Target Amount',
+                  hintText: '0.00',
+                  labelStyle: TextStyle(color: mutedTextColor),
+                  hintStyle: TextStyle(color: mutedTextColor.withValues(alpha: 0.7)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                  ),
+                  filled: true,
+                  fillColor: inputFillColor,
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter target amount';
+                  }
+                  final parsed = double.tryParse(value.trim());
+                  if (parsed == null || parsed <= 0) {
+                    return 'Please enter a valid amount greater than 0';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: AppSizes.md),
+
+              // Current Saved input
+              TextFormField(
+                controller: _currentAmountController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                style: TextStyle(color: primaryTextColor),
+                decoration: InputDecoration(
+                  labelText: 'Already Saved (Optional)',
                   hintText: '0.00',
                   labelStyle: TextStyle(color: mutedTextColor),
                   hintStyle: TextStyle(color: mutedTextColor.withValues(alpha: 0.7)),
@@ -154,17 +185,76 @@ class _AddAccountBottomSheetState extends State<AddAccountBottomSheet> {
                 ),
                 validator: (value) {
                   if (value != null && value.trim().isNotEmpty) {
-                    if (double.tryParse(value.trim()) == null) {
-                      return 'Please enter a valid number';
+                    final parsed = double.tryParse(value.trim());
+                    if (parsed == null || parsed < 0) {
+                      return 'Please enter a valid non-negative amount';
                     }
                   }
                   return null;
                 },
               ),
+              const SizedBox(height: AppSizes.md),
+
+              // Estimated Date picker field
+              InkWell(
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _estimatedDate,
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(const Duration(days: 365 * 20)),
+                    builder: (context, child) {
+                      return Theme(
+                        data: isDark
+                            ? ThemeData.dark().copyWith(
+                                colorScheme: const ColorScheme.dark(
+                                  primary: AppColors.primary,
+                                  onPrimary: Colors.white,
+                                  surface: AppColors.surfaceDark,
+                                  onSurface: Colors.white,
+                                ),
+                              )
+                            : ThemeData.light().copyWith(
+                                colorScheme: const ColorScheme.light(
+                                  primary: AppColors.primary,
+                                  onPrimary: Colors.white,
+                                  surface: Colors.white,
+                                  onSurface: Colors.black,
+                                ),
+                              ),
+                        child: child!,
+                      );
+                    },
+                  );
+                  if (picked != null) {
+                    setState(() {
+                      _estimatedDate = picked;
+                    });
+                  }
+                },
+                child: IgnorePointer(
+                  child: TextFormField(
+                    style: TextStyle(color: primaryTextColor),
+                    decoration: InputDecoration(
+                      labelText: 'Target Date',
+                      labelStyle: TextStyle(color: mutedTextColor),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                      filled: true,
+                      fillColor: inputFillColor,
+                      suffixIcon: Icon(Icons.calendar_today, color: mutedTextColor),
+                    ),
+                    controller: TextEditingController(
+                      text: "${_estimatedDate.day}/${_estimatedDate.month}/${_estimatedDate.year}",
+                    ),
+                  ),
+                ),
+              ),
               const SizedBox(height: AppSizes.lg),
 
               Text(
-                'Account Type',
+                'Goal Icon',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -173,66 +263,39 @@ class _AddAccountBottomSheetState extends State<AddAccountBottomSheet> {
               ),
               const SizedBox(height: AppSizes.sm),
 
-              // Account Type Selector
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: AppSizes.sm,
-                  mainAxisSpacing: AppSizes.sm,
-                  childAspectRatio: 2.2,
-                ),
-                itemCount: AccountType.values.length,
-                itemBuilder: (context, index) {
-                  final type = AccountType.values[index];
-                  final isSelected = _selectedType == type;
-                  final Color typeColor = type.mainColor;
-                  final Color bgColor = isDark ? typeColor.withValues(alpha: 0.2) : type.bgColor;
-
+              // Goal Icon Selector Row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: _icons.map((icon) {
+                  final isSelected = _selectedIcon == icon;
                   return GestureDetector(
                     onTap: () {
                       setState(() {
-                        _selectedType = type;
+                        _selectedIcon = icon;
                       });
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
+                      padding: const EdgeInsets.all(AppSizes.sm),
                       decoration: BoxDecoration(
-                        color: isSelected ? bgColor : itemBgColor,
-                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        color: isSelected ? AppColors.primary.withValues(alpha: 0.15) : containerColor,
+                        shape: BoxShape.circle,
                         border: Border.all(
-                          color: isSelected ? typeColor : borderColor,
-                          width: isSelected ? 2 : 1,
+                          color: isSelected ? AppColors.primary : borderColor,
+                          width: 2,
                         ),
                       ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            _getDefaultIcon(type),
-                            color: isSelected ? typeColor : mutedTextColor,
-                            size: 24,
-                          ),
-                          const SizedBox(width: AppSizes.sm),
-                          Text(
-                            type.displayName,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              color: isSelected
-                                  ? primaryTextColor
-                                  : (isDark ? AppColors.textSecondaryDark : Colors.grey.shade700),
-                            ),
-                          ),
-                        ],
+                      child: Icon(
+                        icon,
+                        color: isSelected ? AppColors.primary : mutedTextColor,
+                        size: 28,
                       ),
                     ),
                   );
-                },
+                }).toList(),
               ),
               const SizedBox(height: AppSizes.xl),
 
-              // Buttons
+              // Action Buttons
               Row(
                 children: [
                   Expanded(
@@ -247,9 +310,7 @@ class _AddAccountBottomSheetState extends State<AddAccountBottomSheet> {
                       ),
                       child: Text(
                         'Cancel',
-                        style: TextStyle(
-                          color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                        ),
+                        style: TextStyle(color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight),
                       ),
                     ),
                   ),
@@ -259,18 +320,19 @@ class _AddAccountBottomSheetState extends State<AddAccountBottomSheet> {
                       onPressed: () {
                         if (!_formKey.currentState!.validate()) return;
                         final name = _nameController.text.trim();
-                        final balance = double.tryParse(_balanceController.text.trim()) ?? 0.0;
-                        final icon = _getDefaultIcon(_selectedType);
+                        final targetAmount = double.tryParse(_targetAmountController.text.trim()) ?? 0.0;
+                        final currentAmount = double.tryParse(_currentAmountController.text.trim()) ?? 0.0;
 
-                        final newAccount = AccountEntity(
-                          id: 'acc_${DateTime.now().millisecondsSinceEpoch}',
+                        final newGoal = SavingGoalEntity(
+                          id: 'goal_${DateTime.now().millisecondsSinceEpoch}',
                           name: name,
-                          type: _selectedType,
-                          balance: balance,
-                          icon: icon,
+                          targetAmount: targetAmount,
+                          currentAmount: currentAmount,
+                          estimatedDate: _estimatedDate,
+                          icon: _selectedIcon,
                         );
 
-                        widget.viewModel.addNewAccount(newAccount);
+                        widget.viewModel.addNewGoal(newGoal);
                         Navigator.pop(context);
                       },
                       style: ElevatedButton.styleFrom(

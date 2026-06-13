@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
-import 'package:spend_io_app/features/auth/data/models/user_model.dart';
+import 'package:spend_io_app/features/auth/domain/entities/user_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/account_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/budget_category_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/financial_health_status.dart';
@@ -12,6 +12,8 @@ import 'package:spend_io_app/features/wallet/domain/usecases/add_goal_usecase.da
 import 'package:spend_io_app/features/wallet/domain/usecases/get_accounts_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/get_goals_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/get_wallet_summary_usecase.dart';
+import 'package:spend_io_app/features/wallet/domain/usecases/get_categories_usecase.dart';
+import 'package:spend_io_app/features/wallet/domain/usecases/initialize_budget_categories_usecase.dart';
 
 class WalletViewModel extends ChangeNotifier {
   final GetWalletSummaryUseCase getWalletSummaryUseCase;
@@ -19,8 +21,10 @@ class WalletViewModel extends ChangeNotifier {
   final GetGoalsUseCase getGoalsUseCase;
   final AddAccountUseCase addAccountUseCase;
   final AddGoalUseCase addGoalUseCase;
+  final GetCategoriesUseCase getCategoriesUseCase;
+  final InitializeBudgetCategoriesUseCase initializeBudgetCategoriesUseCase;
 
-  UserModel? _currentUser;
+  UserEntity? _currentUser;
   bool _isLoading = false;
   String? _errorMessage;
   int? _lastUserId;
@@ -33,6 +37,7 @@ class WalletViewModel extends ChangeNotifier {
   );
   List<AccountEntity> _accounts = [];
   List<SavingGoalEntity> _goals = [];
+  List<BudgetCategoryEntity> _categories = [];
   DateTime selectedMonth = DateTime.now();
 
   WalletViewModel({
@@ -41,9 +46,12 @@ class WalletViewModel extends ChangeNotifier {
     required this.getGoalsUseCase,
     required this.addAccountUseCase,
     required this.addGoalUseCase,
+    required this.getCategoriesUseCase,
+    required this.initializeBudgetCategoriesUseCase,
   }) {
     _accounts = [];
     _goals = [];
+    _categories = [];
   }
 
   bool get isLoading => _isLoading;
@@ -52,10 +60,10 @@ class WalletViewModel extends ChangeNotifier {
   WalletSummaryEntity get summary => _summary;
   List<AccountEntity> get accounts => _accounts;
   List<SavingGoalEntity> get goals => _goals;
-  List<BudgetCategoryEntity> get categories => [];
+  List<BudgetCategoryEntity> get categories => _categories;
 
   /// Cập nhật thông tin User hiện tại từ AuthProvider
-  void updateUser(UserModel? user) {
+  void updateUser(UserEntity? user) {
     // Guard: avoid scheduling fetch when already loading
     if (_isLoading) return;
 
@@ -73,7 +81,7 @@ class WalletViewModel extends ChangeNotifier {
     _currentUser = user;
     _lastUserId = newUserId;
 
-    Future.microtask(() => fetchWalletData());
+    Future.microtask(() => initialize());
   }
 
   /// Định dạng hiển thị tháng/năm hiện tại
@@ -86,11 +94,11 @@ class WalletViewModel extends ChangeNotifier {
     return '$currentMonthLabel Budget';
   }
 
-  /// Tải dữ liệu ví thực tế từ database
-  Future<void> fetchWalletData() async {
+  /// Tải dữ liệu ví thực tế từ database qua chu trình initialize()
+  Future<void> initialize() async {
     final sw = Stopwatch()..start();
     debugPrint(
-        'WalletViewModel.fetchWalletData: start userId=${_currentUser?.id}');
+        'WalletViewModel.initialize: start userId=${_currentUser?.id}');
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -98,12 +106,11 @@ class WalletViewModel extends ChangeNotifier {
     try {
       if (_currentUser != null) {
         final localId = _currentUser!.id ?? 1;
-        final remoteUid = FirebaseAuth.instance.currentUser?.uid ?? '';
-
-        // Tải bất đồng bộ các dữ liệu
-        _accounts = await getAccountsUseCase(localId, remoteUid);
-        _goals = await getGoalsUseCase(localId, remoteUid);
-        _summary = await getWalletSummaryUseCase(localId);
+        await initializeCategories(localId);
+        await loadSummary(localId);
+        await loadAccounts(localId);
+        await loadGoals(localId);
+        await loadCategories(localId);
       } else {
         _summary = const WalletSummaryEntity(
           totalAssets: 0.0,
@@ -113,21 +120,55 @@ class WalletViewModel extends ChangeNotifier {
         );
         _accounts = [];
         _goals = [];
+        _categories = [];
       }
     } catch (e) {
       _errorMessage = e.toString();
-      debugPrint('WalletViewModel.fetchWalletData: error: $e');
+      debugPrint('WalletViewModel.initialize: error: $e');
     } finally {
       _isLoading = false;
       sw.stop();
       debugPrint(
-          'WalletViewModel.fetchWalletData: finished in ${sw.elapsedMilliseconds}ms');
+          'WalletViewModel.initialize: finished in ${sw.elapsedMilliseconds}ms');
       notifyListeners();
     }
   }
 
+  String get _remoteUid {
+    try {
+      return FirebaseAuth.instance.currentUser?.uid ?? '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  Future<void> initializeCategories(int localId) async {
+    await initializeBudgetCategoriesUseCase(localId);
+  }
+
+  Future<void> loadSummary(int localId) async {
+    _summary = await getWalletSummaryUseCase(localId);
+  }
+
+  Future<void> loadAccounts(int localId) async {
+    _accounts = await getAccountsUseCase(localId, _remoteUid);
+  }
+
+  Future<void> loadGoals(int localId) async {
+    _goals = await getGoalsUseCase(localId, _remoteUid);
+  }
+
+  Future<void> loadCategories(int localId) async {
+    _categories = await getCategoriesUseCase(localId);
+  }
+
+  /// Backward compatible trigger method
+  Future<void> fetchWalletData() async {
+    await initialize();
+  }
+
   Future<void> fetchWalletSummary() async {
-    await fetchWalletData();
+    await initialize();
   }
 
   /// Thêm ví tài khoản mới
@@ -141,7 +182,7 @@ class WalletViewModel extends ChangeNotifier {
 
     try {
       await addAccountUseCase(localId, remoteUid, account);
-      await fetchWalletData();
+      await initialize();
     } catch (e) {
       _errorMessage = e.toString();
       _isLoading = false;
@@ -160,7 +201,7 @@ class WalletViewModel extends ChangeNotifier {
 
     try {
       await addGoalUseCase(localId, remoteUid, goal);
-      await fetchWalletData();
+      await initialize();
     } catch (e) {
       _errorMessage = e.toString();
       _isLoading = false;

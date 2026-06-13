@@ -3,8 +3,10 @@ import 'package:spend_io_app/features/wallet/data/datasource/wallet_local_data_s
 import 'package:spend_io_app/features/wallet/data/datasource/wallet_remote_data_source.dart';
 import 'package:spend_io_app/features/wallet/data/models/account_model.dart';
 import 'package:spend_io_app/features/wallet/data/models/saving_goal_model.dart';
+import 'package:spend_io_app/features/wallet/data/models/budget_category_model.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/account_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/saving_goal_entity.dart';
+import 'package:spend_io_app/features/wallet/domain/entities/budget_category_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/wallet_summary_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/repositories/wallet_repository.dart';
 
@@ -27,7 +29,7 @@ class WalletRepositoryImpl implements WalletRepository {
     final activeGoals = goals.length;
     
     // Tính ngân sách từ tổng ngân sách các danh mục
-    final categories = localDataSource.getCategories();
+    final categories = await localDataSource.getCategories(localUserId);
     final monthlyBudget = categories.fold(0.0, (sum, cat) => sum + cat.budget);
 
     return WalletSummaryEntity(
@@ -188,5 +190,23 @@ class WalletRepositoryImpl implements WalletRepository {
       // Nuốt lỗi kết nối hoặc Firestore timeout để duy trì trải nghiệm Offline
       debugPrint('Đang offline, không thể đồng bộ hóa với Firestore: $e');
     }
+  }
+
+  @override
+  Future<List<BudgetCategoryEntity>> getCategories(int localUserId) async {
+    final models = await localDataSource.getCategories(localUserId);
+    return models.map((m) => m.toEntity()).toList();
+  }
+
+  @override
+  Future<void> createCategory(int localUserId, BudgetCategoryEntity category) async {
+    final model = BudgetCategoryModel.fromEntity(category);
+    await localDataSource.insertCategory(localUserId, model);
+  }
+
+  @override
+  Future<void> updateCategory(int localUserId, BudgetCategoryEntity category) async {
+    final model = BudgetCategoryModel.fromEntity(category);
+    await localDataSource.updateCategory(localUserId, model);
   }
 }

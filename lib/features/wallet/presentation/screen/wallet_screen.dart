@@ -9,9 +9,11 @@ import 'package:spend_io_app/features/wallet/presentation/widgets/accounts/accou
 import 'package:spend_io_app/features/wallet/presentation/widgets/accounts/add_account_bottom_sheet.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/budget/budget_section.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/goals/goals_section.dart';
+import 'package:spend_io_app/features/wallet/presentation/widgets/goals/add_goal_bottom_sheet.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/header/wallet_header.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/hero/total_assets_card.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/quick_actions/quick_actions_section.dart';
+import 'package:spend_io_app/features/wallet/presentation/widgets/dialogs/month_picker_dialog.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -27,7 +29,7 @@ class _WalletScreenState extends State<WalletScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = context.read<AuthProvider>();
       final vm = context.read<WalletViewModel>();
-      vm.updateUser(auth.currentUser);
+      vm.updateUser(auth.currentUser?.toEntity());
     });
   }
 
@@ -44,8 +46,12 @@ class _WalletScreenState extends State<WalletScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
+    final errorTextColor = isDark ? AppColors.textPrimaryDark : Colors.black87;
+
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: backgroundColor,
       body: Consumer<WalletViewModel>(
         builder: (context, viewModel, child) {
           // Lớp bảo vệ 01: Hiển thị trạng thái xoay tròn chờ nạp dữ liệu từ DB/Firebase, tránh lỗi trắng màn hình
@@ -71,7 +77,7 @@ class _WalletScreenState extends State<WalletScreen> {
                     Text(
                       'Đã xảy ra lỗi: ${viewModel.errorMessage}',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.black87),
+                      style: TextStyle(color: errorTextColor),
                     ),
                     const SizedBox(height: AppSizes.md),
                     ElevatedButton(
@@ -106,6 +112,17 @@ class _WalletScreenState extends State<WalletScreen> {
                           selectedMonth: viewModel.selectedMonth,
                           onGenerateReport: () =>
                               _handleGenerateReport(context, viewModel),
+                          onMonthTap: () async {
+                            final picked = await showDialog<DateTime>(
+                              context: context,
+                              builder: (context) => MonthPickerDialog(
+                                initialDate: viewModel.selectedMonth,
+                              ),
+                            );
+                            if (picked != null) {
+                              viewModel.selectMonth(picked);
+                            }
+                          },
                         ),
                         const SizedBox(height: AppSizes.lg),
                         TotalAssetsCard(
@@ -113,7 +130,42 @@ class _WalletScreenState extends State<WalletScreen> {
                           healthStatus: viewModel.healthStatus,
                         ),
                         const SizedBox(height: AppSizes.xl),
-                        const QuickActionsSection(),
+                        QuickActionsSection(
+                          onAddAccount: () {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (_) =>
+                                  AddAccountBottomSheet(viewModel: viewModel),
+                            );
+                          },
+                          onAddGoal: () {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (_) =>
+                                  AddGoalBottomSheet(viewModel: viewModel),
+                            );
+                          },
+                          onAddBudget: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Add Budget feature will be available in Phase 02'),
+                                backgroundColor: AppColors.primary,
+                              ),
+                            );
+                          },
+                          onTransfer: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Transfer feature will be available in Phase 02'),
+                                backgroundColor: AppColors.primary,
+                              ),
+                            );
+                          },
+                        ),
                         const SizedBox(height: AppSizes.xl),
                         BudgetSection(
                           totalSpent: viewModel.totalSpent,
@@ -158,8 +210,7 @@ class _WalletScreenState extends State<WalletScreen> {
                 const SliverPadding(
                   padding: EdgeInsets.fromLTRB(
                     AppSizes.md, // Left
-                    AppSizes
-                        .lg, // Top (Đã sửa từ AppColors.error thành AppSizes.lg)
+                    AppSizes.lg, // Top
                     AppSizes.md, // Right
                     0, // Bottom
                   ),

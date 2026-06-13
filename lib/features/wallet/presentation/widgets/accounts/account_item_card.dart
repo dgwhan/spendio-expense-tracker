@@ -19,13 +19,18 @@ class AccountItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final Color mainColor = account.type.mainColor;
     final Color bgColor = account.type.bgColor;
     final isNegative = account.balance < 0;
 
+    final cardBgColor = isDark ? AppColors.surfaceSecondaryDark : AppColors.surfaceCardLight;
+    final mutedTextColor = isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
+    final primaryTextColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surfaceCardLight,
+        color: cardBgColor,
         borderRadius: BorderRadius.circular(AppRadius.cardRadiusLg),
         boxShadow: const [
           BoxShadow(
@@ -56,10 +61,10 @@ class AccountItemCard extends StatelessWidget {
                 children: [
                   Text(
                     account.type.displayName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.textMutedLight,
+                      color: mutedTextColor,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -70,15 +75,15 @@ class AccountItemCard extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       color: isNegative
                           ? AppColors.expense
-                          : AppColors.textPrimaryLight,
+                          : primaryTextColor,
                     ),
                   ),
                 ],
               ),
               const Spacer(),
-              const Icon(
+              Icon(
                 Icons.chevron_right,
-                color: AppColors.textMutedLight,
+                color: mutedTextColor,
                 size: 24,
               ),
             ],

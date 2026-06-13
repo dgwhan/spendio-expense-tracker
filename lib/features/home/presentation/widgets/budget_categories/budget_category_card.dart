@@ -5,142 +5,173 @@ import 'package:spend_io_app/features/wallet/domain/entities/budget_category_ent
 
 class BudgetCategoryCard extends StatelessWidget {
   final BudgetCategoryEntity category;
+  final VoidCallback? onTap;
 
   const BudgetCategoryCard({
     super.key,
     required this.category,
+    this.onTap,
   });
 
-  //helper màu sắc cho từng category
-  Map<String, dynamic> _getCategoryStyle(String name) {
+  //helper màu sắc cho từng category hỗ trợ Dark Mode
+  Map<String, dynamic> _getCategoryStyle(String name, bool isDark) {
+    MaterialColor baseColor;
     switch (name) {
       case 'Dining':
-        return {
-          'icon': Icons.restaurant_outlined,
-          'color': Colors.orange.shade700,
-          'bgColor': Colors.orange.shade50,
-        };
+        baseColor = Colors.orange;
+        break;
       case 'Transport':
-        return {
-          'icon': Icons.directions_bus_outlined,
-          'color': Colors.blue.shade700,
-          'bgColor': Colors.blue.shade50,
-        };
+        baseColor = Colors.blue;
+        break;
       case 'Shopping':
-        return {
-          'icon': Icons.shopping_bag_outlined,
-          'color': Colors.purple.shade700,
-          'bgColor': Colors.purple.shade50,
-        };
+        baseColor = Colors.purple;
+        break;
       case 'Health':
-        return {
-          'icon': Icons.favorite_border_outlined,
-          'color': Colors.red.shade700,
-          'bgColor': Colors.red.shade50,
-        };
+        baseColor = Colors.red;
+        break;
       case 'Bills':
-        return {
-          'icon': Icons.bolt_outlined,
-          'color': Colors.amber.shade800,
-          'bgColor': Colors.amber.shade50,
-        };
+        baseColor = Colors.amber;
+        break;
       case 'Entertainment':
-        return {
-          'icon': Icons.confirmation_number_outlined,
-          'color': Colors.pink.shade700,
-          'bgColor': Colors.pink.shade50,
-        };
+        baseColor = Colors.pink;
+        break;
       default:
-        return {
-          'icon': Icons.category_outlined,
-          'color': Colors.grey.shade700,
-          'bgColor': Colors.grey.shade50,
-        };
+        baseColor = Colors.grey;
     }
+
+    final iconColor = isDark ? baseColor.withValues(alpha: 0.9) : baseColor.shade700;
+    final bgColor = isDark
+        ? baseColor.withValues(alpha: 0.15)
+        : baseColor.withValues(alpha: 0.08);
+
+    IconData icon;
+    switch (name) {
+      case 'Dining':
+        icon = Icons.restaurant_outlined;
+        break;
+      case 'Transport':
+        icon = Icons.directions_bus_outlined;
+        break;
+      case 'Shopping':
+        icon = Icons.shopping_bag_outlined;
+        break;
+      case 'Health':
+        icon = Icons.favorite_border_outlined;
+        break;
+      case 'Bills':
+        icon = Icons.bolt_outlined;
+        break;
+      case 'Entertainment':
+        icon = Icons.confirmation_number_outlined;
+        break;
+      default:
+        icon = Icons.category_outlined;
+    }
+
+    return {
+      'icon': icon,
+      'color': iconColor,
+      'bgColor': bgColor,
+    };
   }
 
   @override
   Widget build(BuildContext context) {
-    final style = _getCategoryStyle(category.name);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final style = _getCategoryStyle(category.name, isDark);
 
     final String spentText = CurrencyFormatter.compact(category.spent);
     final String budgetText = CurrencyFormatter.compact(category.budget);
 
     final double safeProgress = category.progress.clamp(0.0, 1.0);
 
+    final titleColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final subtitleColor = isDark ? AppColors.textMutedDark : Colors.black54;
+    final cardBgColor = isDark ? AppColors.surfaceSecondaryDark : Colors.white;
+    final borderColor = isDark ? AppColors.borderDark : AppColors.borderLight;
+
     return Container(
-      padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardBgColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.borderLight,
+          color: borderColor,
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          //icon, tên danh mục
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: style['bgColor'],
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  style['icon'],
-                  color: style['color'],
-                  size: 18,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  category.name,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimaryLight,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                //icon, tên danh mục
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: style['bgColor'],
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                      child: Icon(
+                        style['icon'],
+                        color: style['color'],
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        category.name,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: titleColor,
+                            ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 16),
+
+                //thanh tiến trình, số tiền
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: safeProgress,
+                        backgroundColor: isDark ? AppColors.borderDark : Colors.grey.shade100,
+                        valueColor: AlwaysStoppedAnimation<Color>(style['color']),
+                        minHeight: 6,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '$spentText / $budgetText',
+                      style: TextStyle(
+                        color: subtitleColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                )
+              ],
+            ),
           ),
-
-          const SizedBox(height: 16),
-
-          //thanh tiến trình, số tiền
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: safeProgress,
-                  backgroundColor: Colors.grey.shade100,
-                  valueColor: AlwaysStoppedAnimation<Color>(style['color']),
-                  minHeight: 6,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                '$spentText / $budgetText',
-                style: const TextStyle(
-                  color: Colors.black54,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          )
-        ],
+        ),
       ),
     );
   }

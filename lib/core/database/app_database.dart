@@ -3,6 +3,7 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'migrations/migration_v1.dart';
+import 'migrations/migration_v4.dart';
 
 /// Application SQLite database
 class AppDatabase {
@@ -30,7 +31,7 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 3,
+      version: 4,
       onConfigure: (db) async {
         await db.execute(
           'PRAGMA foreign_keys = ON',
@@ -38,13 +39,12 @@ class AppDatabase {
       },
       onCreate: (db, version) async {
         await MigrationV1.run(db);
+        await MigrationV4.run(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        // Drop child tables first to avoid Foreign Key constraint failures
-        await db.execute('DROP TABLE IF EXISTS wallets');
-        await db.execute('DROP TABLE IF EXISTS financial_goals');
-        await db.execute('DROP TABLE IF EXISTS users');
-        await MigrationV1.run(db);
+        if (oldVersion < 4) {
+          await MigrationV4.run(db);
+        }
       },
       onOpen: (db) async {
         debugPrint('DB opened at: $path');

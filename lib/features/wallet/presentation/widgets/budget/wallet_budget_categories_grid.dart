@@ -7,10 +7,12 @@ import 'package:spend_io_app/shared/states/section_empty_state.dart';
 
 class WalletBudgetCategoriesGrid extends StatelessWidget {
   final List<BudgetCategoryEntity> categories;
+  final ValueChanged<BudgetCategoryEntity>? onTapCategory;
 
   const WalletBudgetCategoriesGrid({
     super.key,
     required this.categories,
+    this.onTapCategory,
   });
 
   @override
@@ -23,27 +25,29 @@ class WalletBudgetCategoriesGrid extends StatelessWidget {
       );
     }
 
-    return SizedBox(
-      height: 150,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        padding: EdgeInsets.zero,
-        itemCount: categories.length,
-        itemBuilder: (context, index) {
-          final entity = categories[index];
-
-          return Padding(
-            padding: const EdgeInsets.only(right: AppSizes.md),
-            child: SizedBox(
-              width: 170,
-              child: BudgetCategoryCard(
-                category: entity as dynamic,
-              ),
-            ),
-          );
-        },
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.zero,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: AppSizes.md,
+        mainAxisSpacing: AppSizes.md,
+        childAspectRatio: 1.4,
       ),
+      itemCount: categories.length,
+      itemBuilder: (context, index) {
+        final entity = categories[index];
+
+        return BudgetCategoryCard(
+          category: entity,
+          onTap: () {
+            if (onTapCategory != null) {
+              onTapCategory!(entity);
+            }
+          },
+        );
+      },
     );
   }
 }

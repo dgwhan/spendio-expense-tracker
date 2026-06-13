@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:spend_io_app/features/auth/data/models/user_model.dart';
+import 'package:spend_io_app/features/auth/domain/entities/user_entity.dart';
+import 'package:spend_io_app/features/auth/domain/repositories/auth_repository.dart';
+import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/account_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/saving_goal_entity.dart';
-import 'package:spend_io_app/features/wallet/domain/entities/financial_health_status.dart';
+import 'package:spend_io_app/features/wallet/domain/entities/budget_category_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/wallet_summary_entity.dart';
 import 'package:spend_io_app/features/wallet/presentation/screen/wallet_screen.dart';
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
@@ -12,6 +16,8 @@ import 'package:spend_io_app/features/wallet/domain/usecases/add_goal_usecase.da
 import 'package:spend_io_app/features/wallet/domain/usecases/get_accounts_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/get_goals_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/get_wallet_summary_usecase.dart';
+import 'package:spend_io_app/features/wallet/domain/usecases/get_categories_usecase.dart';
+import 'package:spend_io_app/features/wallet/domain/usecases/initialize_budget_categories_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/repositories/wallet_repository.dart';
 
 class FakeWalletRepository implements WalletRepository {
@@ -39,16 +45,50 @@ class FakeWalletRepository implements WalletRepository {
   Future<void> deleteGoal(String remoteUid, String goalId) async {}
   @override
   Future<void> syncWithFirebase(int localUserId, String remoteUid) async {}
+
+  @override
+  Future<List<BudgetCategoryEntity>> getCategories(int localUserId) async {
+    return [];
+  }
+  @override
+  Future<void> createCategory(int localUserId, BudgetCategoryEntity category) async {}
+  @override
+  Future<void> updateCategory(int localUserId, BudgetCategoryEntity category) async {}
+}
+
+class FakeAuthRepository implements AuthRepository {
+  @override
+  Future<bool> register(UserEntity user) async => true;
+  @override
+  Future<UserEntity?> login(String email, String password) async => null;
+  @override
+  Future<void> logout() async {}
+  @override
+  Future<bool> checkEmailExists(String email) async => false;
+  @override
+  Future<UserEntity?> getCurrentUser() async => null;
+  @override
+  Future<void> updateOnboarding({required UserEntity user}) async {}
 }
 
 void main() {
   testWidgets('Test rendering WalletScreen', (WidgetTester tester) async {
+    // Set a large screen size to prevent lazy-loaded slivers from being off-screen
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
     final repo = FakeWalletRepository();
     final getWalletSummaryUseCase = GetWalletSummaryUseCase(repo);
     final getAccountsUseCase = GetAccountsUseCase(repo);
     final getGoalsUseCase = GetGoalsUseCase(repo);
     final addAccountUseCase = AddAccountUseCase(repo);
     final addGoalUseCase = AddGoalUseCase(repo);
+    final getCategoriesUseCase = GetCategoriesUseCase(repo);
+    final initializeBudgetCategoriesUseCase = InitializeBudgetCategoriesUseCase(repo);
 
     final viewModel = WalletViewModel(
       getWalletSummaryUseCase: getWalletSummaryUseCase,
@@ -56,19 +96,34 @@ void main() {
       getGoalsUseCase: getGoalsUseCase,
       addAccountUseCase: addAccountUseCase,
       addGoalUseCase: addGoalUseCase,
+      getCategoriesUseCase: getCategoriesUseCase,
+      initializeBudgetCategoriesUseCase: initializeBudgetCategoriesUseCase,
+    );
+
+    final authRepo = FakeAuthRepository();
+    final authProvider = AuthProvider(repository: authRepo);
+    authProvider.currentUser = UserModel(
+      id: 1,
+      email: 'test@example.com',
+      password: 'password',
+      displayName: 'test',
+      createdAt: DateTime.now(),
     );
 
     await tester.pumpWidget(
       MaterialApp(
-        home: ChangeNotifierProvider<WalletViewModel>.value(
-          value: viewModel,
+        home: MultiProvider(
+          providers: [
+            ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
+            ChangeNotifierProvider<WalletViewModel>.value(value: viewModel),
+          ],
           child: const WalletScreen(),
         ),
       ),
     );
 
-    // Trigger frame
-    await tester.pump();
+    // Wait for all async database initialization flows to settle
+    await tester.pumpAndSettle();
 
     // Expecting to find WalletHeader
     expect(find.text('Wallet'), findsOneWidget);

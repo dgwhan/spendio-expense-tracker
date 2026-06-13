@@ -4,9 +4,9 @@ import 'package:spend_io_app/features/wallet/data/datasource/wallet_local_data_s
 import 'package:spend_io_app/features/wallet/data/datasource/wallet_remote_data_source.dart';
 import 'package:spend_io_app/features/wallet/data/models/account_model.dart';
 import 'package:spend_io_app/features/wallet/data/models/saving_goal_model.dart';
+import 'package:spend_io_app/features/wallet/data/models/budget_category_model.dart';
 import 'package:spend_io_app/features/wallet/data/repositories/wallet_repository_impl.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/account_entity.dart';
-import 'package:spend_io_app/features/wallet/domain/entities/budget_category_entity.dart';
 
 // --------------------------------------------------------------------
 // LỚP MOCK ĐỂ KIỂM THỬ KHÔNG PHỤ THUỘC VÀO SQLITE & FIRESTORE THẬT
@@ -15,6 +15,7 @@ import 'package:spend_io_app/features/wallet/domain/entities/budget_category_ent
 class FakeLocalDataSource implements WalletLocalDataSource {
   final List<AccountModel> accountsDb = [];
   final List<SavingGoalModel> goalsDb = [];
+  final List<BudgetCategoryModel> categoriesDb = [];
 
   @override
   Future<List<AccountModel>> getAccounts(int userId) async => accountsDb;
@@ -45,7 +46,19 @@ class FakeLocalDataSource implements WalletLocalDataSource {
   }
 
   @override
-  List<BudgetCategoryEntity> getCategories() => [];
+  Future<List<BudgetCategoryModel>> getCategories(int userId) async => categoriesDb;
+
+  @override
+  Future<void> insertCategory(int userId, BudgetCategoryModel category) async {
+    categoriesDb.removeWhere((c) => c.id == category.id);
+    categoriesDb.add(category);
+  }
+
+  @override
+  Future<void> updateCategory(int userId, BudgetCategoryModel category) async {
+    categoriesDb.removeWhere((c) => c.id == category.id);
+    categoriesDb.add(category);
+  }
 }
 
 class FakeRemoteDataSource implements WalletRemoteDataSource {

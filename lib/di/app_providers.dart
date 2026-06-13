@@ -30,6 +30,8 @@ import '../../../features/wallet/domain/usecases/get_accounts_usecase.dart';
 import '../../../features/wallet/domain/usecases/get_goals_usecase.dart';
 import '../../../features/wallet/domain/usecases/add_account_usecase.dart';
 import '../../../features/wallet/domain/usecases/add_goal_usecase.dart';
+import '../../../features/wallet/domain/usecases/get_categories_usecase.dart';
+import '../../../features/wallet/domain/usecases/initialize_budget_categories_usecase.dart';
 
 class AppProviders {
   AppProviders._();
@@ -114,6 +116,12 @@ class AppProviders {
         ProxyProvider<WalletRepositoryImpl, AddGoalUseCase>(
           update: (_, repo, __) => AddGoalUseCase(repo),
         ),
+        ProxyProvider<WalletRepositoryImpl, GetCategoriesUseCase>(
+          update: (_, repo, __) => GetCategoriesUseCase(repo),
+        ),
+        ProxyProvider<WalletRepositoryImpl, InitializeBudgetCategoriesUseCase>(
+          update: (_, repo, __) => InitializeBudgetCategoriesUseCase(repo),
+        ),
 
         // ==============================================================
         // 3. PRESENTATION LAYER (VIEWMODELS & PROVIDERS)
@@ -174,6 +182,8 @@ class AppProviders {
             getGoalsUseCase: context.read<GetGoalsUseCase>(),
             addAccountUseCase: context.read<AddAccountUseCase>(),
             addGoalUseCase: context.read<AddGoalUseCase>(),
+            getCategoriesUseCase: context.read<GetCategoriesUseCase>(),
+            initializeBudgetCategoriesUseCase: context.read<InitializeBudgetCategoriesUseCase>(),
           ),
           update: (context, authProvider, vm) {
             final activeVm = vm ?? WalletViewModel(
@@ -182,8 +192,10 @@ class AppProviders {
               getGoalsUseCase: context.read<GetGoalsUseCase>(),
               addAccountUseCase: context.read<AddAccountUseCase>(),
               addGoalUseCase: context.read<AddGoalUseCase>(),
+              getCategoriesUseCase: context.read<GetCategoriesUseCase>(),
+              initializeBudgetCategoriesUseCase: context.read<InitializeBudgetCategoriesUseCase>(),
             );
-            activeVm.updateUser(authProvider.currentUser);
+            activeVm.updateUser(authProvider.currentUser?.toEntity());
             return activeVm;
           },
         ),

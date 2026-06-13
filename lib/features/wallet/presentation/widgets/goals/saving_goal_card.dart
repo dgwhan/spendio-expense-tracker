@@ -18,6 +18,7 @@ class SavingGoalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     //Tính % tiến độ: Tránh chia cho 0 và giới hạn giá trị trong khoảng [0.0 - 1.0] (0% - 100%) bằng .clamp
     final double progress = (goal.targetAmount > 0)
         ? (goal.currentAmount / goal.targetAmount).clamp(0.0, 1.0)
@@ -28,13 +29,17 @@ class SavingGoalCard extends StatelessWidget {
         isEmergency ? AppColors.success : AppColors.primary;
     final Color iconBgColor = themeColor.withValues(alpha: 0.15);
 
+    final backgroundColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+    final borderColor = isDark ? AppColors.borderDark : AppColors.borderLight;
+    final titleTextColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+
     return Container(
       margin: const EdgeInsets.only(bottom: AppSizes.md),
       padding: const EdgeInsets.all(AppSizes.md * 1.2),
       decoration: BoxDecoration(
-        color: AppColors.surfaceLight,
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.borderLight, width: 1),
+        border: Border.all(color: borderColor, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,10 +66,10 @@ class SavingGoalCard extends StatelessWidget {
                   children: [
                     Text(
                       goal.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimaryLight,
+                        color: titleTextColor,
                       ),
                     ),
                     const SizedBox(height: AppSizes.xs),

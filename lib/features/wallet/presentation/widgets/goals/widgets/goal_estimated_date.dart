@@ -12,14 +12,16 @@ class GoalEstimatedDate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final String formattedDate = DateFormat('MMM yyyy').format(estimatedDate);
+    final textColor = isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
 
     return Text(
       'Est. Completion: $formattedDate',
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 13,
         fontWeight: FontWeight.w400,
-        color: AppColors.textMutedLight,
+        color: textColor,
       ),
     );
   }

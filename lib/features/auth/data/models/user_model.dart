@@ -1,4 +1,5 @@
 // lớp kế thừa từ user_enity (domain/enitines) 
+import '../../domain/entities/user_entity.dart';
 
 class UserModel {
   final int? id;
@@ -147,6 +148,18 @@ class UserModel {
 
       createdAt:
           createdAt ?? this.createdAt,
+    );
+  }
+
+  UserEntity toEntity() {
+    return UserEntity(
+      id: id,
+      email: email,
+      password: password,
+      occupation: occupation,
+      financialGoal: financialGoal,
+      currency: currency,
+      onboardingCompleted: onboardingCompleted,
     );
   }
 }

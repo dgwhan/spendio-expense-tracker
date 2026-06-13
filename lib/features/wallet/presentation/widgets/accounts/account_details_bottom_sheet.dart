@@ -12,7 +12,7 @@ class AccountDetailsBottomSheet extends StatelessWidget {
 
   const AccountDetailsBottomSheet({super.key, required this.account});
 
-  List<Map<String, dynamic>> _getSimulatedTransactions(AccountEntity account) {
+  List<Map<String, dynamic>> _getSimulatedTransactions(AccountEntity account, bool isDark) {
     final now = DateTime.now();
     switch (account.type) {
       case AccountType.bank:
@@ -24,8 +24,8 @@ class AccountDetailsBottomSheet extends StatelessWidget {
             'date': now.subtract(const Duration(days: 2)),
             'isExpense': false,
             'icon': Icons.payment,
-            'color': Colors.green.shade800,
-            'bgColor': Colors.green.shade50,
+            'color': isDark ? Colors.green.shade400 : Colors.green.shade800,
+            'bgColor': isDark ? Colors.green.shade900.withValues(alpha: 0.2) : Colors.green.shade50,
           },
           {
             'title': 'Electricity Bill',
@@ -34,8 +34,8 @@ class AccountDetailsBottomSheet extends StatelessWidget {
             'date': now.subtract(const Duration(days: 5)),
             'isExpense': true,
             'icon': Icons.electrical_services,
-            'color': Colors.orange.shade800,
-            'bgColor': Colors.orange.shade50,
+            'color': isDark ? Colors.orange.shade400 : Colors.orange.shade800,
+            'bgColor': isDark ? Colors.orange.shade900.withValues(alpha: 0.2) : Colors.orange.shade50,
           },
           {
             'title': 'Office Lunch',
@@ -44,8 +44,8 @@ class AccountDetailsBottomSheet extends StatelessWidget {
             'date': now.subtract(const Duration(days: 6)),
             'isExpense': true,
             'icon': Icons.local_dining,
-            'color': Colors.amber.shade800,
-            'bgColor': Colors.amber.shade50,
+            'color': isDark ? Colors.amber.shade400 : Colors.amber.shade800,
+            'bgColor': isDark ? Colors.amber.shade900.withValues(alpha: 0.2) : Colors.amber.shade50,
           },
         ];
       case AccountType.creditCard:
@@ -57,8 +57,8 @@ class AccountDetailsBottomSheet extends StatelessWidget {
             'date': now.subtract(const Duration(days: 1)),
             'isExpense': true,
             'icon': Icons.shopping_bag,
-            'color': Colors.blue.shade800,
-            'bgColor': Colors.blue.shade50,
+            'color': isDark ? Colors.blue.shade400 : Colors.blue.shade800,
+            'bgColor': isDark ? Colors.blue.shade900.withValues(alpha: 0.2) : Colors.blue.shade50,
           },
           {
             'title': 'Netflix Subscription',
@@ -67,8 +67,8 @@ class AccountDetailsBottomSheet extends StatelessWidget {
             'date': now.subtract(const Duration(days: 4)),
             'isExpense': true,
             'icon': Icons.movie,
-            'color': Colors.red.shade800,
-            'bgColor': Colors.red.shade50,
+            'color': isDark ? Colors.red.shade400 : Colors.red.shade800,
+            'bgColor': isDark ? Colors.red.shade900.withValues(alpha: 0.2) : Colors.red.shade50,
           },
           {
             'title': 'Fuel Refill Station',
@@ -77,8 +77,8 @@ class AccountDetailsBottomSheet extends StatelessWidget {
             'date': now.subtract(const Duration(days: 8)),
             'isExpense': true,
             'icon': Icons.local_gas_station,
-            'color': Colors.purple.shade800,
-            'bgColor': Colors.purple.shade50,
+            'color': isDark ? Colors.purple.shade400 : Colors.purple.shade800,
+            'bgColor': isDark ? Colors.purple.shade900.withValues(alpha: 0.2) : Colors.purple.shade50,
           },
         ];
       case AccountType.eWallet:
@@ -90,8 +90,8 @@ class AccountDetailsBottomSheet extends StatelessWidget {
             'date': now.subtract(const Duration(hours: 4)),
             'isExpense': true,
             'icon': Icons.shopping_cart,
-            'color': Colors.orange.shade800,
-            'bgColor': Colors.orange.shade50,
+            'color': isDark ? Colors.orange.shade400 : Colors.orange.shade800,
+            'bgColor': isDark ? Colors.orange.shade900.withValues(alpha: 0.2) : Colors.orange.shade50,
           },
           {
             'title': 'CGV Cinema Tickets',
@@ -100,8 +100,8 @@ class AccountDetailsBottomSheet extends StatelessWidget {
             'date': now.subtract(const Duration(days: 3)),
             'isExpense': true,
             'icon': Icons.theaters,
-            'color': Colors.red.shade800,
-            'bgColor': Colors.red.shade50,
+            'color': isDark ? Colors.red.shade400 : Colors.red.shade800,
+            'bgColor': isDark ? Colors.red.shade900.withValues(alpha: 0.2) : Colors.red.shade50,
           },
           {
             'title': 'Transfer from Vietcombank',
@@ -110,8 +110,8 @@ class AccountDetailsBottomSheet extends StatelessWidget {
             'date': now.subtract(const Duration(days: 5)),
             'isExpense': false,
             'icon': Icons.swap_horiz,
-            'color': Colors.green.shade800,
-            'bgColor': Colors.green.shade50,
+            'color': isDark ? Colors.green.shade400 : Colors.green.shade800,
+            'bgColor': isDark ? Colors.green.shade900.withValues(alpha: 0.2) : Colors.green.shade50,
           },
         ];
       case AccountType.cash:
@@ -123,8 +123,8 @@ class AccountDetailsBottomSheet extends StatelessWidget {
             'date': now.subtract(const Duration(hours: 2)),
             'isExpense': true,
             'icon': Icons.coffee,
-            'color': Colors.brown.shade800,
-            'bgColor': Colors.brown.shade50,
+            'color': isDark ? Colors.brown.shade400 : Colors.brown.shade800,
+            'bgColor': isDark ? Colors.brown.shade900.withValues(alpha: 0.2) : Colors.brown.shade50,
           },
           {
             'title': 'Grab Bike Ride',
@@ -133,8 +133,8 @@ class AccountDetailsBottomSheet extends StatelessWidget {
             'date': now.subtract(const Duration(hours: 5)),
             'isExpense': true,
             'icon': Icons.motorcycle,
-            'color': Colors.teal.shade800,
-            'bgColor': Colors.teal.shade50,
+            'color': isDark ? Colors.teal.shade400 : Colors.teal.shade800,
+            'bgColor': isDark ? Colors.teal.shade900.withValues(alpha: 0.2) : Colors.teal.shade50,
           },
           {
             'title': 'Street Food Lunch',
@@ -143,8 +143,8 @@ class AccountDetailsBottomSheet extends StatelessWidget {
             'date': now.subtract(const Duration(days: 1)),
             'isExpense': true,
             'icon': Icons.restaurant,
-            'color': Colors.amber.shade800,
-            'bgColor': Colors.amber.shade50,
+            'color': isDark ? Colors.amber.shade400 : Colors.amber.shade800,
+            'bgColor': isDark ? Colors.amber.shade900.withValues(alpha: 0.2) : Colors.amber.shade50,
           },
         ];
     }
@@ -167,8 +167,9 @@ class AccountDetailsBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final Color typeColor = account.type.mainColor;
-    final transactions = _getSimulatedTransactions(account);
+    final transactions = _getSimulatedTransactions(account, isDark);
 
     double totalIncome = 0.0;
     double totalExpense = 0.0;
@@ -182,12 +183,19 @@ class AccountDetailsBottomSheet extends StatelessWidget {
       }
     }
 
+    final backgroundColor = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
+    final primaryTextColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final mutedTextColor = isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
+    final surfaceColor = isDark ? AppColors.surfaceSecondaryDark : Colors.white;
+    final borderColor = isDark ? AppColors.borderDark : AppColors.borderLight;
+    final dividerColor = isDark ? AppColors.borderDark : Colors.grey.shade100;
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
       padding: const EdgeInsets.all(AppSizes.md),
-      decoration: const BoxDecoration(
-        color: AppColors.backgroundLight,
-        borderRadius: BorderRadius.only(
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(AppRadius.cardRadiusLg),
           topRight: Radius.circular(AppRadius.cardRadiusLg),
         ),
@@ -201,7 +209,7 @@ class AccountDetailsBottomSheet extends StatelessWidget {
               width: 48,
               height: 5,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: isDark ? AppColors.borderDark : Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(2.5),
               ),
             ),
@@ -211,15 +219,15 @@ class AccountDetailsBottomSheet extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               IconButton(
-                icon: const Icon(Icons.close, color: AppColors.textPrimaryLight),
+                icon: Icon(Icons.close, color: primaryTextColor),
                 onPressed: () => Navigator.pop(context),
               ),
               Text(
                 account.name,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimaryLight,
+                  color: primaryTextColor,
                 ),
               ),
               const SizedBox(width: 48),
@@ -315,9 +323,9 @@ class AccountDetailsBottomSheet extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.all(AppSizes.md),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: surfaceColor,
                             borderRadius: BorderRadius.circular(AppRadius.lg),
-                            border: Border.all(color: AppColors.borderLight),
+                            border: Border.all(color: borderColor),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -327,22 +335,22 @@ class AccountDetailsBottomSheet extends StatelessWidget {
                                   Container(
                                     padding: const EdgeInsets.all(6),
                                     decoration: BoxDecoration(
-                                      color: Colors.green.shade50,
+                                      color: isDark ? Colors.green.shade900.withValues(alpha: 0.2) : Colors.green.shade50,
                                       shape: BoxShape.circle,
                                     ),
-                                    child: Icon(Icons.arrow_downward, color: Colors.green.shade700, size: 14),
+                                    child: Icon(Icons.arrow_downward, color: isDark ? Colors.green.shade400 : Colors.green.shade700, size: 14),
                                   ),
                                   const SizedBox(width: 8),
-                                  const Text('Inflow', style: TextStyle(color: AppColors.textMutedLight, fontSize: 12)),
+                                  Text('Inflow', style: TextStyle(color: mutedTextColor, fontSize: 12)),
                                 ],
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 CurrencyFormatter.format(totalIncome),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimaryLight,
+                                  color: primaryTextColor,
                                 ),
                               ),
                             ],
@@ -354,9 +362,9 @@ class AccountDetailsBottomSheet extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.all(AppSizes.md),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: surfaceColor,
                             borderRadius: BorderRadius.circular(AppRadius.lg),
-                            border: Border.all(color: AppColors.borderLight),
+                            border: Border.all(color: borderColor),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -366,22 +374,22 @@ class AccountDetailsBottomSheet extends StatelessWidget {
                                   Container(
                                     padding: const EdgeInsets.all(6),
                                     decoration: BoxDecoration(
-                                      color: Colors.red.shade50,
+                                      color: isDark ? Colors.red.shade900.withValues(alpha: 0.2) : Colors.red.shade50,
                                       shape: BoxShape.circle,
                                     ),
-                                    child: Icon(Icons.arrow_upward, color: Colors.red.shade700, size: 14),
+                                    child: Icon(Icons.arrow_upward, color: isDark ? Colors.red.shade400 : Colors.red.shade700, size: 14),
                                   ),
                                   const SizedBox(width: 8),
-                                  const Text('Outflow', style: TextStyle(color: AppColors.textMutedLight, fontSize: 12)),
+                                  Text('Outflow', style: TextStyle(color: mutedTextColor, fontSize: 12)),
                                 ],
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 CurrencyFormatter.format(totalExpense),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimaryLight,
+                                  color: primaryTextColor,
                                 ),
                               ),
                             ],
@@ -392,12 +400,12 @@ class AccountDetailsBottomSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSizes.xl),
 
-                  const Text(
+                  Text(
                     'Recent Transactions',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimaryLight,
+                      color: primaryTextColor,
                     ),
                   ),
                   const SizedBox(height: AppSizes.md),
@@ -407,7 +415,7 @@ class AccountDetailsBottomSheet extends StatelessWidget {
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: transactions.length,
-                    separatorBuilder: (context, index) => Divider(color: Colors.grey.shade100, height: 1),
+                    separatorBuilder: (context, index) => Divider(color: dividerColor, height: 1),
                     itemBuilder: (context, index) {
                       final tx = transactions[index];
                       final isExpense = tx['isExpense'] as bool;
@@ -436,10 +444,10 @@ class AccountDetailsBottomSheet extends StatelessWidget {
                                 children: [
                                   Text(
                                     tx['title'] as String,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
-                                      color: AppColors.textPrimaryLight,
+                                      color: primaryTextColor,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -447,9 +455,9 @@ class AccountDetailsBottomSheet extends StatelessWidget {
                                   const SizedBox(height: 2),
                                   Text(
                                     '${tx['category']} • ${_formatDateTime(tx['date'] as DateTime)}',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 11,
-                                      color: AppColors.textMutedLight,
+                                      color: mutedTextColor,
                                     ),
                                   ),
                                 ],
@@ -460,7 +468,7 @@ class AccountDetailsBottomSheet extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
-                                color: isExpense ? AppColors.textPrimaryLight : Colors.green.shade700,
+                                color: isExpense ? primaryTextColor : (isDark ? Colors.green.shade400 : Colors.green.shade700),
                               ),
                             ),
                           ],

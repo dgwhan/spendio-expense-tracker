@@ -6,15 +6,21 @@ import 'package:spend_io_app/core/utils/date_formatter.dart';
 class WalletHeader extends StatelessWidget {
   final DateTime selectedMonth;
   final VoidCallback onGenerateReport;
+  final VoidCallback onMonthTap;
 
   const WalletHeader({
     super.key,
     required this.selectedMonth,
     required this.onGenerateReport,
+    required this.onMonthTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final subtitleColor = isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -25,16 +31,34 @@ class WalletHeader extends StatelessWidget {
               Text(
                 'Wallet',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: AppColors.textPrimaryLight,
+                      color: titleColor,
                       fontWeight: FontWeight.bold,
                     ),
               ),
               const SizedBox(height: AppSizes.xs),
-              Text(
-                DateFormatter.toMonthYearString(selectedMonth),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textMutedLight,
-                    ),
+              InkWell(
+                onTap: onMonthTap,
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 4.0),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        DateFormatter.toMonthYearString(selectedMonth),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: subtitleColor,
+                            ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.keyboard_arrow_down,
+                        size: 18,
+                        color: subtitleColor,
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
