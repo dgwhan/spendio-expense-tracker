@@ -1,6 +1,7 @@
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
+import '../../../features/home/presentation/viewmodels/dashboard_viewmodel.dart';
 
 // ONBOARDING LAYER
 import '../features/onboarding/data/datasources/onboarding_local_datasource.dart';
@@ -216,6 +217,12 @@ class AppProviders {
             activeVm.updateUser(authProvider.currentUser?.toEntity());
             return activeVm;
           },
+        ),
+        ChangeNotifierProxyProvider<WalletViewModel, DashboardViewModel>(
+          create: (context) => DashboardViewModel(
+            walletViewModel: context.read<WalletViewModel>(),
+          ),
+          update: (_, walletVM, vm) => vm ?? DashboardViewModel(walletViewModel: walletVM),
         ),
       ];
 }

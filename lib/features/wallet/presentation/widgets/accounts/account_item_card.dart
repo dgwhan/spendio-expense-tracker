@@ -34,28 +34,28 @@ class AccountItemCard extends StatelessWidget {
     if (isDark) {
       switch (type) {
         case AccountType.cash:
-          return const Color(0x2681C784);
+          return AppColors.cashBgDark;
         case AccountType.bank:
-          return const Color(0x2664B5F6);
+          return AppColors.bankBgDark;
         case AccountType.creditCard:
-          return const Color(0x26FFB74D);
+          return AppColors.creditCardBgDark;
         case AccountType.eWallet:
-          return const Color(0x26BA68C8);
+          return AppColors.eWalletBgDark;
         case AccountType.savingsAccount:
-          return const Color(0x264DB6AC);
+          return AppColors.savingsAccountBgDark;
       }
     } else {
       switch (type) {
         case AccountType.cash:
-          return const Color(0xFFE8F5E9);
+          return AppColors.cashBgLight;
         case AccountType.bank:
-          return const Color(0xFFE3F2FD);
+          return AppColors.bankBgLight;
         case AccountType.creditCard:
-          return const Color(0xFFFFF3E0);
+          return AppColors.creditCardBgLight;
         case AccountType.eWallet:
-          return const Color(0xFFF3E5F5);
+          return AppColors.eWalletBgLight;
         case AccountType.savingsAccount:
-          return const Color(0xFFE0F2F1);
+          return AppColors.savingsAccountBgLight;
       }
     }
   }
@@ -64,28 +64,28 @@ class AccountItemCard extends StatelessWidget {
     if (isDark) {
       switch (type) {
         case AccountType.cash:
-          return const Color(0xFF81C784);
+          return AppColors.cashDark;
         case AccountType.bank:
-          return const Color(0xFF64B5F6);
+          return AppColors.bankDark;
         case AccountType.creditCard:
-          return const Color(0xFFFFB74D);
+          return AppColors.creditCardDark;
         case AccountType.eWallet:
-          return const Color(0xFFBA68C8);
+          return AppColors.eWalletDark;
         case AccountType.savingsAccount:
-          return const Color(0xFF4DB6AC);
+          return AppColors.savingsAccountDark;
       }
     } else {
       switch (type) {
         case AccountType.cash:
-          return const Color(0xFF2E7D32);
+          return AppColors.cashLight;
         case AccountType.bank:
-          return const Color(0xFF1565C0);
+          return AppColors.bankLight;
         case AccountType.creditCard:
-          return const Color(0xFFE65100);
+          return AppColors.creditCardLight;
         case AccountType.eWallet:
-          return const Color(0xFF6A1B9A);
+          return AppColors.eWalletLight;
         case AccountType.savingsAccount:
-          return const Color(0xFF00695C);
+          return AppColors.savingsAccountLight;
       }
     }
   }
@@ -104,7 +104,7 @@ class AccountItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
-    final cardBgColor = isDark ? AppColors.surfaceSecondaryDark : Colors.white;
+    final cardBgColor = isDark ? AppColors.surfaceSecondaryDark : AppColors.surfaceLight;
     final primaryTextColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final mutedTextColor = isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
 
@@ -112,11 +112,11 @@ class AccountItemCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: cardBgColor,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: AppColors.shadow,
             blurRadius: 20,
-            offset: const Offset(0, 8),
+            offset: Offset(0, 8),
             spreadRadius: 0,
           ),
         ],

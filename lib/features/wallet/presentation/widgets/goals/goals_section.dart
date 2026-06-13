@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
-import 'package:spend_io_app/shared/headers/app_section_header.dart';
-import 'package:spend_io_app/shared/states/section_empty_state.dart';
+import 'package:spend_io_app/core/widgets/common/app_section_header.dart';
+import 'package:spend_io_app/core/widgets/common/app_empty_state.dart';
 import 'saving_goal_card.dart';
 import 'add_goal_bottom_sheet.dart';
 
@@ -13,6 +13,7 @@ class GoalsSection extends StatelessWidget {
   void _showAddGoalDialog(BuildContext context, WalletViewModel viewModel) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => AddGoalBottomSheet(viewModel: viewModel),
@@ -38,7 +39,7 @@ class GoalsSection extends StatelessWidget {
               },
             ),
             const SizedBox(height: AppSizes.md),
-            SectionEmptyState(
+            AppEmptyState(
               title: 'No Saving Goals',
               subtitle: 'Create a goal and start\nbuilding your future.',
               icon: Icons.track_changes_outlined,
@@ -46,6 +47,7 @@ class GoalsSection extends StatelessWidget {
               onActionTap: () {
                 _showAddGoalDialog(context, viewModel);
               },
+              isBordered: true,
             ),
           ],
         ),

@@ -1,0 +1,180 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:spend_io_app/core/constants/app_colors.dart';
+import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
+import 'package:spend_io_app/features/home/presentation/viewmodels/dashboard_viewmodel.dart';
+import 'package:spend_io_app/features/home/presentation/widgets/app_header/app_header.dart';
+import 'package:spend_io_app/features/home/presentation/widgets/balance_summary/balance_summary_card.dart';
+import 'package:spend_io_app/features/home/presentation/widgets/financial_pulse/financial_pulse_section.dart';
+import 'package:spend_io_app/features/home/presentation/widgets/monthly_budget/monthly_budget_progress.dart';
+import 'package:spend_io_app/features/home/presentation/widgets/quick_actions/quick_actions_grid.dart';
+import 'package:spend_io_app/features/home/presentation/widgets/recent_activity/recent_activity_section.dart';
+import 'package:spend_io_app/features/home/presentation/widgets/savings_goal/savings_goal_card.dart';
+import 'package:spend_io_app/features/home/presentation/widgets/spending_breakdown/spending_breakdown_section.dart';
+import 'package:spend_io_app/features/home/data/models/dashboard_summary_model.dart';
+import 'package:spend_io_app/features/wallet/domain/entities/saving_goal_entity.dart';
+import 'package:spend_io_app/features/home/data/models/savings_goal_model.dart';
+
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
+  void _navigateToInsights(BuildContext context) {
+    debugPrint('Navigation Action: Redirect to Insights Tab details.');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+    final dashboardVM = context.watch<DashboardViewModel>();
+
+    final displayName = authProvider.currentUser?.displayName ?? 'Guest';
+    final summaryModel = DashboardSummaryModel(
+      balance: dashboardVM.totalAssets,
+      income: dashboardVM.totalAssets * 0.25 > 0 ? dashboardVM.totalAssets * 0.25 : 18000000,
+      expense: dashboardVM.totalSpent,
+      savings: dashboardVM.totalSaved,
+    );
+
+    return Scaffold(
+      backgroundColor: AppColors.backgroundLight,
+      body: SafeArea(
+        child: RefreshIndicator(
+          color: AppColors.primary,
+          onRefresh: () async {
+            await dashboardVM.walletViewModel.fetchWalletData();
+          },
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              // Header
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
+                sliver: SliverToBoxAdapter(
+                  child: AppHeader(
+                    displayName: displayName,
+                    avatarUrl: '',
+                    onProfileTap: () {},
+                    onNotificationTap: () {},
+                  ),
+                ),
+              ),
+
+              // Total balance card
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                sliver: SliverToBoxAdapter(
+                  child: BalanceSummaryCard(
+                    summary: summaryModel,
+                  ),
+                ),
+              ),
+
+              // Quick action
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                sliver: SliverToBoxAdapter(
+                  child: QuickActionsGrid(
+                    onTransactionTap: () {
+                      debugPrint('Quick Action: Add transaction clicked');
+                    },
+                    onBudgetTap: () {
+                      debugPrint('Quick Action: Budget clicked');
+                    },
+                    onAnalyticsTap: () {
+                      debugPrint('Quick Action: Analytics clicked');
+                    },
+                    onSavingGoalTap: () {
+                      debugPrint('Quick Action: Saving goal clicked');
+                    },
+                  ),
+                ),
+              ),
+
+              // Spending breakdown
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                sliver: SliverToBoxAdapter(
+                  child: SpendingBreakdownSection(
+                    weekData: dashboardVM.spendingBreakdownWeek,
+                    monthData: dashboardVM.spendingBreakdownMonth,
+                    yearData: dashboardVM.spendingBreakdownYear,
+                    onViewDetailTap: () => _navigateToInsights(context),
+                    onViewMoreTap: () => _navigateToInsights(context),
+                  ),
+                ),
+              ),
+
+              // Financial Pulse (AI & Density heat map)
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                sliver: SliverToBoxAdapter(
+                  child: FinancialPulseSection(
+                    pulse: dashboardVM.financialPulse,
+                  ),
+                ),
+              ),
+
+              // Savings Goals
+              if (dashboardVM.savingsGoals.isNotEmpty)
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  sliver: SliverToBoxAdapter(
+                    child: SavingsGoalCard(
+                      goals: dashboardVM.savingsGoals.map((g) {
+                        return g.toSavingsGoalModel();
+                      }).toList(),
+                      onViewAllTap: () {},
+                    ),
+                  ),
+                ),
+
+              // Monthly Budget
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                sliver: SliverToBoxAdapter(
+                  child: MonthlyBudgetProgress(
+                    budget: dashboardVM.monthlyBudget,
+                  ),
+                ),
+              ),
+
+              // Recent Activity
+              if (dashboardVM.recentTransactions.isNotEmpty)
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 40.0),
+                  sliver: SliverToBoxAdapter(
+                    child: RecentActivitySection(
+                      transactions: dashboardVM.recentTransactions,
+                      onViewAllTap: () {},
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Extension mapping helper to convert domain entity to presentation model safely
+extension on SavingGoalEntity {
+  SavingsGoalModel toSavingsGoalModel() {
+    final percent = progress;
+    String status = 'ON TRACK';
+    if (percent >= 0.8) {
+      status = 'GREAT PROGRESS';
+    } else if (percent < 0.2) {
+      status = 'BEHIND';
+    }
+    return SavingsGoalModel(
+      id: id,
+      title: name,
+      category: 'Finance',
+      currentAmount: currentAmount,
+      targetAmount: targetAmount,
+      status: status,
+      iconType: 'finance',
+    );
+  }
+}

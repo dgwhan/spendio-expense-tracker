@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:spend_io_app/features/home/presentation/screens/dashboard_screen.dart';
+import 'package:spend_io_app/features/home/presentation/screens/home_screen.dart';
 import 'package:spend_io_app/features/navigation/presentation/providers/navigation_provider.dart';
 import 'package:spend_io_app/features/navigation/presentation/widgets/bottom_navigation_bar.dart';
 import 'package:spend_io_app/features/navigation/presentation/widgets/center_action_button.dart';
@@ -57,7 +57,7 @@ class _NavigationShellState extends State<NavigationShell> {
           children: [
             _buildTabWorkspace(
                 navigatorKey: _navigatorKeys[0],
-                rootPage: const DashboardScreen()),
+                rootPage: const HomeScreen()),
             _buildTabWorkspace(
                 navigatorKey: _navigatorKeys[1],
                 rootPage: const WalletScreen()),

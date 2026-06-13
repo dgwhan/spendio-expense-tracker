@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:spend_io_app/features/navigation/presentation/screens/navigation_entry.dart';
 import 'package:spend_io_app/features/auth/presentation/screens/login_screen.dart';
 import 'package:spend_io_app/features/onboarding/presentation/screens/onboarding_flow_screen.dart';
 

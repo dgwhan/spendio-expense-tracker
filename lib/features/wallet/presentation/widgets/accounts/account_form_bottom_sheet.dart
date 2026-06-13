@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/core/constants/app_radius.dart';
-import 'package:spend_io_app/core/utils/account_type_ext.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/account_entity.dart';
+import 'widgets/account_type_grid_selector.dart';
 
 class AccountFormBottomSheet extends StatefulWidget {
   final AccountEntity? account;
@@ -46,21 +46,6 @@ class _AccountFormBottomSheetState extends State<AccountFormBottomSheet> {
     super.dispose();
   }
 
-  IconData _getDefaultIcon(AccountType type) {
-    switch (type) {
-      case AccountType.cash:
-        return Icons.wallet;
-      case AccountType.bank:
-        return Icons.account_balance;
-      case AccountType.eWallet:
-        return Icons.account_balance_wallet;
-      case AccountType.creditCard:
-        return Icons.credit_card;
-      case AccountType.savingsAccount:
-        return Icons.savings;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -69,9 +54,8 @@ class _AccountFormBottomSheetState extends State<AccountFormBottomSheet> {
     final backgroundColor = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
     final primaryTextColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final mutedTextColor = isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
-    final inputFillColor = isDark ? AppColors.surfaceSecondaryDark : Colors.grey.shade50;
-    final borderColor = isDark ? AppColors.borderDark : Colors.grey.shade300;
-    final itemBgColor = isDark ? AppColors.surfaceDark : Colors.white;
+    final inputFillColor = isDark ? AppColors.surfaceSecondaryDark : AppColors.surfaceSecondaryLight;
+    final borderColor = isDark ? AppColors.borderDark : AppColors.borderLight;
 
     return Container(
       decoration: BoxDecoration(
@@ -100,7 +84,7 @@ class _AccountFormBottomSheetState extends State<AccountFormBottomSheet> {
                   width: 48,
                   height: 5,
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.borderDark : Colors.grey.shade300,
+                    color: isDark ? AppColors.borderDark : AppColors.borderLight,
                     borderRadius: BorderRadius.circular(2.5),
                   ),
                 ),
@@ -198,63 +182,12 @@ class _AccountFormBottomSheetState extends State<AccountFormBottomSheet> {
                       const SizedBox(height: AppSizes.sm),
 
                       // Account Type Selector
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: AppSizes.sm,
-                          mainAxisSpacing: AppSizes.sm,
-                          childAspectRatio: 2.2,
-                        ),
-                        itemCount: AccountType.values.length,
-                        itemBuilder: (context, index) {
-                          final type = AccountType.values[index];
-                          final isSelected = _selectedType == type;
-                          final Color typeColor = type.mainColor;
-                          final Color bgColor = isDark ? typeColor.withValues(alpha: 0.2) : type.bgColor;
-
-                          return GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _selectedType = type;
-                              });
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
-                              decoration: BoxDecoration(
-                                color: isSelected ? bgColor : itemBgColor,
-                                borderRadius: BorderRadius.circular(AppRadius.md),
-                                border: Border.all(
-                                  color: isSelected ? typeColor : borderColor,
-                                  width: isSelected ? 2 : 1,
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    _getDefaultIcon(type),
-                                    color: isSelected ? typeColor : mutedTextColor,
-                                    size: 24,
-                                  ),
-                                  const SizedBox(width: AppSizes.sm),
-                                  Expanded(
-                                    child: Text(
-                                      type.displayName,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                        color: isSelected
-                                            ? primaryTextColor
-                                            : (isDark ? AppColors.textSecondaryDark : Colors.grey.shade700),
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
+                      AccountTypeGridSelector(
+                        selectedType: _selectedType,
+                        onTypeSelected: (type) {
+                          setState(() {
+                            _selectedType = type;
+                          });
                         },
                       ),
                     ],

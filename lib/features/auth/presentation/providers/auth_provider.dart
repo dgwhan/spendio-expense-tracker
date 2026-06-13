@@ -93,7 +93,32 @@ class AuthProvider extends ChangeNotifier {
 
   /// Load current user session
   Future<void> loadSession() async {
+    isLoading = true;
     notifyListeners();
+    try {
+      final user = await repository.getCurrentUser();
+      if (user != null) {
+        currentUser = UserModel(
+          id: user.id,
+          email: user.email,
+          password: user.password,
+          displayName: user.email.split('@').first,
+          occupation: user.occupation,
+          financialGoal: user.financialGoal,
+          currency: user.currency,
+          onboardingCompleted: user.onboardingCompleted,
+          createdAt: DateTime.now(),
+        );
+      } else {
+        currentUser = null;
+      }
+    } catch (e) {
+      debugPrint("Error loading session: $e");
+      currentUser = null;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
   }
 
   /// Tải lại thông tin User hiện tại từ database

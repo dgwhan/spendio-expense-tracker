@@ -157,14 +157,13 @@ void main() {
     expect(find.text('Add'), findsOneWidget);
 
     // Verify the mock accounts are rendered
-    expect(find.text('CHASE CHECKING'), findsNothing); // Should be uppercase type label
+    expect(find.text('CHASE CHECKING'), findsNothing); 
     expect(find.text('BANK'), findsOneWidget);
     expect(find.text('CASH'), findsOneWidget);
     
     expect(find.text('Chase Checking'), findsOneWidget);
     expect(find.text('Cash Wallet'), findsOneWidget);
 
-    // Verify the DETAILS buttons are rendered
-    expect(find.text('DETAILS >'), findsNWidgets(2));
+    expect(find.text('Details >'), findsNWidgets(2));
   });
 }

@@ -10,12 +10,12 @@ class InitializeBudgetCategoriesUseCase {
     final existing = await repository.getCategories(localUserId);
     if (existing.isEmpty) {
       final defaults = [
-        const BudgetCategoryEntity(id: 'dining', name: 'Dining', spent: 0.0, budget: 5000000.0),
-        const BudgetCategoryEntity(id: 'transport', name: 'Transport', spent: 0.0, budget: 2000000.0),
-        const BudgetCategoryEntity(id: 'shopping', name: 'Shopping', spent: 0.0, budget: 6000000.0),
-        const BudgetCategoryEntity(id: 'health', name: 'Health', spent: 0.0, budget: 1500000.0),
-        const BudgetCategoryEntity(id: 'bills', name: 'Bills', spent: 0.0, budget: 3000000.0),
-        const BudgetCategoryEntity(id: 'entertainment', name: 'Entertainment', spent: 0.0, budget: 2500000.0),
+        const BudgetCategoryEntity(id: 'dining', name: 'Dining', spent: 0.0, budget: 0.0),
+        const BudgetCategoryEntity(id: 'transport', name: 'Transport', spent: 0.0, budget: 0.0),
+        const BudgetCategoryEntity(id: 'shopping', name: 'Shopping', spent: 0.0, budget: 0.0),
+        const BudgetCategoryEntity(id: 'health', name: 'Health', spent: 0.0, budget: 0.0),
+        const BudgetCategoryEntity(id: 'bills', name: 'Bills', spent: 0.0, budget: 0.0),
+        const BudgetCategoryEntity(id: 'entertainment', name: 'Entertainment', spent: 0.0, budget: 0.0),
       ];
 
       for (final category in defaults) {

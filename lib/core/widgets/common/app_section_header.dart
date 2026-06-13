@@ -19,6 +19,9 @@ class AppSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -27,7 +30,7 @@ class AppSectionHeader extends StatelessWidget {
           style: TextStyle(
             fontSize: fontSize ?? 18,
             fontWeight: FontWeight.bold,
-            color: AppColors.textPrimaryLight,
+            color: titleColor,
           ),
         ),
         if (trailing != null)

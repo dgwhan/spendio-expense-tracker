@@ -9,7 +9,7 @@ import 'package:spend_io_app/features/wallet/presentation/widgets/accounts/accou
 import 'package:spend_io_app/features/wallet/presentation/widgets/accounts/add_account_bottom_sheet.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/accounts/edit_account_bottom_sheet.dart';
 import 'package:spend_io_app/shared/widgets/buttons/app_text_button.dart';
-import 'package:spend_io_app/shared/states/section_empty_state.dart';
+import 'package:spend_io_app/core/widgets/common/app_empty_state.dart';
 
 class AccountListScreen extends StatelessWidget {
   const AccountListScreen({super.key});
@@ -17,6 +17,7 @@ class AccountListScreen extends StatelessWidget {
   void _openAddAccount(BuildContext context, WalletViewModel viewModel) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => AddAccountBottomSheet(viewModel: viewModel),
@@ -26,6 +27,7 @@ class AccountListScreen extends StatelessWidget {
   void _handleAccountTap(BuildContext context, WalletViewModel viewModel, AccountEntity account) async {
     final result = await showModalBottomSheet<String>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => AccountDetailsBottomSheet(account: account),
@@ -36,6 +38,7 @@ class AccountListScreen extends StatelessWidget {
     if (result == 'edit') {
       showModalBottomSheet(
         context: context,
+        useRootNavigator: true,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
         builder: (_) => EditAccountBottomSheet(
@@ -110,7 +113,7 @@ class AccountListScreen extends StatelessWidget {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(AppSizes.lg),
-                child: SectionEmptyState(
+                child: AppEmptyState(
                   title: 'No Accounts Yet',
                   subtitle: 'Add your first account\nto start tracking money.',
                   icon: Icons.account_balance_wallet_outlined,

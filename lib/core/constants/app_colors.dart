@@ -61,4 +61,30 @@ class AppColors {
   static const Color eWalletAccount = Color(0xFF64B5F6);
   static const Color defaultAccount = Color(0xFFFFB74D);
   static const Color surfaceCardLight = Color(0xFFF9FAFB);
+
+  // Account type specific colors (Light/Dark Mode and Backgrounds)
+  static const Color cashLight = Color(0xFF2E7D32);
+  static const Color cashDark = Color(0xFF81C784);
+  static const Color cashBgLight = Color(0xFFE8F5E9);
+  static const Color cashBgDark = Color(0x2681C784);
+
+  static const Color bankLight = Color(0xFF1565C0);
+  static const Color bankDark = Color(0xFF64B5F6);
+  static const Color bankBgLight = Color(0xFFE3F2FD);
+  static const Color bankBgDark = Color(0x2664B5F6);
+
+  static const Color creditCardLight = Color(0xFFE65100);
+  static const Color creditCardDark = Color(0xFFFFB74D);
+  static const Color creditCardBgLight = Color(0xFFFFF3E0);
+  static const Color creditCardBgDark = Color(0x26FFB74D);
+
+  static const Color eWalletLight = Color(0xFF6A1B9A);
+  static const Color eWalletDark = Color(0xFFBA68C8);
+  static const Color eWalletBgLight = Color(0xFFF3E5F5);
+  static const Color eWalletBgDark = Color(0x26BA68C8);
+
+  static const Color savingsAccountLight = Color(0xFF00695C);
+  static const Color savingsAccountDark = Color(0xFF4DB6AC);
+  static const Color savingsAccountBgLight = Color(0xFFE0F2F1);
+  static const Color savingsAccountBgDark = Color(0x264DB6AC);
 }

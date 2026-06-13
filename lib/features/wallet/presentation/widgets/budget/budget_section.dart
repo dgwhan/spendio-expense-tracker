@@ -4,7 +4,7 @@ import 'package:spend_io_app/core/utils/date_formatter.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/budget_category_entity.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/budget/monthly_budget_card.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/budget/wallet_budget_categories_grid.dart';
-import 'package:spend_io_app/shared/headers/app_section_header.dart';
+import 'package:spend_io_app/core/widgets/common/app_section_header.dart';
 
 class BudgetSection extends StatelessWidget {
   final double totalSpent;

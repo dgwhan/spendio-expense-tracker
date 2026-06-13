@@ -1,27 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 
-// Định nghĩa cấu trúc dữ liệu cho các mục thông tin nhỏ phía dưới
-class SummaryItem {
+class AppInfoItem {
   final String label;
   final String value;
   final Color? valueColor;
 
-  SummaryItem({
+  AppInfoItem({
     required this.label,
     required this.value,
     this.valueColor,
   });
 }
 
-class SummaryCard extends StatelessWidget {
+class AppInfoCard extends StatelessWidget {
   final String title;
   final String mainBalance;
-  final List<SummaryItem> items;
+  final List<AppInfoItem> items;
   final String? statusLabel;
   final Widget? trailingIcon;
 
-  const SummaryCard({
+  const AppInfoCard({
     super.key,
     required this.title,
     required this.mainBalance,
@@ -32,7 +31,6 @@ class SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Kiểm tra chế độ Dark Mode của hệ thống để linh hoạt thay đổi màu chữ/nền mờ khi cần
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
@@ -60,7 +58,6 @@ class SummaryCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          //hàng Tiêu đề và trạng thái
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -92,9 +89,9 @@ class SummaryCard extends StatelessWidget {
                         size: 16,
                       ),
                       const SizedBox(width: 4),
-                      const Text(
-                        'Excellent',
-                        style: TextStyle(
+                      Text(
+                        statusLabel!,
+                        style: const TextStyle(
                           color: AppColors.textPrimaryLight,
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -108,8 +105,6 @@ class SummaryCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-
-          //số dư chính
           Text(
             mainBalance,
             style: TextStyle(
@@ -120,16 +115,12 @@ class SummaryCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-
-          //đường kẻ ngang mờ phân cách
           Container(
             height: 1,
             color: (isDarkMode ? AppColors.dividerDark : AppColors.dividerLight)
                 .withValues(alpha: 0.2),
           ),
           const SizedBox(height: 20),
-
-          //hàng hiển thị danh sách các thông số động
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,

@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/extensions/string_extension.dart';
 import 'package:spend_io_app/features/home/data/models/dashboard_summary_model.dart';
-import 'package:spend_io_app/shared/cards/summary_card.dart';
+import 'package:spend_io_app/core/widgets/cards/app_info_card.dart';
 
 class BalanceSummaryCard extends StatefulWidget {
   final DashboardSummaryModel summary;
@@ -30,7 +30,7 @@ class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
 
   @override
   Widget build(BuildContext context) {
-    return SummaryCard(
+    return AppInfoCard(
       title: 'TOTAL BALANCE',
       mainBalance: _formatCurrency(widget.summary.balance),
       trailingIcon: IconButton(
@@ -50,17 +50,17 @@ class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
         },
       ),
       items: [
-        SummaryItem(
+        AppInfoItem(
           label: 'INCOME (THIS MONTH)',
           value: _formatCurrency(widget.summary.income),
           valueColor: AppColors.income,
         ),
-        SummaryItem(
+        AppInfoItem(
           label: 'EXPENSE (THIS MONTH)',
           value: _formatCurrency(widget.summary.expense),
           valueColor: AppColors.expense,
         ),
-        SummaryItem(
+        AppInfoItem(
           label: 'SAVINGS (THIS MONTH)',
           value: _formatCurrency(widget.summary.savings),
           valueColor: Colors.white.withValues(alpha: 0.9),

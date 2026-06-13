@@ -3,8 +3,8 @@ import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/account_entity.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/accounts/account_item_card.dart';
-import 'package:spend_io_app/shared/headers/app_section_header.dart';
-import 'package:spend_io_app/shared/states/section_empty_state.dart';
+import 'package:spend_io_app/core/widgets/common/app_section_header.dart';
+import 'package:spend_io_app/core/widgets/common/app_empty_state.dart';
 
 class AccountsSection extends StatelessWidget {
   final List<AccountEntity> accounts;
@@ -32,12 +32,13 @@ class AccountsSection extends StatelessWidget {
               onActionTap: onViewAll,
             ),
             const SizedBox(height: AppSizes.lg),
-            SectionEmptyState(
+            AppEmptyState(
               title: 'No Accounts Yet',
               subtitle: 'Add your first account\nto start tracking money.',
               icon: Icons.account_balance_wallet_outlined,
               actionLabel: 'Add Your First Account',
               onActionTap: onViewAll,
+              isBordered: true,
             ),
           ],
         ),

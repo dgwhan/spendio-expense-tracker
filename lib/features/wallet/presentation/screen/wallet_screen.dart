@@ -15,7 +15,7 @@ import 'package:spend_io_app/features/wallet/presentation/widgets/goals/add_goal
 import 'package:spend_io_app/features/wallet/presentation/widgets/header/wallet_header.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/hero/total_assets_card.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/quick_actions/quick_actions_section.dart';
-import 'package:spend_io_app/features/wallet/presentation/widgets/dialogs/month_picker_dialog.dart';
+import 'package:spend_io_app/core/widgets/dialogs/app_month_picker_dialog.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -117,7 +117,7 @@ class _WalletScreenState extends State<WalletScreen> {
                           onMonthTap: () async {
                             final picked = await showDialog<DateTime>(
                               context: context,
-                              builder: (context) => MonthPickerDialog(
+                              builder: (context) => AppMonthPickerDialog(
                                 initialDate: viewModel.selectedMonth,
                               ),
                             );
@@ -136,6 +136,7 @@ class _WalletScreenState extends State<WalletScreen> {
                           onAddAccount: () {
                             showModalBottomSheet(
                               context: context,
+                              useRootNavigator: true,
                               isScrollControlled: true,
                               backgroundColor: Colors.transparent,
                               builder: (_) =>
@@ -145,6 +146,7 @@ class _WalletScreenState extends State<WalletScreen> {
                           onAddGoal: () {
                             showModalBottomSheet(
                               context: context,
+                              useRootNavigator: true,
                               isScrollControlled: true,
                               backgroundColor: Colors.transparent,
                               builder: (_) =>
@@ -196,6 +198,7 @@ class _WalletScreenState extends State<WalletScreen> {
                     onAccountTap: (account) async {
                       final result = await showModalBottomSheet<String>(
                         context: context,
+                        useRootNavigator: true,
                         isScrollControlled: true,
                         backgroundColor: Colors.transparent,
                         builder: (_) =>
@@ -207,6 +210,7 @@ class _WalletScreenState extends State<WalletScreen> {
                       if (result == 'edit') {
                         showModalBottomSheet(
                           context: context,
+                          useRootNavigator: true,
                           isScrollControlled: true,
                           backgroundColor: Colors.transparent,
                           builder: (_) => EditAccountBottomSheet(

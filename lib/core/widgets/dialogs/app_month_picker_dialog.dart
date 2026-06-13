@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 
-class MonthPickerDialog extends StatefulWidget {
+class AppMonthPickerDialog extends StatefulWidget {
   final DateTime initialDate;
 
-  const MonthPickerDialog({
+  const AppMonthPickerDialog({
     super.key,
     required this.initialDate,
   });
 
   @override
-  State<MonthPickerDialog> createState() => _MonthPickerDialogState();
+  State<AppMonthPickerDialog> createState() => _AppMonthPickerDialogState();
 }
 
-class _MonthPickerDialogState extends State<MonthPickerDialog> {
+class _AppMonthPickerDialogState extends State<AppMonthPickerDialog> {
   late int _selectedYear;
   late int _selectedMonth;
 
@@ -59,7 +59,6 @@ class _MonthPickerDialogState extends State<MonthPickerDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Title
             Text(
               'Select Month',
               style: TextStyle(
@@ -69,8 +68,6 @@ class _MonthPickerDialogState extends State<MonthPickerDialog> {
               ),
             ),
             const SizedBox(height: 16),
-
-            // Year Selector Row
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -101,8 +98,6 @@ class _MonthPickerDialogState extends State<MonthPickerDialog> {
               ],
             ),
             const SizedBox(height: 16),
-
-            // Month Grid
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -151,8 +146,6 @@ class _MonthPickerDialogState extends State<MonthPickerDialog> {
               },
             ),
             const SizedBox(height: 16),
-
-            // Cancel Button
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(

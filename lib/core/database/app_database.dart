@@ -5,6 +5,7 @@ import 'package:sqflite/sqflite.dart';
 import 'migrations/migration_v1.dart';
 import 'migrations/migration_v4.dart';
 import 'migrations/migration_v5.dart';
+import 'migrations/migration_v6.dart';
 
 /// Application SQLite database
 class AppDatabase {
@@ -32,7 +33,7 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 5,
+      version: 6,
       onConfigure: (db) async {
         await db.execute(
           'PRAGMA foreign_keys = ON',
@@ -42,6 +43,7 @@ class AppDatabase {
         await MigrationV1.run(db);
         await MigrationV4.run(db);
         await MigrationV5.run(db);
+        await MigrationV6.run(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 4) {
@@ -49,6 +51,9 @@ class AppDatabase {
         }
         if (oldVersion < 5) {
           await MigrationV5.run(db);
+        }
+        if (oldVersion < 6) {
+          await MigrationV6.run(db);
         }
       },
       onOpen: (db) async {
