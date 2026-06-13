@@ -72,6 +72,15 @@ class FakeWalletRepository implements WalletRepository {
   Future<void> createCategory(int localUserId, BudgetCategoryEntity category) async {}
   @override
   Future<void> updateCategory(int localUserId, BudgetCategoryEntity category) async {}
+
+  @override
+  Future<bool> hasWalletData(int userId) async => false;
+  @override
+  Future<bool> hasAccounts(int userId) async => false;
+  @override
+  Future<bool> hasGoals(int userId) async => false;
+  @override
+  Future<bool> hasCategories(int userId) async => false;
 }
 
 class FakeAuthRepository implements AuthRepository {

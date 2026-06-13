@@ -1,8 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-
-import '../../../auth/presentation/screens/start_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:spend_io_app/core/startup/startup_coordinator.dart';
+import 'package:spend_io_app/core/startup/startup_result.dart';
+import 'package:spend_io_app/features/auth/presentation/screens/start_screen.dart';
+import 'package:spend_io_app/features/navigation/presentation/screens/navigation_entry.dart';
+import 'package:spend_io_app/features/onboarding/presentation/screens/onboarding_flow_screen.dart';
 
 /// initial splash screen
 class SplashScreen extends StatefulWidget {
@@ -20,19 +24,48 @@ class _SplashScreenState extends State<SplashScreen> {
     startApp();
   }
 
-  /// navigate to onboarding
-  void startApp() {
-    Timer(
-      const Duration(seconds: 2),
-      () {
+  /// navigate based on coordinator resolution
+  Future<void> startApp() async {
+    final startTime = DateTime.now();
+
+    final startupCoordinator = context.read<StartupCoordinator>();
+    final result = await startupCoordinator.resolve();
+
+    final elapsed = DateTime.now().difference(startTime);
+    const minDuration = Duration(seconds: 2);
+    if (elapsed < minDuration) {
+      await Future.delayed(minDuration - elapsed);
+    }
+
+    if (!mounted) return;
+
+    switch (result) {
+      case StartupResult.login:
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (_) => const StartScreen(),
           ),
         );
-      },
-    );
+        break;
+      case StartupResult.onboarding:
+        final email = startupCoordinator.authProvider.currentUser?.email ?? '';
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OnboardingFlowScreen(userEmail: email),
+          ),
+        );
+        break;
+      case StartupResult.home:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const NavigationEntry(),
+          ),
+        );
+        break;
+    }
   }
 
   @override

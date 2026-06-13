@@ -87,6 +87,21 @@ class FakeLocalDataSource implements WalletLocalDataSource {
     categoriesDb.removeWhere((c) => c.id == category.id);
     categoriesDb.add(category);
   }
+
+  @override
+  Future<bool> hasAccounts(int userId) async {
+    return accountsDb.where((a) => a.userId == userId && a.deletedAt == null).isNotEmpty;
+  }
+
+  @override
+  Future<bool> hasGoals(int userId) async {
+    return goalsDb.isNotEmpty;
+  }
+
+  @override
+  Future<bool> hasCategories(int userId) async {
+    return categoriesDb.isNotEmpty;
+  }
 }
 
 class FakeRemoteDataSource implements WalletRemoteDataSource {
@@ -370,6 +385,82 @@ void main() {
 
       // Verify remote updated
       expect(remoteDataSource.firestoreDb.first.deletedAt, isNull);
+    });
+  });
+
+  group('WalletRepositoryImpl Existence Checks and Wallet Data Tests', () {
+    setUp(() {
+      localDataSource.accountsDb.clear();
+      localDataSource.goalsDb.clear();
+      localDataSource.categoriesDb.clear();
+    });
+
+    test('hasWalletData() trả về false khi không có bất kỳ dữ liệu nào', () async {
+      final result = await repository.hasWalletData(1);
+      expect(result, isFalse);
+    });
+
+    test('hasWalletData() trả về true khi chỉ có accounts hoạt động', () async {
+      localDataSource.accountsDb.add(AccountModel(
+        id: 'acc_1',
+        userId: 1,
+        name: 'Main Cash',
+        type: AccountType.cash,
+        balance: 100.0,
+        icon: Icons.wallet,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ));
+
+      expect(await repository.hasAccounts(1), isTrue);
+      expect(await repository.hasWalletData(1), isTrue);
+    });
+
+    test('hasWalletData() trả về false khi tài khoản duy nhất bị soft delete', () async {
+      localDataSource.accountsDb.add(AccountModel(
+        id: 'acc_1',
+        userId: 1,
+        name: 'Deleted Cash',
+        type: AccountType.cash,
+        balance: 100.0,
+        icon: Icons.wallet,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        deletedAt: DateTime.now(),
+      ));
+
+      expect(await repository.hasAccounts(1), isFalse);
+      expect(await repository.hasWalletData(1), isFalse);
+    });
+
+    test('hasWalletData() trả về true khi có savings goals', () async {
+      localDataSource.goalsDb.add(SavingGoalModel(
+        id: 'goal_1',
+        name: 'New Car',
+        currentAmount: 10.0,
+        targetAmount: 100.0,
+        estimatedDate: DateTime.now(),
+        icon: Icons.car_rental,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ));
+
+      expect(await repository.hasGoals(1), isTrue);
+      expect(await repository.hasWalletData(1), isTrue);
+    });
+
+    test('hasWalletData() trả về true khi có budget categories', () async {
+      localDataSource.categoriesDb.add(BudgetCategoryModel(
+        id: 'cat_1',
+        name: 'Food',
+        spent: 50.0,
+        budget: 500.0,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ));
+
+      expect(await repository.hasCategories(1), isTrue);
+      expect(await repository.hasWalletData(1), isTrue);
     });
   });
 }

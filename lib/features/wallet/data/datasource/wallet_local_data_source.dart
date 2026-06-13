@@ -22,6 +22,10 @@ abstract class WalletLocalDataSource {
   Future<List<BudgetCategoryModel>> getCategories(int userId);
   Future<void> insertCategory(int userId, BudgetCategoryModel category);
   Future<void> updateCategory(int userId, BudgetCategoryModel category);
+
+  Future<bool> hasAccounts(int userId);
+  Future<bool> hasGoals(int userId);
+  Future<bool> hasCategories(int userId);
 }
 
 class WalletLocalDataSourceImpl implements WalletLocalDataSource {
@@ -185,5 +189,38 @@ class WalletLocalDataSourceImpl implements WalletLocalDataSource {
       where: 'id = ? AND user_id = ?',
       whereArgs: [category.id, userId],
     );
+  }
+
+  @override
+  Future<bool> hasAccounts(int userId) async {
+    final db = await _db;
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) as count FROM wallets WHERE user_id = ? AND deleted_at IS NULL',
+      [userId],
+    );
+    final count = Sqflite.firstIntValue(result) ?? 0;
+    return count > 0;
+  }
+
+  @override
+  Future<bool> hasGoals(int userId) async {
+    final db = await _db;
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) as count FROM financial_goals WHERE user_id = ?',
+      [userId],
+    );
+    final count = Sqflite.firstIntValue(result) ?? 0;
+    return count > 0;
+  }
+
+  @override
+  Future<bool> hasCategories(int userId) async {
+    final db = await _db;
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) as count FROM budget_categories WHERE user_id = ?',
+      [userId],
+    );
+    final count = Sqflite.firstIntValue(result) ?? 0;
+    return count > 0;
   }
 }

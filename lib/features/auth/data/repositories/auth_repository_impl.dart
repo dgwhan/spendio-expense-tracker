@@ -156,85 +156,69 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<UserEntity?> getCurrentUser() async {
-    final firebaseUser = fb.FirebaseAuth.instance.currentUser;
-    if (firebaseUser == null) return null;
+    final firebaseUser = remoteDatasource.currentUser;
+    if (firebaseUser == null || firebaseUser.email == null) return null;
 
-    final email = firebaseUser.email;
-    if (email == null) return null;
-
-    // Try finding the user in local SQLite DB first
-    final dbUsers = await localDatasource.getAllUsers();
-    UserModel? localUser;
-    for (final u in dbUsers) {
-      if (u.email == email) {
-        localUser = u;
-        break;
-      }
-    }
-
-    // If not found locally, create a default local Model
-    localUser ??= UserModel(
-      id: null,
-      email: email,
-      password: '',
-      displayName: firebaseUser.displayName ?? email.split('@').first,
-      createdAt: DateTime.now(),
+    final email = firebaseUser.email!;
+    final users = await localDatasource.getAllUsers();
+    final localUser = users.cast<UserModel?>().firstWhere(
+      (u) => u?.email == email,
+      orElse: () => null,
     );
 
-    // Sync profile from Firestore if online
-    Map<String, dynamic>? userData;
+    if (localUser != null) {
+      return localUser.toEntity();
+    }
+
+    // Local record is missing, download Firestore profile
+    Map<String, dynamic> userData = {};
     double? walletBalance;
+    bool exists = false;
+
     try {
       final profileSnap = await remoteDatasource
           .getUserProfile(uid: firebaseUser.uid)
           .timeout(const Duration(seconds: 3));
 
       if (profileSnap.exists) {
-        userData = profileSnap.data();
+        exists = true;
+        userData = profileSnap.data()!;
         walletBalance = await remoteDatasource
             .getWalletBalance(uid: firebaseUser.uid)
             .timeout(const Duration(seconds: 2));
       }
     } catch (e) {
-      debugPrint("===> Error fetching remote profile in getCurrentUser: $e");
+      debugPrint("Failed to load user profile in getCurrentUser: $e");
     }
 
-    if (userData != null) {
-      final syncedModel = UserModel(
-        id: localUser.id,
-        email: email,
-        password: localUser.password.isNotEmpty ? localUser.password : '',
-        displayName: userData['display_name'] ?? localUser.displayName ?? email.split('@').first,
-        occupation: userData['occupation'] as String? ?? localUser.occupation,
-        financialGoal: userData['financial_goal'] as String? ?? localUser.financialGoal,
-        currency: userData['currency_code'] as String? ?? localUser.currency,
-        onboardingCompleted: userData['onboarding_completed'] == 1,
-        createdAt: userData['created_at'] != null
-            ? DateTime.parse(userData['created_at'] as String)
-            : localUser.createdAt,
-      );
-
-      await localDatasource.syncUserFromFirebase(syncedModel, walletBalance: walletBalance);
+    if (!exists) {
+      return null;
     }
 
-    // Retrieve updated user to get accurate database ID and values
-    final updatedDbUsers = await localDatasource.getAllUsers();
-    final updatedLocalUser = updatedDbUsers.firstWhere(
-      (u) => u.email == email,
-      orElse: () => localUser!,
+    // Sync to SQLite
+    final localModel = UserModel(
+      email: email,
+      password: '',
+      displayName: userData['display_name'] ?? email.split('@').first,
+      occupation: userData['occupation'] as String?,
+      financialGoal: userData['financial_goal'] as String?,
+      currency: userData['currency_code'] as String?,
+      onboardingCompleted: userData['onboarding_completed'] == 1,
+      createdAt: userData['created_at'] != null
+          ? DateTime.parse(userData['created_at'] as String)
+          : DateTime.now(),
     );
 
-    return UserEntity(
-      id: updatedLocalUser.id,
-      email: updatedLocalUser.email,
-      password: updatedLocalUser.password,
-      occupation: updatedLocalUser.occupation,
-      financialGoal: updatedLocalUser.financialGoal,
-      currency: updatedLocalUser.currency,
-      onboardingCompleted: updatedLocalUser.onboardingCompleted,
+    await localDatasource.syncUserFromFirebase(localModel, walletBalance: walletBalance);
+
+    final dbUsers = await localDatasource.getAllUsers();
+    final syncedUser = dbUsers.cast<UserModel?>().firstWhere(
+      (u) => u?.email == email,
+      orElse: () => null,
     );
+
+    return syncedUser?.toEntity();
   }
-
 
   @override
   Future<void> logout() async {

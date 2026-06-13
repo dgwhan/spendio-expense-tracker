@@ -45,4 +45,9 @@ abstract class WalletRepository {
 
   /// Đồng bộ hóa thủ công với Firebase Firestore
   Future<void> syncWithFirebase(int localUserId, String remoteUid);
+
+  Future<bool> hasWalletData(int userId);
+  Future<bool> hasAccounts(int userId);
+  Future<bool> hasGoals(int userId);
+  Future<bool> hasCategories(int userId);
 }

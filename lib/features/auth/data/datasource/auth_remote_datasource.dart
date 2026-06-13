@@ -5,6 +5,8 @@ class AuthRemoteDatasource {
   final fb.FirebaseAuth _auth = fb.FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  fb.User? get currentUser => _auth.currentUser;
+
   /// Đăng ký tài khoản Firebase và tạo profile Firestore
   Future<fb.UserCredential> registerUser({
     required String email,

@@ -18,9 +18,11 @@ import '../../../features/auth/data/datasource/auth_local_datasource.dart';
 import '../../../features/auth/data/datasource/auth_remote_datasource.dart';
 import '../../../features/auth/data/repositories/auth_repository_impl.dart';
 import '../../../features/auth/domain/usecases/check_email_usecase.dart';
+import '../../../features/auth/domain/usecases/get_current_user_usecase.dart';
 import '../../../features/auth/presentation/viewmodels/register_form_viewmodel.dart';
 import '../../../features/auth/presentation/viewmodels/login_form_viewmodel.dart';
 import '../../../features/auth/presentation/providers/auth_provider.dart';
+import '../core/startup/startup_coordinator.dart';
 
 // WALLET LAYER
 import '../../../features/wallet/data/datasource/wallet_local_data_source.dart';
@@ -36,6 +38,7 @@ import '../../../features/wallet/domain/usecases/restore_account_usecase.dart';
 import '../../../features/wallet/domain/usecases/add_goal_usecase.dart';
 import '../../../features/wallet/domain/usecases/get_categories_usecase.dart';
 import '../../../features/wallet/domain/usecases/initialize_budget_categories_usecase.dart';
+import '../../../features/wallet/domain/usecases/check_wallet_initialization_usecase.dart';
 
 class AppProviders {
   AppProviders._();
@@ -92,6 +95,10 @@ class AppProviders {
           update: (_, repo, __) => CheckEmailUseCase(repo),
         ),
 
+        ProxyProvider<AuthRepositoryImpl, GetCurrentUserUseCase>(
+          update: (_, repo, __) => GetCurrentUserUseCase(repo),
+        ),
+
         ProxyProvider<OnboardingRepositoryImpl, SaveOnboardingUseCase>(
           update: (_, repo, __) => SaveOnboardingUseCase(repository: repo),
         ),
@@ -134,6 +141,10 @@ class AppProviders {
         ),
         ProxyProvider<WalletRepositoryImpl, InitializeBudgetCategoriesUseCase>(
           update: (_, repo, __) => InitializeBudgetCategoriesUseCase(repo),
+        ),
+
+        ProxyProvider<WalletRepositoryImpl, CheckWalletInitializationUseCase>(
+          update: (_, repo, __) => CheckWalletInitializationUseCase(repo),
         ),
 
         // ==============================================================
@@ -185,6 +196,15 @@ class AppProviders {
           ),
           update: (_, repo, provider) =>
               provider ?? AuthProvider(repository: repo),
+        ),
+
+        // Startup Coordinator
+        ProxyProvider2<AuthProvider, CheckWalletInitializationUseCase, StartupCoordinator>(
+          update: (context, authProvider, checkWalletInit, __) => StartupCoordinator(
+            authProvider: authProvider,
+            checkWalletInitializationUseCase: checkWalletInit,
+            getCurrentUserUseCase: context.read<GetCurrentUserUseCase>(),
+          ),
         ),
 
         // Wallet VM 

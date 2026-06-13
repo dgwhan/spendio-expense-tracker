@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:spend_io_app/features/navigation/presentation/screens/navigation_entry.dart';
-import 'package:spend_io_app/features/onboarding/presentation/screens/onboarding_flow_screen.dart';
+import 'package:spend_io_app/features/splash/presentation/screens/splash_screen.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/text_styles.dart';
@@ -22,7 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
-  bool _rememberMe = false;
+
 
   @override
   void initState() {
@@ -42,8 +41,6 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> login() async {
     final authProvider = context.read<AuthProvider>();
 
-    final emailText = emailController.text.trim();
-
     final success = await authProvider.login(
       email: emailController.text.trim(),
       password: passwordController.text.trim(),
@@ -52,28 +49,13 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (success) {
-      final user = authProvider.currentUser;
-      if (user == null ||
-          user.financialGoal == null ||
-          user.onboardingCompleted == false) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder: (_) => OnboardingFlowScreen(
-              userEmail: emailText,
-            ),
-          ),
-          (route) => false,
-        );
-      } else {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const NavigationEntry(),
-          ),
-          (route) => false,
-        );
-      }
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const SplashScreen(),
+        ),
+        (route) => false,
+      );
       return;
     }
 
@@ -184,41 +166,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 20),
 
-              // ================= REMEMBER ME =================
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: Checkbox(
-                          value: _rememberMe,
-                          activeColor: AppColors.primary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          onChanged: (value) {
-                            setState(() {
-                              _rememberMe = value ?? false;
-                            });
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  GestureDetector(
-                    onTap: () {},
-                    child: Text(
-                      'Forgot password?',
-                      style: TextStyles.bodyMedium(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
+              // ================= FORGOT PASSWORD =================
+              Align(
+                alignment: Alignment.centerRight,
+                child: GestureDetector(
+                  onTap: () {},
+                  child: Text(
+                    'Forgot password?',
+                    style: TextStyles.bodyMedium(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                ],
+                ),
               ),
 
               const SizedBox(height: 32),

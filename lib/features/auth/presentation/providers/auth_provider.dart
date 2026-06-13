@@ -93,32 +93,54 @@ class AuthProvider extends ChangeNotifier {
 
   /// Load current user session
   Future<void> loadSession() async {
-    isLoading = true;
-    notifyListeners();
     try {
-      final user = await repository.getCurrentUser();
-      if (user != null) {
+      isLoading = true;
+      notifyListeners();
+
+      final result = await repository.getCurrentUser();
+
+      if (result != null) {
         currentUser = UserModel(
-          id: user.id,
-          email: user.email,
-          password: user.password,
-          displayName: user.email.split('@').first,
-          occupation: user.occupation,
-          financialGoal: user.financialGoal,
-          currency: user.currency,
-          onboardingCompleted: user.onboardingCompleted,
+          id: result.id,
+          email: result.email,
+          password: result.password,
+          displayName: result.email.split('@').first,
+          occupation: result.occupation,
+          financialGoal: result.financialGoal,
+          currency: result.currency,
+          onboardingCompleted: result.onboardingCompleted,
           createdAt: DateTime.now(),
         );
       } else {
         currentUser = null;
       }
     } catch (e) {
-      debugPrint("Error loading session: $e");
+      debugPrint("Lỗi tại AuthProvider.loadSession: $e");
       currentUser = null;
     } finally {
       isLoading = false;
       notifyListeners();
     }
+  }
+
+  /// Set user helper
+  void setCurrentUser(UserEntity? user) {
+    if (user != null) {
+      currentUser = UserModel(
+        id: user.id,
+        email: user.email,
+        password: user.password,
+        displayName: user.email.split('@').first,
+        occupation: user.occupation,
+        financialGoal: user.financialGoal,
+        currency: user.currency,
+        onboardingCompleted: user.onboardingCompleted,
+        createdAt: DateTime.now(),
+      );
+    } else {
+      currentUser = null;
+    }
+    notifyListeners();
   }
 
   /// Tải lại thông tin User hiện tại từ database

@@ -247,4 +247,27 @@ class WalletRepositoryImpl implements WalletRepository {
     final model = BudgetCategoryModel.fromEntity(category);
     await localDataSource.updateCategory(localUserId, model);
   }
+
+  @override
+  Future<bool> hasWalletData(int userId) async {
+    final accounts = await hasAccounts(userId);
+    final goals = await hasGoals(userId);
+    final categories = await hasCategories(userId);
+    return accounts || goals || categories;
+  }
+
+  @override
+  Future<bool> hasAccounts(int userId) {
+    return localDataSource.hasAccounts(userId);
+  }
+
+  @override
+  Future<bool> hasGoals(int userId) {
+    return localDataSource.hasGoals(userId);
+  }
+
+  @override
+  Future<bool> hasCategories(int userId) {
+    return localDataSource.hasCategories(userId);
+  }
 }
