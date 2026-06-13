@@ -6,7 +6,9 @@ import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/accounts/account_details_bottom_sheet.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/accounts/accounts_section.dart';
+import 'package:spend_io_app/features/wallet/presentation/screen/account_list_screen.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/accounts/add_account_bottom_sheet.dart';
+import 'package:spend_io_app/features/wallet/presentation/widgets/accounts/edit_account_bottom_sheet.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/budget/budget_section.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/goals/goals_section.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/goals/add_goal_bottom_sheet.dart';
@@ -181,28 +183,50 @@ class _WalletScreenState extends State<WalletScreen> {
                 // Phase 02: My Accounts (Hiển thị danh sách ví tài khoản)
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
-                  sliver: SliverToBoxAdapter(
-                    child: AccountsSection(
-                      accounts: viewModel.accounts,
-                      onAddAccount: () {
+                  sliver: AccountsSection(
+                    accounts: viewModel.accounts,
+                    onViewAll: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AccountListScreen(),
+                        ),
+                      );
+                    },
+                    onAccountTap: (account) async {
+                      final result = await showModalBottomSheet<String>(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) =>
+                            AccountDetailsBottomSheet(account: account),
+                      );
+
+                      if (!context.mounted) return;
+
+                      if (result == 'edit') {
                         showModalBottomSheet(
                           context: context,
                           isScrollControlled: true,
                           backgroundColor: Colors.transparent,
-                          builder: (_) =>
-                              AddAccountBottomSheet(viewModel: viewModel),
+                          builder: (_) => EditAccountBottomSheet(
+                            viewModel: viewModel,
+                            account: account,
+                          ),
                         );
-                      },
-                      onAccountTap: (account) {
-                        showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (_) =>
-                              AccountDetailsBottomSheet(account: account),
-                        );
-                      },
-                    ),
+                      } else if (result == 'delete') {
+                        viewModel.deleteAccount(account.id).then((_) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Account deleted successfully!'),
+                                backgroundColor: Colors.redAccent,
+                              ),
+                            );
+                          }
+                        });
+                      }
+                    },
                   ),
                 ),
 
@@ -214,9 +238,7 @@ class _WalletScreenState extends State<WalletScreen> {
                     AppSizes.md, // Right
                     0, // Bottom
                   ),
-                  sliver: SliverToBoxAdapter(
-                    child: GoalsSection(),
-                  ),
+                  sliver: GoalsSection(),
                 ),
                 const SliverToBoxAdapter(child: SizedBox(height: AppSizes.xl)),
               ],

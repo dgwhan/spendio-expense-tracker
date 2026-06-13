@@ -28,7 +28,10 @@ import '../../../features/wallet/data/repositories/wallet_repository_impl.dart';
 import '../../../features/wallet/domain/usecases/get_wallet_summary_usecase.dart';
 import '../../../features/wallet/domain/usecases/get_accounts_usecase.dart';
 import '../../../features/wallet/domain/usecases/get_goals_usecase.dart';
-import '../../../features/wallet/domain/usecases/add_account_usecase.dart';
+import '../../../features/wallet/domain/usecases/create_account_usecase.dart';
+import '../../../features/wallet/domain/usecases/update_account_usecase.dart';
+import '../../../features/wallet/domain/usecases/delete_account_usecase.dart';
+import '../../../features/wallet/domain/usecases/restore_account_usecase.dart';
 import '../../../features/wallet/domain/usecases/add_goal_usecase.dart';
 import '../../../features/wallet/domain/usecases/get_categories_usecase.dart';
 import '../../../features/wallet/domain/usecases/initialize_budget_categories_usecase.dart';
@@ -110,8 +113,17 @@ class AppProviders {
         ProxyProvider<WalletRepositoryImpl, GetGoalsUseCase>(
           update: (_, repo, __) => GetGoalsUseCase(repo),
         ),
-        ProxyProvider<WalletRepositoryImpl, AddAccountUseCase>(
-          update: (_, repo, __) => AddAccountUseCase(repo),
+        ProxyProvider<WalletRepositoryImpl, CreateAccountUseCase>(
+          update: (_, repo, __) => CreateAccountUseCase(repo),
+        ),
+        ProxyProvider<WalletRepositoryImpl, UpdateAccountUseCase>(
+          update: (_, repo, __) => UpdateAccountUseCase(repo),
+        ),
+        ProxyProvider<WalletRepositoryImpl, DeleteAccountUseCase>(
+          update: (_, repo, __) => DeleteAccountUseCase(repo),
+        ),
+        ProxyProvider<WalletRepositoryImpl, RestoreAccountUseCase>(
+          update: (_, repo, __) => RestoreAccountUseCase(repo),
         ),
         ProxyProvider<WalletRepositoryImpl, AddGoalUseCase>(
           update: (_, repo, __) => AddGoalUseCase(repo),
@@ -180,7 +192,10 @@ class AppProviders {
             getWalletSummaryUseCase: context.read<GetWalletSummaryUseCase>(),
             getAccountsUseCase: context.read<GetAccountsUseCase>(),
             getGoalsUseCase: context.read<GetGoalsUseCase>(),
-            addAccountUseCase: context.read<AddAccountUseCase>(),
+            createAccountUseCase: context.read<CreateAccountUseCase>(),
+            updateAccountUseCase: context.read<UpdateAccountUseCase>(),
+            deleteAccountUseCase: context.read<DeleteAccountUseCase>(),
+            restoreAccountUseCase: context.read<RestoreAccountUseCase>(),
             addGoalUseCase: context.read<AddGoalUseCase>(),
             getCategoriesUseCase: context.read<GetCategoriesUseCase>(),
             initializeBudgetCategoriesUseCase: context.read<InitializeBudgetCategoriesUseCase>(),
@@ -190,7 +205,10 @@ class AppProviders {
               getWalletSummaryUseCase: context.read<GetWalletSummaryUseCase>(),
               getAccountsUseCase: context.read<GetAccountsUseCase>(),
               getGoalsUseCase: context.read<GetGoalsUseCase>(),
-              addAccountUseCase: context.read<AddAccountUseCase>(),
+              createAccountUseCase: context.read<CreateAccountUseCase>(),
+              updateAccountUseCase: context.read<UpdateAccountUseCase>(),
+              deleteAccountUseCase: context.read<DeleteAccountUseCase>(),
+              restoreAccountUseCase: context.read<RestoreAccountUseCase>(),
               addGoalUseCase: context.read<AddGoalUseCase>(),
               getCategoriesUseCase: context.read<GetCategoriesUseCase>(),
               initializeBudgetCategoriesUseCase: context.read<InitializeBudgetCategoriesUseCase>(),

@@ -10,11 +10,20 @@ abstract class WalletRepository {
   /// Lấy danh sách toàn bộ tài khoản/ví thành phần
   Future<List<AccountEntity>> getAccounts(int localUserId, String remoteUid, {bool forceSync = false});
 
-  /// Thêm/Cập nhật tài khoản ví
+  /// Thêm/Cập nhật tài khoản ví (deprecated, sử dụng createAccount / updateAccount)
   Future<void> saveAccount(int localUserId, String remoteUid, AccountEntity account);
 
-  /// Xóa tài khoản ví
-  Future<void> deleteAccount(String remoteUid, String accountId);
+  /// Tạo tài khoản ví mới
+  Future<void> createAccount(int localUserId, String remoteUid, AccountEntity account);
+
+  /// Cập nhật tài khoản ví
+  Future<void> updateAccount(int localUserId, String remoteUid, AccountEntity account);
+
+  /// Xóa mềm tài khoản ví
+  Future<void> deleteAccount(int localUserId, String remoteUid, String accountId);
+
+  /// Khôi phục tài khoản ví đã xóa mềm
+  Future<void> restoreAccount(int localUserId, String remoteUid, String accountId);
 
   /// Lấy danh sách các mục tiêu tiết kiệm đang hoạt động
   Future<List<SavingGoalEntity>> getGoals(int localUserId, String remoteUid, {bool forceSync = false});

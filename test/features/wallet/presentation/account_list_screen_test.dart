@@ -2,14 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:spend_io_app/features/auth/data/models/user_model.dart';
-import 'package:spend_io_app/features/auth/domain/entities/user_entity.dart';
-import 'package:spend_io_app/features/auth/domain/repositories/auth_repository.dart';
 import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/account_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/saving_goal_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/budget_category_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/wallet_summary_entity.dart';
-import 'package:spend_io_app/features/wallet/presentation/screen/wallet_screen.dart';
+import 'package:spend_io_app/features/wallet/presentation/screen/account_list_screen.dart';
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/create_account_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/update_account_usecase.dart';
@@ -22,6 +20,8 @@ import 'package:spend_io_app/features/wallet/domain/usecases/get_wallet_summary_
 import 'package:spend_io_app/features/wallet/domain/usecases/get_categories_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/initialize_budget_categories_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/repositories/wallet_repository.dart';
+import 'package:spend_io_app/features/auth/domain/repositories/auth_repository.dart';
+import 'package:spend_io_app/features/auth/domain/entities/user_entity.dart';
 
 class FakeWalletRepository implements WalletRepository {
   @override
@@ -30,9 +30,19 @@ class FakeWalletRepository implements WalletRepository {
       AccountEntity(
         id: '1',
         userId: 1,
-        name: 'Cash',
+        name: 'Chase Checking',
+        type: AccountType.bank,
+        balance: 12450.80,
+        icon: Icons.account_balance,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+      AccountEntity(
+        id: '2',
+        userId: 1,
+        name: 'Cash Wallet',
         type: AccountType.cash,
-        balance: 1000000,
+        balance: 150.00,
         icon: Icons.wallet,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -45,7 +55,7 @@ class FakeWalletRepository implements WalletRepository {
   }
   @override
   Future<WalletSummaryEntity> getSummary(int localUserId) async {
-    return const WalletSummaryEntity(totalAssets: 1000000, monthlyBudget: 500000, totalSaved: 0, activeGoals: 0);
+    return const WalletSummaryEntity(totalAssets: 12600.80, monthlyBudget: 500.0, totalSaved: 0, activeGoals: 0);
   }
   @override
   Future<void> saveAccount(int localUserId, String remoteUid, AccountEntity account) async {}
@@ -90,15 +100,7 @@ class FakeAuthRepository implements AuthRepository {
 }
 
 void main() {
-  testWidgets('Test rendering WalletScreen', (WidgetTester tester) async {
-    // Set a large screen size to prevent lazy-loaded slivers from being off-screen
-    tester.view.physicalSize = const Size(1080, 1920);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(() {
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
-    });
-
+  testWidgets('Test rendering AccountListScreen', (WidgetTester tester) async {
     final repo = FakeWalletRepository();
     final getWalletSummaryUseCase = GetWalletSummaryUseCase(repo);
     final getAccountsUseCase = GetAccountsUseCase(repo);
@@ -133,6 +135,9 @@ void main() {
       createdAt: DateTime.now(),
     );
 
+    viewModel.updateUser(authProvider.currentUser?.toEntity());
+    await viewModel.initialize();
+
     await tester.pumpWidget(
       MaterialApp(
         home: MultiProvider(
@@ -140,16 +145,26 @@ void main() {
             ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
             ChangeNotifierProvider<WalletViewModel>.value(value: viewModel),
           ],
-          child: const WalletScreen(),
+          child: const AccountListScreen(),
         ),
       ),
     );
 
-    // Wait for all async database initialization flows to settle
     await tester.pumpAndSettle();
 
-    // Expecting to find WalletHeader
-    expect(find.text('Wallet'), findsOneWidget);
+    // Verify screen title and action buttons
     expect(find.text('My Accounts'), findsOneWidget);
+    expect(find.text('Add'), findsOneWidget);
+
+    // Verify the mock accounts are rendered
+    expect(find.text('CHASE CHECKING'), findsNothing); // Should be uppercase type label
+    expect(find.text('BANK'), findsOneWidget);
+    expect(find.text('CASH'), findsOneWidget);
+    
+    expect(find.text('Chase Checking'), findsOneWidget);
+    expect(find.text('Cash Wallet'), findsOneWidget);
+
+    // Verify the DETAILS buttons are rendered
+    expect(find.text('DETAILS >'), findsNWidgets(2));
   });
 }

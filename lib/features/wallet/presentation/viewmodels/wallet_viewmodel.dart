@@ -7,7 +7,10 @@ import 'package:spend_io_app/features/wallet/domain/entities/budget_category_ent
 import 'package:spend_io_app/features/wallet/domain/entities/financial_health_status.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/saving_goal_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/wallet_summary_entity.dart';
-import 'package:spend_io_app/features/wallet/domain/usecases/add_account_usecase.dart';
+import 'package:spend_io_app/features/wallet/domain/usecases/create_account_usecase.dart';
+import 'package:spend_io_app/features/wallet/domain/usecases/update_account_usecase.dart';
+import 'package:spend_io_app/features/wallet/domain/usecases/delete_account_usecase.dart';
+import 'package:spend_io_app/features/wallet/domain/usecases/restore_account_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/add_goal_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/get_accounts_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/get_goals_usecase.dart';
@@ -19,7 +22,10 @@ class WalletViewModel extends ChangeNotifier {
   final GetWalletSummaryUseCase getWalletSummaryUseCase;
   final GetAccountsUseCase getAccountsUseCase;
   final GetGoalsUseCase getGoalsUseCase;
-  final AddAccountUseCase addAccountUseCase;
+  final CreateAccountUseCase createAccountUseCase;
+  final UpdateAccountUseCase updateAccountUseCase;
+  final DeleteAccountUseCase deleteAccountUseCase;
+  final RestoreAccountUseCase restoreAccountUseCase;
   final AddGoalUseCase addGoalUseCase;
   final GetCategoriesUseCase getCategoriesUseCase;
   final InitializeBudgetCategoriesUseCase initializeBudgetCategoriesUseCase;
@@ -28,6 +34,17 @@ class WalletViewModel extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   int? _lastUserId;
+
+  // Dedicated CRUD states
+  bool _isCreatingAccount = false;
+  bool _isUpdatingAccount = false;
+  bool _isDeletingAccount = false;
+  bool _isRestoringAccount = false;
+
+  String? _createAccountError;
+  String? _updateAccountError;
+  String? _deleteAccountError;
+  String? _restoreAccountError;
 
   WalletSummaryEntity _summary = const WalletSummaryEntity(
     totalAssets: 0.0,
@@ -44,7 +61,10 @@ class WalletViewModel extends ChangeNotifier {
     required this.getWalletSummaryUseCase,
     required this.getAccountsUseCase,
     required this.getGoalsUseCase,
-    required this.addAccountUseCase,
+    required this.createAccountUseCase,
+    required this.updateAccountUseCase,
+    required this.deleteAccountUseCase,
+    required this.restoreAccountUseCase,
     required this.addGoalUseCase,
     required this.getCategoriesUseCase,
     required this.initializeBudgetCategoriesUseCase,
@@ -56,6 +76,16 @@ class WalletViewModel extends ChangeNotifier {
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+
+  bool get isCreatingAccount => _isCreatingAccount;
+  bool get isUpdatingAccount => _isUpdatingAccount;
+  bool get isDeletingAccount => _isDeletingAccount;
+  bool get isRestoringAccount => _isRestoringAccount;
+
+  String? get createAccountError => _createAccountError;
+  String? get updateAccountError => _updateAccountError;
+  String? get deleteAccountError => _deleteAccountError;
+  String? get restoreAccountError => _restoreAccountError;
 
   WalletSummaryEntity get summary => _summary;
   List<AccountEntity> get accounts => _accounts;
@@ -111,6 +141,20 @@ class WalletViewModel extends ChangeNotifier {
         await loadAccounts(localId);
         await loadGoals(localId);
         await loadCategories(localId);
+        
+        // Notify immediately after local load to ensure UI renders instantly
+        _isLoading = false;
+        notifyListeners();
+
+        // Background sync and refresh UI with synced data
+        final remoteUid = _remoteUid;
+        if (remoteUid.isNotEmpty) {
+          await getAccountsUseCase.repository.syncWithFirebase(localId, remoteUid);
+          await loadSummary(localId);
+          await loadAccounts(localId);
+          await loadGoals(localId);
+          notifyListeners();
+        }
       } else {
         _summary = const WalletSummaryEntity(
           totalAssets: 0.0,
@@ -121,16 +165,18 @@ class WalletViewModel extends ChangeNotifier {
         _accounts = [];
         _goals = [];
         _categories = [];
+        _isLoading = false;
+        notifyListeners();
       }
     } catch (e) {
       _errorMessage = e.toString();
-      debugPrint('WalletViewModel.initialize: error: $e');
-    } finally {
       _isLoading = false;
+      debugPrint('WalletViewModel.initialize: error: $e');
+      notifyListeners();
+    } finally {
       sw.stop();
       debugPrint(
           'WalletViewModel.initialize: finished in ${sw.elapsedMilliseconds}ms');
-      notifyListeners();
     }
   }
 
@@ -171,21 +217,99 @@ class WalletViewModel extends ChangeNotifier {
     await initialize();
   }
 
-  /// Thêm ví tài khoản mới
+  /// Thêm ví tài khoản mới (Backward compatible)
   Future<void> addNewAccount(AccountEntity account) async {
+    await createAccount(account);
+  }
+
+  /// Tạo tài khoản mới
+  Future<void> createAccount(AccountEntity account) async {
     if (_currentUser == null) return;
     final localId = _currentUser!.id ?? 1;
-    final remoteUid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final remoteUid = _remoteUid;
 
-    _isLoading = true;
+    _isCreatingAccount = true;
+    _createAccountError = null;
     notifyListeners();
 
     try {
-      await addAccountUseCase(localId, remoteUid, account);
-      await initialize();
+      await createAccountUseCase(localId, remoteUid, account);
+      await loadAccounts(localId);
+      await loadSummary(localId);
     } catch (e) {
-      _errorMessage = e.toString();
-      _isLoading = false;
+      _createAccountError = e.toString();
+      debugPrint('Error creating account: $e');
+    } finally {
+      _isCreatingAccount = false;
+      notifyListeners();
+    }
+  }
+
+  /// Cập nhật tài khoản ví
+  Future<void> updateAccount(AccountEntity account) async {
+    if (_currentUser == null) return;
+    final localId = _currentUser!.id ?? 1;
+    final remoteUid = _remoteUid;
+
+    _isUpdatingAccount = true;
+    _updateAccountError = null;
+    notifyListeners();
+
+    try {
+      await updateAccountUseCase(localId, remoteUid, account);
+      await loadAccounts(localId);
+      await loadSummary(localId);
+    } catch (e) {
+      _updateAccountError = e.toString();
+      debugPrint('Error updating account: $e');
+    } finally {
+      _isUpdatingAccount = false;
+      notifyListeners();
+    }
+  }
+
+  /// Xóa mềm tài khoản ví
+  Future<void> deleteAccount(String accountId) async {
+    if (_currentUser == null) return;
+    final localId = _currentUser!.id ?? 1;
+    final remoteUid = _remoteUid;
+
+    _isDeletingAccount = true;
+    _deleteAccountError = null;
+    notifyListeners();
+
+    try {
+      await deleteAccountUseCase(localId, remoteUid, accountId);
+      await loadAccounts(localId);
+      await loadSummary(localId);
+    } catch (e) {
+      _deleteAccountError = e.toString();
+      debugPrint('Error deleting account: $e');
+    } finally {
+      _isDeletingAccount = false;
+      notifyListeners();
+    }
+  }
+
+  /// Khôi phục tài khoản ví
+  Future<void> restoreAccount(String accountId) async {
+    if (_currentUser == null) return;
+    final localId = _currentUser!.id ?? 1;
+    final remoteUid = _remoteUid;
+
+    _isRestoringAccount = true;
+    _restoreAccountError = null;
+    notifyListeners();
+
+    try {
+      await restoreAccountUseCase(localId, remoteUid, accountId);
+      await loadAccounts(localId);
+      await loadSummary(localId);
+    } catch (e) {
+      _restoreAccountError = e.toString();
+      debugPrint('Error restoring account: $e');
+    } finally {
+      _isRestoringAccount = false;
       notifyListeners();
     }
   }

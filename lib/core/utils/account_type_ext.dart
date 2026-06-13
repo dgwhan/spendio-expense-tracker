@@ -11,6 +11,8 @@ extension AccountTypeExt on AccountType {
         return AppColors.cashAccount;
       case AccountType.eWallet:
         return AppColors.eWalletAccount;
+      case AccountType.savingsAccount:
+        return AppColors.savings;
       default:
         return AppColors.defaultAccount;
     }
@@ -28,6 +30,8 @@ extension AccountTypeExt on AccountType {
         return 'Credit Card';
       case AccountType.eWallet:
         return 'E-Wallet';
+      case AccountType.savingsAccount:
+        return 'Savings Account';
     }
   }
 }

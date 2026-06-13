@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_radius.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/core/utils/account_type_ext.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/account_entity.dart';
+import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
+import 'edit_account_bottom_sheet.dart';
 
 class AccountDetailsBottomSheet extends StatelessWidget {
   final AccountEntity account;
@@ -147,6 +150,29 @@ class AccountDetailsBottomSheet extends StatelessWidget {
             'bgColor': isDark ? Colors.amber.shade900.withValues(alpha: 0.2) : Colors.amber.shade50,
           },
         ];
+      case AccountType.savingsAccount:
+        return [
+          {
+            'title': 'Interest Payment',
+            'category': 'Income',
+            'amount': 250000.0,
+            'date': now.subtract(const Duration(days: 1)),
+            'isExpense': false,
+            'icon': Icons.trending_up,
+            'color': isDark ? Colors.teal.shade400 : Colors.teal.shade800,
+            'bgColor': isDark ? Colors.teal.shade900.withValues(alpha: 0.2) : Colors.teal.shade50,
+          },
+          {
+            'title': 'Monthly Transfer',
+            'category': 'Income',
+            'amount': 2000000.0,
+            'date': now.subtract(const Duration(days: 15)),
+            'isExpense': false,
+            'icon': Icons.savings,
+            'color': isDark ? Colors.purple.shade400 : Colors.purple.shade800,
+            'bgColor': isDark ? Colors.purple.shade900.withValues(alpha: 0.2) : Colors.purple.shade50,
+          },
+        ];
     }
   }
 
@@ -163,6 +189,31 @@ class AccountDetailsBottomSheet extends StatelessWidget {
     } else {
       return DateFormat('MMMM d, yyyy').format(date);
     }
+  }
+
+  void _showDeleteConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return AlertDialog(
+          title: const Text('Delete Account'),
+          content: const Text('Are you sure you want to delete this account?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogCtx),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogCtx); // Pop dialog
+                Navigator.pop(context, 'delete'); // Pop details sheet
+              },
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -313,6 +364,48 @@ class AccountDetailsBottomSheet extends StatelessWidget {
                         ),
                       ],
                     ),
+                  ),
+                  const SizedBox(height: AppSizes.md),
+
+                  // Edit & Delete Actions
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context, 'edit'); // Close details sheet
+                          },
+                          icon: const Icon(Icons.edit_outlined, size: 18, color: Colors.white),
+                          label: const Text('Edit Account'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                            ),
+                            elevation: 0,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSizes.md),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            _showDeleteConfirmation(context);
+                          },
+                          icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                          label: const Text('Delete', style: TextStyle(color: Colors.red)),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                            ),
+                            side: const BorderSide(color: Colors.red),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: AppSizes.lg),
 

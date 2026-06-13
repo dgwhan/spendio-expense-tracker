@@ -8,73 +8,107 @@ import 'package:spend_io_app/shared/states/section_empty_state.dart';
 
 class AccountsSection extends StatelessWidget {
   final List<AccountEntity> accounts;
-  final VoidCallback? onAddAccount;
+  final VoidCallback onViewAll;
   final Function(AccountEntity)? onAccountTap;
 
   const AccountsSection({
     super.key,
     required this.accounts,
-    this.onAddAccount,
+    required this.onViewAll,
     this.onAccountTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AppSectionHeader(
-          title: 'My Accounts',
-          fontSize: 26,
-          trailing: GestureDetector(
-            onTap: onAddAccount,
-            child: Container(
-              padding: const EdgeInsets.all(AppSizes.sm * 1.2),
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 4,
-                    offset: Offset(0, 2),
-                  ),
-                ],
+    if (accounts.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppSectionHeader(
+              title: 'My Accounts',
+              fontSize: 26,
+              actionLabel: 'View All',
+              onActionTap: onViewAll,
+            ),
+            const SizedBox(height: AppSizes.lg),
+            SectionEmptyState(
+              title: 'No Accounts Yet',
+              subtitle: 'Add your first account\nto start tracking money.',
+              icon: Icons.account_balance_wallet_outlined,
+              actionLabel: 'Add Your First Account',
+              onActionTap: onViewAll,
+            ),
+          ],
+        ),
+      );
+    }
+
+    final displayLimit = accounts.length > 3 ? 3 : accounts.length;
+    final showMoreIndicator = accounts.length > 3;
+    final childCount = 1 + displayLimit + (showMoreIndicator ? 1 : 0);
+
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          if (index == 0) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: AppSizes.lg),
+              child: AppSectionHeader(
+                title: 'My Accounts',
+                fontSize: 26,
+                actionLabel: 'View All',
+                onActionTap: onViewAll,
               ),
-              child: const Icon(
-                Icons.add,
-                color: Colors.white,
-                size: 20,
+            );
+          }
+
+          if (index <= displayLimit) {
+            final account = accounts[index - 1];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: AppSizes.md),
+              child: AccountItemCard(
+                account: account,
+                onTap: () => onAccountTap?.call(account),
+              ),
+            );
+          }
+
+          // More indicator
+          final remaining = accounts.length - 3;
+          return Padding(
+            padding: const EdgeInsets.only(top: AppSizes.xs, bottom: AppSizes.lg),
+            child: InkWell(
+              onTap: onViewAll,
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '+$remaining more account${remaining > 1 ? "s" : ""}',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 16,
+                      color: AppColors.primary,
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ),
-        const SizedBox(height: AppSizes.lg),
-        accounts.isEmpty
-            ? SectionEmptyState(
-                title: 'No Accounts Yet',
-                subtitle: 'Add your first account\nto start tracking money.',
-                icon: Icons.account_balance_wallet_outlined,
-                actionLabel: 'Add Your First Account',
-                onActionTap: onAddAccount,
-              )
-            : ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: EdgeInsets.zero,
-                itemCount: accounts.length,
-                itemBuilder: (context, index) {
-                  final account = accounts[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: AppSizes.md),
-                    child: AccountItemCard(
-                      account: account,
-                      onTap: () => onAccountTap?.call(account),
-                    ),
-                  );
-                },
-              ),
-      ],
+          );
+        },
+        childCount: childCount,
+      ),
     );
   }
 }
+

@@ -24,36 +24,59 @@ class GoalsSection extends StatelessWidget {
     final viewModel = context.watch<WalletViewModel>();
     final liveGoals = viewModel.goals;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AppSectionHeader(
-          title: 'Savings Goals',
-          fontSize: 26,
-          actionLabel: 'Add',
-          onActionTap: () {
-            _showAddGoalDialog(context, viewModel);
-          },
+    if (liveGoals.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppSectionHeader(
+              title: 'Savings Goals',
+              fontSize: 26,
+              actionLabel: 'Add',
+              onActionTap: () {
+                _showAddGoalDialog(context, viewModel);
+              },
+            ),
+            const SizedBox(height: AppSizes.md),
+            SectionEmptyState(
+              title: 'No Saving Goals',
+              subtitle: 'Create a goal and start\nbuilding your future.',
+              icon: Icons.track_changes_outlined,
+              actionLabel: 'Create Goal',
+              onActionTap: () {
+                _showAddGoalDialog(context, viewModel);
+              },
+            ),
+          ],
         ),
-        const SizedBox(height: AppSizes.md),
+      );
+    }
 
-        // XỬ LÝ ĐIỀU KIỆN EMPTY STATE (PR-09)
-        liveGoals.isEmpty
-            ? SectionEmptyState(
-                title: 'No Saving Goals',
-                subtitle: 'Create a goal and start\nbuilding your future.',
-                icon: Icons.track_changes_outlined,
-                actionLabel: 'Create Goal',
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          if (index == 0) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: AppSizes.md),
+              child: AppSectionHeader(
+                title: 'Savings Goals',
+                fontSize: 26,
+                actionLabel: 'Add',
                 onActionTap: () {
                   _showAddGoalDialog(context, viewModel);
                 },
-              )
-            : Column(
-                children: liveGoals
-                    .map((goal) => SavingGoalCard(goal: goal))
-                    .toList(),
               ),
-      ],
+            );
+          }
+
+          final goal = liveGoals[index - 1];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: AppSizes.md),
+            child: SavingGoalCard(goal: goal),
+          );
+        },
+        childCount: liveGoals.length + 1,
+      ),
     );
   }
 }

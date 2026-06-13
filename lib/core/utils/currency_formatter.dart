@@ -53,3 +53,31 @@ class CurrencyFormatter {
     return formatter.format(amount).replaceAll('\u00A0', ' ').trim();
   }
 }
+
+/// Global formatting helper for fully formatted currency
+String formatCurrency(
+  double amount, {
+  String locale = 'vi_VN',
+  String currencyCode = 'VND',
+  int? decimalDigits,
+}) {
+  return CurrencyFormatter.format(
+    amount,
+    locale: locale,
+    currencyCode: currencyCode,
+    decimalDigits: decimalDigits,
+  );
+}
+
+/// Global formatting helper for compact currency
+String formatCompactCurrency(
+  double amount, {
+  String locale = 'vi_VN',
+  String currencyCode = 'VND',
+}) {
+  return CurrencyFormatter.compact(
+    amount,
+    locale: locale,
+    currencyCode: currencyCode,
+  );
+}

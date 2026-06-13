@@ -32,6 +32,34 @@ class FakeLocalDataSource implements WalletLocalDataSource {
   }
 
   @override
+  Future<void> createAccount(int userId, AccountModel account) async {
+    accountsDb.removeWhere((a) => a.id == account.id);
+    accountsDb.add(account);
+  }
+
+  @override
+  Future<void> updateAccount(int userId, AccountModel account) async {
+    accountsDb.removeWhere((a) => a.id == account.id);
+    accountsDb.add(account);
+  }
+
+  @override
+  Future<void> softDeleteAccount(String accountId) async {
+    final index = accountsDb.indexWhere((a) => a.id == accountId);
+    if (index != -1) {
+      accountsDb[index] = accountsDb[index].copyWith(deletedAt: DateTime.now());
+    }
+  }
+
+  @override
+  Future<void> restoreAccount(String accountId) async {
+    final index = accountsDb.indexWhere((a) => a.id == accountId);
+    if (index != -1) {
+      accountsDb[index] = accountsDb[index].copyWith(removeDeletedAt: true);
+    }
+  }
+
+  @override
   Future<List<SavingGoalModel>> getGoals(int userId) async => goalsDb;
 
   @override
@@ -113,6 +141,7 @@ void main() {
       // Gán dữ liệu local tạo offline
       final offlineWallet = AccountModel(
         id: 'wallet_local_01',
+        userId: 1,
         name: 'Offline Cash',
         type: AccountType.cash,
         balance: 100.0,
@@ -135,6 +164,7 @@ void main() {
       // Gán dữ liệu remote
       final remoteWallet = AccountModel(
         id: 'wallet_remote_01',
+        userId: 1,
         name: 'Cloud Wallet',
         type: AccountType.bank,
         balance: 5000.0,
@@ -156,6 +186,7 @@ void main() {
     test('Nên cập nhật Local nếu Remote có updatedAt mới hơn', () async {
       final oldLocalWallet = AccountModel(
         id: 'wallet_trung_01',
+        userId: 1,
         name: 'Tài khoản gốc',
         type: AccountType.eWallet,
         balance: 200.0,
@@ -167,6 +198,7 @@ void main() {
 
       final newRemoteWallet = AccountModel(
         id: 'wallet_trung_01',
+        userId: 1,
         name: 'Tài khoản cập nhật trên Web',
         type: AccountType.eWallet,
         balance: 250.0, // Đã thay đổi số dư
@@ -186,6 +218,7 @@ void main() {
     test('Nên cập nhật Remote nếu Local có updatedAt mới hơn', () async {
       final newLocalWallet = AccountModel(
         id: 'wallet_trung_02',
+        userId: 1,
         name: 'Ví cập nhật Offline',
         type: AccountType.cash,
         balance: 300.0,
@@ -197,6 +230,7 @@ void main() {
 
       final oldRemoteWallet = AccountModel(
         id: 'wallet_trung_02',
+        userId: 1,
         name: 'Ví cũ trên Cloud',
         type: AccountType.cash,
         balance: 150.0,
@@ -211,6 +245,131 @@ void main() {
       // Kiểm tra remote được cập nhật theo local
       expect(remoteDataSource.firestoreDb.first.name, 'Ví cập nhật Offline');
       expect(remoteDataSource.firestoreDb.first.balance, 300.0);
+    });
+  });
+
+  group('WalletRepositoryImpl CRUD & Soft Delete Tests', () {
+    test('createAccount() nên chèn SQLite và đẩy lên remote', () async {
+      final account = AccountEntity(
+        id: 'new_acc_01',
+        userId: 1,
+        name: 'New Account',
+        type: AccountType.savingsAccount,
+        balance: 1000.0,
+        icon: Icons.wallet,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      await repository.createAccount(1, 'remote_user_uid', account);
+
+      expect(localDataSource.accountsDb.length, 1);
+      expect(localDataSource.accountsDb.first.id, 'new_acc_01');
+      expect(localDataSource.accountsDb.first.type, AccountType.savingsAccount);
+
+      expect(remoteDataSource.firestoreDb.length, 1);
+      expect(remoteDataSource.firestoreDb.first.id, 'new_acc_01');
+    });
+
+    test('updateAccount() nên cập nhật SQLite và đẩy lên remote', () async {
+      final account = AccountEntity(
+        id: 'acc_01',
+        userId: 1,
+        name: 'Updated Name',
+        type: AccountType.cash,
+        balance: 1500.0,
+        icon: Icons.wallet,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      // Add account to test update
+      localDataSource.accountsDb.add(AccountModel.fromEntity(account));
+
+      final updatedAccount = AccountEntity(
+        id: 'acc_01',
+        userId: 1,
+        name: 'Updated Name 2',
+        type: AccountType.cash,
+        balance: 1800.0,
+        icon: Icons.wallet,
+        createdAt: account.createdAt,
+        updatedAt: DateTime.now(),
+      );
+
+      await repository.updateAccount(1, 'remote_user_uid', updatedAccount);
+
+      expect(localDataSource.accountsDb.first.name, 'Updated Name 2');
+      expect(localDataSource.accountsDb.first.balance, 1800.0);
+      expect(remoteDataSource.firestoreDb.first.name, 'Updated Name 2');
+    });
+
+    test('deleteAccount() nên đặt deletedAt và ẩn khỏi danh sách UI', () async {
+      final activeWallet = AccountModel(
+        id: 'wallet_to_delete',
+        userId: 1,
+        name: 'To Delete',
+        type: AccountType.cash,
+        balance: 200.0,
+        icon: Icons.wallet,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      localDataSource.accountsDb.clear();
+      remoteDataSource.firestoreDb.clear();
+      localDataSource.accountsDb.add(activeWallet);
+
+      // Verify it is visible initially
+      var accounts = await repository.getAccounts(1, 'remote_user_uid');
+      expect(accounts.length, 1);
+
+      // Perform soft delete
+      await repository.deleteAccount(1, 'remote_user_uid', 'wallet_to_delete');
+
+      // Verify local record still exists but is marked deleted
+      expect(localDataSource.accountsDb.length, 1);
+      expect(localDataSource.accountsDb.first.deletedAt, isNotNull);
+
+      // Verify filtered out for UI listing
+      accounts = await repository.getAccounts(1, 'remote_user_uid');
+      expect(accounts.length, 0);
+
+      // Verify sync mapped deletedAt to remote
+      expect(remoteDataSource.firestoreDb.length, 1);
+      expect(remoteDataSource.firestoreDb.first.deletedAt, isNotNull);
+    });
+
+    test('restoreAccount() nên xóa deletedAt và hiển thị lại trên UI', () async {
+      final now = DateTime.now();
+      final deletedWallet = AccountModel(
+        id: 'wallet_to_restore',
+        userId: 1,
+        name: 'To Restore',
+        type: AccountType.cash,
+        balance: 200.0,
+        icon: Icons.wallet,
+        createdAt: now,
+        updatedAt: now,
+        deletedAt: now,
+      );
+      localDataSource.accountsDb.clear();
+      remoteDataSource.firestoreDb.clear();
+      localDataSource.accountsDb.add(deletedWallet);
+
+      // Verify hidden initially
+      var accounts = await repository.getAccounts(1, 'remote_user_uid');
+      expect(accounts.length, 0);
+
+      // Perform restore
+      await repository.restoreAccount(1, 'remote_user_uid', 'wallet_to_restore');
+
+      // Verify active again
+      expect(localDataSource.accountsDb.first.deletedAt, isNull);
+      accounts = await repository.getAccounts(1, 'remote_user_uid');
+      expect(accounts.length, 1);
+
+      // Verify remote updated
+      expect(remoteDataSource.firestoreDb.first.deletedAt, isNull);
     });
   });
 }

@@ -22,9 +22,10 @@ class WalletRepositoryImpl implements WalletRepository {
   @override
   Future<WalletSummaryEntity> getSummary(int localUserId) async {
     final accounts = await localDataSource.getAccounts(localUserId);
+    final activeAccounts = accounts.where((a) => a.deletedAt == null).toList();
     final goals = await localDataSource.getGoals(localUserId);
     
-    final totalAssets = accounts.fold(0.0, (sum, acc) => sum + acc.balance);
+    final totalAssets = activeAccounts.fold(0.0, (sum, acc) => sum + acc.balance);
     final totalSaved = goals.fold(0.0, (sum, goal) => sum + goal.currentAmount);
     final activeGoals = goals.length;
     
@@ -44,27 +45,25 @@ class WalletRepositoryImpl implements WalletRepository {
   Future<List<AccountEntity>> getAccounts(int localUserId, String remoteUid, {bool forceSync = false}) async {
     // Luôn trả về từ SQLite cục bộ trước để giao diện tải tức thì
     final localAccounts = await localDataSource.getAccounts(localUserId);
+    final activeLocalAccounts = localAccounts.where((a) => a.deletedAt == null).toList();
 
     if (forceSync) {
       await syncWithFirebase(localUserId, remoteUid);
-      return await localDataSource.getAccounts(localUserId);
+      final refreshed = await localDataSource.getAccounts(localUserId);
+      return refreshed.where((a) => a.deletedAt == null).toList();
     } else {
       // Gọi đồng bộ ngầm (background sync) không chặn luồng hiển thị
       syncWithFirebase(localUserId, remoteUid).catchError((e) {
         debugPrint('Lỗi đồng bộ ngầm wallets: $e');
       });
-      return localAccounts;
+      return activeLocalAccounts;
     }
   }
 
   @override
   Future<void> saveAccount(int localUserId, String remoteUid, AccountEntity account) async {
     final model = AccountModel.fromEntity(account);
-    
-    // 1. Lưu SQLite trước
     await localDataSource.saveAccount(localUserId, model);
-    
-    // 2. Đồng bộ Firestore từ xa
     try {
       await remoteDataSource.saveAccount(remoteUid, model).timeout(const Duration(seconds: 4));
     } catch (e) {
@@ -73,15 +72,54 @@ class WalletRepositoryImpl implements WalletRepository {
   }
 
   @override
-  Future<void> deleteAccount(String remoteUid, String accountId) async {
-    // 1. Xóa SQLite
-    await localDataSource.deleteAccount(accountId);
-
-    // 2. Xóa Firestore
+  Future<void> createAccount(int localUserId, String remoteUid, AccountEntity account) async {
+    final model = AccountModel.fromEntity(account);
+    await localDataSource.createAccount(localUserId, model);
     try {
-      await remoteDataSource.deleteAccount(remoteUid, accountId).timeout(const Duration(seconds: 4));
+      await remoteDataSource.saveAccount(remoteUid, model).timeout(const Duration(seconds: 4));
     } catch (e) {
-      debugPrint('Đang offline, xóa ví tạm thời ở local: $e');
+      debugPrint('Đang offline, tạo ví ở local: $e');
+    }
+  }
+
+  @override
+  Future<void> updateAccount(int localUserId, String remoteUid, AccountEntity account) async {
+    final model = AccountModel.fromEntity(account);
+    await localDataSource.updateAccount(localUserId, model);
+    try {
+      await remoteDataSource.saveAccount(remoteUid, model).timeout(const Duration(seconds: 4));
+    } catch (e) {
+      debugPrint('Đang offline, cập nhật ví ở local: $e');
+    }
+  }
+
+  @override
+  Future<void> deleteAccount(int localUserId, String remoteUid, String accountId) async {
+    // 1. Xóa mềm SQLite
+    await localDataSource.softDeleteAccount(accountId);
+
+    // 2. Lấy model đã cập nhật để đồng bộ lên Firestore
+    try {
+      final localAccounts = await localDataSource.getAccounts(localUserId);
+      final deletedAccount = localAccounts.firstWhere((a) => a.id == accountId);
+      await remoteDataSource.saveAccount(remoteUid, deletedAccount).timeout(const Duration(seconds: 4));
+    } catch (e) {
+      debugPrint('Đang offline, xóa mềm ví tạm thời ở local: $e');
+    }
+  }
+
+  @override
+  Future<void> restoreAccount(int localUserId, String remoteUid, String accountId) async {
+    // 1. Khôi phục SQLite
+    await localDataSource.restoreAccount(accountId);
+
+    // 2. Lấy model đã cập nhật để đồng bộ lên Firestore
+    try {
+      final localAccounts = await localDataSource.getAccounts(localUserId);
+      final restoredAccount = localAccounts.firstWhere((a) => a.id == accountId);
+      await remoteDataSource.saveAccount(remoteUid, restoredAccount).timeout(const Duration(seconds: 4));
+    } catch (e) {
+      debugPrint('Đang offline, khôi phục ví tạm thời ở local: $e');
     }
   }
 

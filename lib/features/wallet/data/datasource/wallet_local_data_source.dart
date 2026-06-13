@@ -9,6 +9,12 @@ abstract class WalletLocalDataSource {
   Future<void> saveAccount(int userId, AccountModel account);
   Future<void> deleteAccount(String accountId);
 
+  // New CRUD contracts
+  Future<void> createAccount(int userId, AccountModel account);
+  Future<void> updateAccount(int userId, AccountModel account);
+  Future<void> softDeleteAccount(String accountId);
+  Future<void> restoreAccount(String accountId);
+
   Future<List<SavingGoalModel>> getGoals(int userId);
   Future<void> saveGoal(int userId, SavingGoalModel goal);
   Future<void> deleteGoal(String goalId);
@@ -50,6 +56,61 @@ class WalletLocalDataSourceImpl implements WalletLocalDataSource {
     final db = await _db;
     await db.delete(
       'wallets',
+      where: 'id = ?',
+      whereArgs: [accountId],
+    );
+  }
+
+  @override
+  Future<void> createAccount(int userId, AccountModel account) async {
+    final db = await _db;
+    final map = account.toMap();
+    map['user_id'] = userId;
+    await db.insert(
+      'wallets',
+      map,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  @override
+  Future<void> updateAccount(int userId, AccountModel account) async {
+    final db = await _db;
+    final map = account.toMap();
+    map['user_id'] = userId;
+    await db.update(
+      'wallets',
+      map,
+      where: 'id = ? AND user_id = ?',
+      whereArgs: [account.id, userId],
+    );
+  }
+
+  @override
+  Future<void> softDeleteAccount(String accountId) async {
+    final db = await _db;
+    final nowStr = DateTime.now().toIso8601String();
+    await db.update(
+      'wallets',
+      {
+        'deleted_at': nowStr,
+        'updated_at': nowStr,
+      },
+      where: 'id = ?',
+      whereArgs: [accountId],
+    );
+  }
+
+  @override
+  Future<void> restoreAccount(String accountId) async {
+    final db = await _db;
+    final nowStr = DateTime.now().toIso8601String();
+    await db.update(
+      'wallets',
+      {
+        'deleted_at': null,
+        'updated_at': nowStr,
+      },
       where: 'id = ?',
       whereArgs: [accountId],
     );

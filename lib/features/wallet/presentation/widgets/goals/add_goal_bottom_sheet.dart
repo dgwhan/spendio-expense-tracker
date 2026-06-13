@@ -56,7 +56,7 @@ class _AddGoalBottomSheetState extends State<AddGoalBottomSheet> {
         AppSizes.lg,
         AppSizes.lg,
         AppSizes.lg,
-        AppSizes.lg + keyboardPadding,
+        AppSizes.lg + (keyboardPadding > 0 ? keyboardPadding : MediaQuery.of(context).padding.bottom),
       ),
       decoration: BoxDecoration(
         color: backgroundColor,
