@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:spend_io_app/features/wallet/data/datasources/wallet_local_data_source.dart';
 import 'package:spend_io_app/features/wallet/data/datasources/wallet_remote_data_source.dart';
-import 'package:spend_io_app/features/wallet/data/models/account_model.dart';
+import 'package:spend_io_app/features/account/data/models/account_model.dart';
 import 'package:spend_io_app/features/wallet/data/models/saving_goal_model.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/wallet_summary_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/repositories/wallet_repository.dart';

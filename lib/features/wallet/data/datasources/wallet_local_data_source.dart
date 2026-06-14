@@ -1,7 +1,7 @@
-import '../models/account_model.dart';
+import '../../../account/data/models/account_model.dart';
 import '../models/saving_goal_model.dart';
 import '../models/budget_category_model.dart';
-import 'account/account_local_data_source.dart';
+import '../../../account/data/datasource/account_local_data_source.dart';
 import 'goal/goal_local_data_source.dart';
 import 'budget/budget_local_data_source.dart';
 

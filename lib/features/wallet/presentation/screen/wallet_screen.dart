@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:spend_io_app/features/account/presentation/screen/utils/account_actions.dart';
 import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
-import 'package:spend_io_app/features/wallet/presentation/screen/account_details_screen.dart';
-import 'package:spend_io_app/features/wallet/presentation/widgets/accounts/accounts_section.dart';
-import 'package:spend_io_app/features/wallet/presentation/screen/account_list_screen.dart';
+import 'package:spend_io_app/features/account/presentation/screen/account_details_screen.dart';
+import 'package:spend_io_app/features/account/presentation/widgets/accounts_section.dart';
+import 'package:spend_io_app/features/account/presentation/screen/account_list_screen.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/budget/budget_section.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/goals/goals_section.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/header/wallet_header.dart';
@@ -167,21 +168,10 @@ class _WalletScreenState extends State<WalletScreen> {
                         return;
                       }
 
-                      if (result == AccountDetailsAction.deleted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Account deleted successfully!'),
-                            backgroundColor: Colors.redAccent,
-                          ),
-                        );
-                      } else if (result == AccountDetailsAction.updated) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Account updated successfully!'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                      }
+                      if (result == AccountDetailsAction.deleted || result == AccountDetailsAction.updated) {
+                          // Refresh wallet UI to reflect account changes
+                          viewModel.fetchWalletData();
+                        }
                     },
                   ),
                 ),

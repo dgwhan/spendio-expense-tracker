@@ -2,11 +2,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/features/wallet/data/datasources/wallet_local_data_source.dart';
 import 'package:spend_io_app/features/wallet/data/datasources/wallet_remote_data_source.dart';
-import 'package:spend_io_app/features/wallet/data/models/account_model.dart';
+import 'package:spend_io_app/features/account/data/models/account_model.dart';
 import 'package:spend_io_app/features/wallet/data/models/saving_goal_model.dart';
 import 'package:spend_io_app/features/wallet/data/models/budget_category_model.dart';
 import 'package:spend_io_app/features/wallet/data/repositories/wallet_repository_impl.dart';
-import 'package:spend_io_app/features/wallet/domain/entities/account_entity.dart';
+import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
 
 // --------------------------------------------------------------------
 // LỚP MOCK ĐỂ KIỂM THỬ KHÔNG PHỤ THUỘC VÀO SQLITE & FIRESTORE THẬT

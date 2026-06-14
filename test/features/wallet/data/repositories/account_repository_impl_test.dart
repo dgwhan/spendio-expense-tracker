@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
-import 'package:spend_io_app/features/wallet/data/datasources/account/account_local_data_source.dart';
-import 'package:spend_io_app/features/wallet/data/datasources/account/account_remote_data_source.dart';
-import 'package:spend_io_app/features/wallet/data/models/account_model.dart';
-import 'package:spend_io_app/features/wallet/data/repositories/account_repository_impl.dart';
-import 'package:spend_io_app/features/wallet/domain/entities/account_entity.dart';
+import 'package:spend_io_app/features/account/data/datasource/account_local_data_source.dart';
+import 'package:spend_io_app/features/account/data/datasource/account_remote_data_source.dart';
+import 'package:spend_io_app/features/account/data/models/account_model.dart';
+import 'package:spend_io_app/features/account/data/repositories/account_repository_impl.dart';
+import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
 
 class FakeAccountLocalDataSource implements AccountLocalDataSource {
   final List<AccountModel> accountsDb = [];

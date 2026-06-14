@@ -2,22 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:spend_io_app/features/auth/domain/entities/user_entity.dart';
-import 'package:spend_io_app/features/wallet/domain/entities/account_entity.dart';
+import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/budget_category_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/financial_health_status.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/saving_goal_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/wallet_summary_entity.dart';
-import 'package:spend_io_app/features/wallet/domain/usecases/accounts/create_account_usecase.dart';
-import 'package:spend_io_app/features/wallet/domain/usecases/accounts/delete_account_usecase.dart';
-import 'package:spend_io_app/features/wallet/domain/usecases/accounts/get_accounts_usecase.dart';
+import 'package:spend_io_app/features/account/domain/usecase/create_account_usecase.dart';
+import 'package:spend_io_app/features/account/domain/usecase/delete_account_usecase.dart';
+import 'package:spend_io_app/features/account/domain/usecase/get_accounts_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/goals/get_goals_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/goals/add_goal_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/get_wallet_summary_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/get_categories_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/initialize_budget_categories_usecase.dart';
-import 'package:spend_io_app/features/wallet/domain/usecases/accounts/restore_account_usecase.dart';
-import 'package:spend_io_app/features/wallet/domain/usecases/accounts/update_account_usecase.dart';
+import 'package:spend_io_app/features/account/domain/usecase/restore_account_usecase.dart';
+import 'package:spend_io_app/features/account/domain/usecase/update_account_usecase.dart';
 
+/// [App Location] Wallet/Home Feature Business Logic Layer (Global ViewModel).
+/// [Core Function] Main state machine orchestrating high-level financial metrics, cross-feature wallet sync pipelines, account CRUD workflows, and real-time financial health algorithm evaluations.
 class WalletViewModel extends ChangeNotifier {
   final GetWalletSummaryUseCase getWalletSummaryUseCase;
   final GetAccountsUseCase getAccountsUseCase;
@@ -92,9 +94,8 @@ class WalletViewModel extends ChangeNotifier {
   List<SavingGoalEntity> get goals => _goals;
   List<BudgetCategoryEntity> get categories => _categories;
 
-  /// Cập nhật thông tin User hiện tại từ AuthProvider
+  /// Updates active user reference and hooks automated microtask data initialization
   void updateUser(UserEntity? user) {
-    // Guard: avoid scheduling fetch when already loading
     if (_isLoading) return;
 
     final hasChanged = _currentUser?.id != user?.id ||
@@ -104,8 +105,6 @@ class WalletViewModel extends ChangeNotifier {
 
     final newUserId = user?.id;
     if (!hasChanged) return;
-
-    // Additional guard: avoid redundant fetch for same user id
     if (newUserId != null && _lastUserId == newUserId) return;
 
     _currentUser = user;
@@ -114,17 +113,15 @@ class WalletViewModel extends ChangeNotifier {
     Future.microtask(() => initialize());
   }
 
-  /// Định dạng hiển thị tháng/năm hiện tại
   String get currentMonthLabel {
     return DateFormat('MMMM yyyy').format(selectedMonth);
   }
 
-  /// Định dạng tiêu đề chu kỳ ngân sách
   String get budgetStatus {
     return '$currentMonthLabel Budget';
   }
 
-  /// Tải dữ liệu ví thực tế từ database qua chu trình initialize()
+  /// Handles localized multi-stream data loading and fires off async Firebase remote data sync
   Future<void> initialize() async {
     final sw = Stopwatch()..start();
     debugPrint('WalletViewModel.initialize: start userId=${_currentUser?.id}');
@@ -141,7 +138,6 @@ class WalletViewModel extends ChangeNotifier {
         await loadGoals(localId);
         await loadCategories(localId);
 
-        // Notify immediately after local load to ensure UI renders instantly
         _isLoading = false;
         notifyListeners();
 
@@ -208,7 +204,6 @@ class WalletViewModel extends ChangeNotifier {
     _categories = await getCategoriesUseCase(localId);
   }
 
-  /// Backward compatible trigger method
   Future<void> fetchWalletData() async {
     await initialize();
   }
@@ -217,12 +212,10 @@ class WalletViewModel extends ChangeNotifier {
     await initialize();
   }
 
-  /// Thêm ví tài khoản mới (Backward compatible)
   Future<void> addNewAccount(AccountEntity account) async {
     await createAccount(account);
   }
 
-  /// Tạo tài khoản mới
   Future<void> createAccount(AccountEntity account) async {
     if (_currentUser == null) return;
     final localId = _currentUser!.id ?? 1;
@@ -245,7 +238,6 @@ class WalletViewModel extends ChangeNotifier {
     }
   }
 
-  /// Cập nhật tài khoản ví
   Future<void> updateAccount(AccountEntity account) async {
     if (_currentUser == null) return;
     final localId = _currentUser!.id ?? 1;
@@ -268,7 +260,6 @@ class WalletViewModel extends ChangeNotifier {
     }
   }
 
-  /// Xóa mềm tài khoản ví
   Future<void> deleteAccount(String accountId) async {
     if (_currentUser == null) return;
     final localId = _currentUser!.id ?? 1;
@@ -291,7 +282,6 @@ class WalletViewModel extends ChangeNotifier {
     }
   }
 
-  /// Khôi phục tài khoản ví
   Future<void> restoreAccount(String accountId) async {
     if (_currentUser == null) return;
     final localId = _currentUser!.id ?? 1;
@@ -314,7 +304,6 @@ class WalletViewModel extends ChangeNotifier {
     }
   }
 
-  /// Thêm mục tiêu tiết kiệm mới
   Future<void> addNewGoal(SavingGoalEntity goal) async {
     if (_currentUser == null) return;
     final localId = _currentUser!.id ?? 1;
@@ -333,68 +322,47 @@ class WalletViewModel extends ChangeNotifier {
     }
   }
 
-  // Thay đổi tháng được chọn và tự động refresh lại dữ liệu
   void selectMonth(DateTime month) {
     selectedMonth = month;
     fetchWalletSummary();
   }
 
-  /// Tính tổng số tiền đã chi tiêu động từ danh sách Entity dùng chung
   double get totalSpent {
     return categories.fold(0.0, (sum, item) => sum + item.spent);
   }
 
-  /// Lấy hạn mức ngân sách tổng của chu kỳ tháng hiện tại
   double get totalBudget {
     return summary.monthlyBudget;
   }
 
-  /// Tính toán số ngày thực tế còn lại trong tháng
   int get daysLeft {
     final now = DateTime.now();
     final lastDayOfMonth = DateTime(now.year, now.month + 1, 0);
     return lastDayOfMonth.difference(now).inDays;
   }
 
-  // Tính toán sức khỏe tài chính dựa trên tỷ lệ tích lũy
-  //
-  // Công thức: Tổng tích lũy (Goals) / Tổng tài sản (Assets)
-  // Ý nghĩa: Đánh giá tỷ lệ phần trăm tài sản được phân bổ cho mục tiêu dài hạn.
-  //
-  // Phân bậc điều kiện:
-  // >= 0.40: Xuất sắc (Excellent) -> Tích lũy ở mức lý tưởng.
-  // >= 0.25: Tốt (Good)          -> Đạt chuẩn quản lý tài chính lành mạnh.
-  // >= 0.10: Cảnh báo (Warning)  -> Tích lũy thấp, cần tối ưu lại chi tiêu.
-  // < 0.10 : Nguy kịch (Critical)
+  /// Calculates real-time financial health thresholds based on goal-to-asset allocation ratios
   FinancialHealthStatus get healthStatus {
     if (summary.totalAssets < 0) {
       return FinancialHealthStatus.critical;
     }
 
-    //set mặc định cho user mới
+    // Default for newly registered profiles
     if (summary.totalAssets > 0 &&
         summary.totalSaved == 0 &&
         summary.monthlyBudget == 0) {
       return FinancialHealthStatus.good;
     }
 
-    //nếu tài sản bằng 0 tròn trĩnh
     if (summary.totalAssets == 0) {
       return FinancialHealthStatus.good;
     }
 
-    //luồng tính toán tỷ lệ khi đã có dữ liệu tích lũy
     final ratio = summary.totalSaved / summary.totalAssets;
 
-    if (ratio >= 0.40) {
-      return FinancialHealthStatus.excellent;
-    }
-    if (ratio >= 0.25) {
-      return FinancialHealthStatus.good;
-    }
-    if (ratio >= 0.10) {
-      return FinancialHealthStatus.warning;
-    }
+    if (ratio >= 0.40) return FinancialHealthStatus.excellent;
+    if (ratio >= 0.25) return FinancialHealthStatus.good;
+    if (ratio >= 0.10) return FinancialHealthStatus.warning;
 
     return FinancialHealthStatus.critical;
   }

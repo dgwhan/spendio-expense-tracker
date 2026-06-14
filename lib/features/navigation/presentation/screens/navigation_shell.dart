@@ -40,11 +40,14 @@ class _NavigationShellState extends State<NavigationShell> {
             _navigatorKeys[currentIndex].currentState;
 
         if (currentNavigator != null && currentNavigator.canPop()) {
-          currentNavigator.pop(); //Lùi trang nội bộ trong tab hiện tại
+          // Lùi trang nội bộ trong tab hiện tại
+          currentNavigator.pop();
         } else {
           if (currentIndex != 0) {
+            // Chuyển về tab Home nếu không phải tab đầu
             provider.changeTab(0);
-          } else {
+          } else if (Navigator.canPop(context)) {
+            // Đảm bảo có lịch sử navigation trước khi pop
             Navigator.of(context).pop();
           }
         }

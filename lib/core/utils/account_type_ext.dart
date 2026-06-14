@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
-import 'package:spend_io_app/features/wallet/domain/entities/account_entity.dart';
+import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
 
 extension AccountTypeExt on AccountType {
   Color get mainColor {

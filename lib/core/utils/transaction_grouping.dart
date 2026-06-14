@@ -1,8 +1,10 @@
-import 'package:spend_io_app/features/home/data/models/recent_transaction_model.dart';
+import 'package:spend_io_app/features/transaction/data/models/transaction_model.dart';
 
+/// [App Location] Core Shared Utilities.
+/// [Core Function] Groups a flat list of transaction models into day-based bucket segments for timeline rendering.
 class TransactionDayGroup {
   final DateTime date;
-  final List<RecentTransactionModel> items;
+  final List<TransactionModel> items;
   final double totalIncome;
   final double totalExpense;
 
@@ -14,42 +16,45 @@ class TransactionDayGroup {
   });
 }
 
-List<TransactionDayGroup> groupByDate(List<RecentTransactionModel> transactions) {
-  final Map<DateTime, List<RecentTransactionModel>> groups = {};
-  
-  for (final tx in transactions) {
-    final dateKey = DateTime(tx.date.year, tx.date.month, tx.date.day);
-    if (!groups.containsKey(dateKey)) {
-      groups[dateKey] = [];
+/// Utility function to partition transactions chronologically by calendar day.
+List<TransactionDayGroup> groupByDate(List<TransactionModel> transactions) {
+  final Map<DateTime, List<TransactionModel>> groups = {};
+
+  // Sort transactions by date descending (Newest first)
+  final sortedTransactions = List<TransactionModel>.from(transactions)
+    ..sort((a, b) => b.date.compareTo(a.date));
+
+  for (final tx in sortedTransactions) {
+    final dateZero = DateTime(tx.date.year, tx.date.month, tx.date.day);
+    if (!groups.containsKey(dateZero)) {
+      groups[dateZero] = [];
     }
-    groups[dateKey]!.add(tx);
+    groups[dateZero]!.add(tx);
   }
 
-  final List<TransactionDayGroup> sortedGroups = [];
-  final List<DateTime> sortedKeys = groups.keys.toList()..sort((a, b) {
-    return b.compareTo(a);
-  });
+  final List<TransactionDayGroup> dayGroups = [];
 
-  for (final date in sortedKeys) {
-    final items = groups[date]!;
-    double totalIncome = 0;
-    double totalExpense = 0;
-    
-    for (final item in items) {
-      if (item.isExpense) {
-        totalExpense += item.amount;
+  groups.forEach((date, items) {
+    double income = 0;
+    double expense = 0;
+
+    for (final tx in items) {
+      if (tx.isExpense) {
+        expense += tx.amount;
       } else {
-        totalIncome += item.amount;
+        income += tx.amount;
       }
     }
-    
-    sortedGroups.add(TransactionDayGroup(
-      date: date,
-      items: items,
-      totalIncome: totalIncome,
-      totalExpense: totalExpense,
-    ));
-  }
 
-  return sortedGroups;
+    dayGroups.add(
+      TransactionDayGroup(
+        date: date,
+        items: items,
+        totalIncome: income,
+        totalExpense: expense,
+      ),
+    );
+  });
+
+  return dayGroups;
 }

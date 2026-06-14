@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/account_model.dart';
+import '../../../account/data/models/account_model.dart';
 import '../models/saving_goal_model.dart';
 
 abstract class WalletRemoteDataSource {
