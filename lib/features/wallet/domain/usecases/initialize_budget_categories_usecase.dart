@@ -1,8 +1,8 @@
 import '../entities/budget_category_entity.dart';
-import '../repositories/wallet_repository.dart';
+import '../repositories/budget_category_repository.dart';
 
 class InitializeBudgetCategoriesUseCase {
-  final WalletRepository repository;
+  final BudgetCategoryRepository repository;
 
   InitializeBudgetCategoriesUseCase(this.repository);
 

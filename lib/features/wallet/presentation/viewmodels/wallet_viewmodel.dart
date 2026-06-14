@@ -7,16 +7,16 @@ import 'package:spend_io_app/features/wallet/domain/entities/budget_category_ent
 import 'package:spend_io_app/features/wallet/domain/entities/financial_health_status.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/saving_goal_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/wallet_summary_entity.dart';
-import 'package:spend_io_app/features/wallet/domain/usecases/create_account_usecase.dart';
-import 'package:spend_io_app/features/wallet/domain/usecases/update_account_usecase.dart';
-import 'package:spend_io_app/features/wallet/domain/usecases/delete_account_usecase.dart';
-import 'package:spend_io_app/features/wallet/domain/usecases/restore_account_usecase.dart';
-import 'package:spend_io_app/features/wallet/domain/usecases/add_goal_usecase.dart';
-import 'package:spend_io_app/features/wallet/domain/usecases/get_accounts_usecase.dart';
-import 'package:spend_io_app/features/wallet/domain/usecases/get_goals_usecase.dart';
+import 'package:spend_io_app/features/wallet/domain/usecases/accounts/create_account_usecase.dart';
+import 'package:spend_io_app/features/wallet/domain/usecases/accounts/delete_account_usecase.dart';
+import 'package:spend_io_app/features/wallet/domain/usecases/accounts/get_accounts_usecase.dart';
+import 'package:spend_io_app/features/wallet/domain/usecases/goals/get_goals_usecase.dart';
+import 'package:spend_io_app/features/wallet/domain/usecases/goals/add_goal_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/get_wallet_summary_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/get_categories_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/initialize_budget_categories_usecase.dart';
+import 'package:spend_io_app/features/wallet/domain/usecases/accounts/restore_account_usecase.dart';
+import 'package:spend_io_app/features/wallet/domain/usecases/accounts/update_account_usecase.dart';
 
 class WalletViewModel extends ChangeNotifier {
   final GetWalletSummaryUseCase getWalletSummaryUseCase;
@@ -127,8 +127,7 @@ class WalletViewModel extends ChangeNotifier {
   /// Tải dữ liệu ví thực tế từ database qua chu trình initialize()
   Future<void> initialize() async {
     final sw = Stopwatch()..start();
-    debugPrint(
-        'WalletViewModel.initialize: start userId=${_currentUser?.id}');
+    debugPrint('WalletViewModel.initialize: start userId=${_currentUser?.id}');
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -141,7 +140,7 @@ class WalletViewModel extends ChangeNotifier {
         await loadAccounts(localId);
         await loadGoals(localId);
         await loadCategories(localId);
-        
+
         // Notify immediately after local load to ensure UI renders instantly
         _isLoading = false;
         notifyListeners();
@@ -149,7 +148,8 @@ class WalletViewModel extends ChangeNotifier {
         // Background sync and refresh UI with synced data
         final remoteUid = _remoteUid;
         if (remoteUid.isNotEmpty) {
-          await getAccountsUseCase.repository.syncWithFirebase(localId, remoteUid);
+          await getWalletSummaryUseCase.repository
+              .syncWithFirebase(localId, remoteUid);
           await loadSummary(localId);
           await loadAccounts(localId);
           await loadGoals(localId);

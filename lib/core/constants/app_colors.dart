@@ -87,4 +87,56 @@ class AppColors {
   static const Color savingsAccountDark = Color(0xFF4DB6AC);
   static const Color savingsAccountBgLight = Color(0xFFE0F2F1);
   static const Color savingsAccountBgDark = Color(0x264DB6AC);
+
+  // outline
+  static const Color outline = Color(0xFFE5E7EB);
+  static const Color outlineDark = Color(0xFF334155);
+
+  // natural shadows
+  static const Color shadowNatural1 = Color(0x0A000000);
+  static const Color shadowNatural2 = Color(0x05000000);
+  static const Color shadowNaturalDark1 = Color(0x1A000000);
+  static const Color shadowNaturalDark2 = Color(0x0D000000);
+
+  // basic colors
+  static const Color white = Color(0xFFFFFFFF);
+  static const Color black = Color(0xFF000000);
+  static const Color transparent = Color(0x00000000);
+
+  // transaction category colors - light/dark mode and backgrounds
+  static const Color categoryFoodDrinkLight = Color(0xFFEF6C00); // Colors.orange.shade800
+  static const Color categoryFoodDrinkDark = Color(0xFFE65100); // Colors.orange.shade900
+  static const Color categoryFoodDrinkBgLight = Color(0xFFFFF3E0); // Colors.orange.shade50
+  static const Color categoryFoodDrinkBgDark = Color(0x4DE65100); // Colors.orange.shade900 with alpha 0.3
+
+  static const Color categoryTransportLight = Color(0xFF2E7D32); // Colors.green.shade800
+  static const Color categoryTransportDark = Color(0xFF1B5E20); // Colors.green.shade900
+  static const Color categoryTransportBgLight = Color(0xFFE8F5E9); // Colors.green.shade50
+  static const Color categoryTransportBgDark = Color(0x4D1B5E20); // Colors.green.shade900 with alpha 0.3
+
+  static const Color categoryGroceriesLight = Color(0xFF1565C0); // Colors.blue.shade800
+  static const Color categoryGroceriesDark = Color(0xFF0D47A1); // Colors.blue.shade900
+  static const Color categoryGroceriesBgLight = Color(0xFFE3F2FD); // Colors.blue.shade50
+  static const Color categoryGroceriesBgDark = Color(0x4D0D47A1); // Colors.blue.shade900 with alpha 0.3
+
+  static const Color categoryBillsLight = Color(0xFFC62828); // Colors.red.shade800
+  static const Color categoryBillsDark = Color(0xFFB71C1C); // Colors.red.shade900
+  static const Color categoryBillsBgLight = Color(0xFFFFEBEE); // Colors.red.shade50
+  static const Color categoryBillsBgDark = Color(0x4DB71C1C); // Colors.red.shade900 with alpha 0.3
+
+  static const Color categoryShoppingLight = Color(0xFF6A1B9A); // Colors.purple.shade800
+  static const Color categoryShoppingDark = Color(0xFF4A148C); // Colors.purple.shade900
+  static const Color categoryShoppingBgLight = Color(0xFFF3E5F5); // Colors.purple.shade50
+  static const Color categoryShoppingBgDark = Color(0x4D4A148C); // Colors.purple.shade900 with alpha 0.3
+
+  static const Color categorySalaryLight = Color(0xFF00695C); // Colors.teal.shade800
+  static const Color categorySalaryDark = Color(0xFF004D40); // Colors.teal.shade900
+  static const Color categorySalaryBgLight = Color(0xFFE0F2F1); // Colors.teal.shade50
+  static const Color categorySalaryBgDark = Color(0x4D004D40); // Colors.teal.shade900 with alpha 0.3
+
+  static const Color categoryOtherLight = Color(0xFF424242); // Colors.grey.shade800
+  static const Color categoryOtherDark = Color(0xFF212121); // Colors.grey.shade900
+  static const Color categoryOtherBgLight = Color(0xFFF5F5F5); // Colors.grey.shade100
+  static const Color categoryOtherBgDark = Color(0x4D212121); // Colors.grey.shade900 with alpha 0.3
 }
+

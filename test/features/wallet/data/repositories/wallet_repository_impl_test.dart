@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
-import 'package:spend_io_app/features/wallet/data/datasource/wallet_local_data_source.dart';
-import 'package:spend_io_app/features/wallet/data/datasource/wallet_remote_data_source.dart';
+import 'package:spend_io_app/features/wallet/data/datasources/wallet_local_data_source.dart';
+import 'package:spend_io_app/features/wallet/data/datasources/wallet_remote_data_source.dart';
 import 'package:spend_io_app/features/wallet/data/models/account_model.dart';
 import 'package:spend_io_app/features/wallet/data/models/saving_goal_model.dart';
 import 'package:spend_io_app/features/wallet/data/models/budget_category_model.dart';
@@ -153,7 +153,6 @@ void main() {
 
   group('WalletRepositoryImpl Sync Engine Tests', () {
     test('Nên tải ví cục bộ lên remote nếu chỉ tồn tại ở Local', () async {
-      // Gán dữ liệu local tạo offline
       final offlineWallet = AccountModel(
         id: 'wallet_local_01',
         userId: 1,
@@ -166,17 +165,14 @@ void main() {
       );
       localDataSource.accountsDb.add(offlineWallet);
 
-      // Thực thi đồng bộ
       await repository.syncWithFirebase(1, 'remote_user_uid');
 
-      // Xác minh remote đã nhận được ví từ local đẩy lên
       expect(remoteDataSource.firestoreDb.length, 1);
       expect(remoteDataSource.firestoreDb.first.id, 'wallet_local_01');
       expect(remoteDataSource.firestoreDb.first.name, 'Offline Cash');
     });
 
     test('Nên tải ví từ remote xuống local nếu chỉ tồn tại ở Remote', () async {
-      // Gán dữ liệu remote
       final remoteWallet = AccountModel(
         id: 'wallet_remote_01',
         userId: 1,
@@ -189,10 +185,8 @@ void main() {
       );
       remoteDataSource.firestoreDb.add(remoteWallet);
 
-      // Thực thi đồng bộ
       await repository.syncWithFirebase(1, 'remote_user_uid');
 
-      // Xác minh local đã lưu được ví tải xuống
       expect(localDataSource.accountsDb.length, 1);
       expect(localDataSource.accountsDb.first.id, 'wallet_remote_01');
       expect(localDataSource.accountsDb.first.name, 'Cloud Wallet');
@@ -207,7 +201,7 @@ void main() {
         balance: 200.0,
         icon: Icons.wallet,
         createdAt: DateTime(2026, 1, 1),
-        updatedAt: DateTime(2026, 1, 1), // Cũ hơn
+        updatedAt: DateTime(2026, 1, 1),
       );
       localDataSource.accountsDb.add(oldLocalWallet);
 
@@ -216,16 +210,15 @@ void main() {
         userId: 1,
         name: 'Tài khoản cập nhật trên Web',
         type: AccountType.eWallet,
-        balance: 250.0, // Đã thay đổi số dư
+        balance: 250.0,
         icon: Icons.wallet,
         createdAt: DateTime(2026, 1, 1),
-        updatedAt: DateTime(2026, 1, 2), // Mới hơn
+        updatedAt: DateTime(2026, 1, 2),
       );
       remoteDataSource.firestoreDb.add(newRemoteWallet);
 
       await repository.syncWithFirebase(1, 'remote_user_uid');
 
-      // Kiểm tra local được cập nhật theo remote
       expect(localDataSource.accountsDb.first.name, 'Tài khoản cập nhật trên Web');
       expect(localDataSource.accountsDb.first.balance, 250.0);
     });
@@ -251,140 +244,14 @@ void main() {
         balance: 150.0,
         icon: Icons.wallet,
         createdAt: DateTime(2026, 1, 1),
-        updatedAt: DateTime(2026, 1, 1), 
+        updatedAt: DateTime(2026, 1, 1),
       );
       remoteDataSource.firestoreDb.add(oldRemoteWallet);
 
       await repository.syncWithFirebase(1, 'remote_user_uid');
 
-      // Kiểm tra remote được cập nhật theo local
       expect(remoteDataSource.firestoreDb.first.name, 'Ví cập nhật Offline');
       expect(remoteDataSource.firestoreDb.first.balance, 300.0);
-    });
-  });
-
-  group('WalletRepositoryImpl CRUD & Soft Delete Tests', () {
-    test('createAccount() nên chèn SQLite và đẩy lên remote', () async {
-      final account = AccountEntity(
-        id: 'new_acc_01',
-        userId: 1,
-        name: 'New Account',
-        type: AccountType.savingsAccount,
-        balance: 1000.0,
-        icon: Icons.wallet,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-
-      await repository.createAccount(1, 'remote_user_uid', account);
-
-      expect(localDataSource.accountsDb.length, 1);
-      expect(localDataSource.accountsDb.first.id, 'new_acc_01');
-      expect(localDataSource.accountsDb.first.type, AccountType.savingsAccount);
-
-      expect(remoteDataSource.firestoreDb.length, 1);
-      expect(remoteDataSource.firestoreDb.first.id, 'new_acc_01');
-    });
-
-    test('updateAccount() nên cập nhật SQLite và đẩy lên remote', () async {
-      final account = AccountEntity(
-        id: 'acc_01',
-        userId: 1,
-        name: 'Updated Name',
-        type: AccountType.cash,
-        balance: 1500.0,
-        icon: Icons.wallet,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-
-      // Add account to test update
-      localDataSource.accountsDb.add(AccountModel.fromEntity(account));
-
-      final updatedAccount = AccountEntity(
-        id: 'acc_01',
-        userId: 1,
-        name: 'Updated Name 2',
-        type: AccountType.cash,
-        balance: 1800.0,
-        icon: Icons.wallet,
-        createdAt: account.createdAt,
-        updatedAt: DateTime.now(),
-      );
-
-      await repository.updateAccount(1, 'remote_user_uid', updatedAccount);
-
-      expect(localDataSource.accountsDb.first.name, 'Updated Name 2');
-      expect(localDataSource.accountsDb.first.balance, 1800.0);
-      expect(remoteDataSource.firestoreDb.first.name, 'Updated Name 2');
-    });
-
-    test('deleteAccount() nên đặt deletedAt và ẩn khỏi danh sách UI', () async {
-      final activeWallet = AccountModel(
-        id: 'wallet_to_delete',
-        userId: 1,
-        name: 'To Delete',
-        type: AccountType.cash,
-        balance: 200.0,
-        icon: Icons.wallet,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-      localDataSource.accountsDb.clear();
-      remoteDataSource.firestoreDb.clear();
-      localDataSource.accountsDb.add(activeWallet);
-
-      // Verify it is visible initially
-      var accounts = await repository.getAccounts(1, 'remote_user_uid');
-      expect(accounts.length, 1);
-
-      // Perform soft delete
-      await repository.deleteAccount(1, 'remote_user_uid', 'wallet_to_delete');
-
-      // Verify local record still exists but is marked deleted
-      expect(localDataSource.accountsDb.length, 1);
-      expect(localDataSource.accountsDb.first.deletedAt, isNotNull);
-
-      // Verify filtered out for UI listing
-      accounts = await repository.getAccounts(1, 'remote_user_uid');
-      expect(accounts.length, 0);
-
-      // Verify sync mapped deletedAt to remote
-      expect(remoteDataSource.firestoreDb.length, 1);
-      expect(remoteDataSource.firestoreDb.first.deletedAt, isNotNull);
-    });
-
-    test('restoreAccount() nên xóa deletedAt và hiển thị lại trên UI', () async {
-      final now = DateTime.now();
-      final deletedWallet = AccountModel(
-        id: 'wallet_to_restore',
-        userId: 1,
-        name: 'To Restore',
-        type: AccountType.cash,
-        balance: 200.0,
-        icon: Icons.wallet,
-        createdAt: now,
-        updatedAt: now,
-        deletedAt: now,
-      );
-      localDataSource.accountsDb.clear();
-      remoteDataSource.firestoreDb.clear();
-      localDataSource.accountsDb.add(deletedWallet);
-
-      // Verify hidden initially
-      var accounts = await repository.getAccounts(1, 'remote_user_uid');
-      expect(accounts.length, 0);
-
-      // Perform restore
-      await repository.restoreAccount(1, 'remote_user_uid', 'wallet_to_restore');
-
-      // Verify active again
-      expect(localDataSource.accountsDb.first.deletedAt, isNull);
-      accounts = await repository.getAccounts(1, 'remote_user_uid');
-      expect(accounts.length, 1);
-
-      // Verify remote updated
-      expect(remoteDataSource.firestoreDb.first.deletedAt, isNull);
     });
   });
 
@@ -412,7 +279,6 @@ void main() {
         updatedAt: DateTime.now(),
       ));
 
-      expect(await repository.hasAccounts(1), isTrue);
       expect(await repository.hasWalletData(1), isTrue);
     });
 
@@ -429,7 +295,6 @@ void main() {
         deletedAt: DateTime.now(),
       ));
 
-      expect(await repository.hasAccounts(1), isFalse);
       expect(await repository.hasWalletData(1), isFalse);
     });
 
@@ -445,7 +310,6 @@ void main() {
         updatedAt: DateTime.now(),
       ));
 
-      expect(await repository.hasGoals(1), isTrue);
       expect(await repository.hasWalletData(1), isTrue);
     });
 
@@ -459,7 +323,6 @@ void main() {
         updatedAt: DateTime.now(),
       ));
 
-      expect(await repository.hasCategories(1), isTrue);
       expect(await repository.hasWalletData(1), isTrue);
     });
   });

@@ -11,19 +11,22 @@ import 'package:spend_io_app/features/wallet/domain/entities/budget_category_ent
 import 'package:spend_io_app/features/wallet/domain/entities/wallet_summary_entity.dart';
 import 'package:spend_io_app/features/wallet/presentation/screen/wallet_screen.dart';
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
-import 'package:spend_io_app/features/wallet/domain/usecases/create_account_usecase.dart';
-import 'package:spend_io_app/features/wallet/domain/usecases/update_account_usecase.dart';
-import 'package:spend_io_app/features/wallet/domain/usecases/delete_account_usecase.dart';
-import 'package:spend_io_app/features/wallet/domain/usecases/restore_account_usecase.dart';
-import 'package:spend_io_app/features/wallet/domain/usecases/add_goal_usecase.dart';
-import 'package:spend_io_app/features/wallet/domain/usecases/get_accounts_usecase.dart';
-import 'package:spend_io_app/features/wallet/domain/usecases/get_goals_usecase.dart';
+import 'package:spend_io_app/features/wallet/domain/usecases/accounts/create_account_usecase.dart';
+import 'package:spend_io_app/features/wallet/domain/usecases/accounts/update_account_usecase.dart';
+import 'package:spend_io_app/features/wallet/domain/usecases/accounts/delete_account_usecase.dart';
+import 'package:spend_io_app/features/wallet/domain/usecases/accounts/restore_account_usecase.dart';
+import 'package:spend_io_app/features/wallet/domain/usecases/goals/add_goal_usecase.dart';
+import 'package:spend_io_app/features/wallet/domain/usecases/accounts/get_accounts_usecase.dart';
+import 'package:spend_io_app/features/wallet/domain/usecases/goals/get_goals_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/get_wallet_summary_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/get_categories_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/initialize_budget_categories_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/repositories/wallet_repository.dart';
+import 'package:spend_io_app/features/wallet/domain/repositories/account_repository.dart';
+import 'package:spend_io_app/features/wallet/domain/repositories/saving_goal_repository.dart';
+import 'package:spend_io_app/features/wallet/domain/repositories/budget_category_repository.dart';
 
-class FakeWalletRepository implements WalletRepository {
+class FakeWalletRepository implements WalletRepository, AccountRepository, SavingGoalRepository, BudgetCategoryRepository {
   @override
   Future<List<AccountEntity>> getAccounts(int localUserId, String remoteUid, {bool forceSync = false}) async {
     return [

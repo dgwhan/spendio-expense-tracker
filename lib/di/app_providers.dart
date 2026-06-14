@@ -1,5 +1,6 @@
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
+import 'package:spend_io_app/features/wallet/data/datasources/wallet_remote_data_source.dart';
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
 import '../../../features/home/presentation/viewmodels/dashboard_viewmodel.dart';
 
@@ -25,17 +26,24 @@ import '../../../features/auth/presentation/providers/auth_provider.dart';
 import '../core/startup/startup_coordinator.dart';
 
 // WALLET LAYER
-import '../../../features/wallet/data/datasource/wallet_local_data_source.dart';
-import '../../../features/wallet/data/datasource/wallet_remote_data_source.dart';
+import '../features/wallet/data/datasources/wallet_local_data_source.dart';
+import '../features/wallet/data/datasources/account/account_local_data_source.dart';
+import '../features/wallet/data/datasources/account/account_remote_data_source.dart';
+import '../features/wallet/data/datasources/goal/goal_local_data_source.dart';
+import '../features/wallet/data/datasources/goal/goal_remote_data_source.dart';
+import '../features/wallet/data/datasources/budget/budget_local_data_source.dart';
 import '../../../features/wallet/data/repositories/wallet_repository_impl.dart';
+import '../../../features/wallet/data/repositories/account_repository_impl.dart';
+import '../../../features/wallet/data/repositories/saving_goal_repository_impl.dart';
+import '../../../features/wallet/data/repositories/budget_category_repository_impl.dart';
 import '../../../features/wallet/domain/usecases/get_wallet_summary_usecase.dart';
-import '../../../features/wallet/domain/usecases/get_accounts_usecase.dart';
-import '../../../features/wallet/domain/usecases/get_goals_usecase.dart';
-import '../../../features/wallet/domain/usecases/create_account_usecase.dart';
-import '../../../features/wallet/domain/usecases/update_account_usecase.dart';
-import '../../../features/wallet/domain/usecases/delete_account_usecase.dart';
-import '../../../features/wallet/domain/usecases/restore_account_usecase.dart';
-import '../../../features/wallet/domain/usecases/add_goal_usecase.dart';
+import '../features/wallet/domain/usecases/accounts/get_accounts_usecase.dart';
+import '../features/wallet/domain/usecases/goals/get_goals_usecase.dart';
+import '../features/wallet/domain/usecases/accounts/create_account_usecase.dart';
+import '../features/wallet/domain/usecases/accounts/update_account_usecase.dart';
+import '../features/wallet/domain/usecases/accounts/delete_account_usecase.dart';
+import '../features/wallet/domain/usecases/accounts/restore_account_usecase.dart';
+import '../features/wallet/domain/usecases/goals/add_goal_usecase.dart';
 import '../../../features/wallet/domain/usecases/get_categories_usecase.dart';
 import '../../../features/wallet/domain/usecases/initialize_budget_categories_usecase.dart';
 import '../../../features/wallet/domain/usecases/check_wallet_initialization_usecase.dart';
@@ -63,8 +71,37 @@ class AppProviders {
           create: (_) => OnboardingRemoteDataSource(),
         ),
 
-        Provider<WalletLocalDataSource>(
-          create: (_) => WalletLocalDataSourceImpl(),
+        // Wallet sub-datasources (local)
+        Provider<AccountLocalDataSource>(
+          create: (_) => AccountLocalDataSourceImpl(),
+        ),
+
+        Provider<GoalLocalDataSource>(
+          create: (_) => GoalLocalDataSourceImpl(),
+        ),
+
+        Provider<BudgetLocalDataSource>(
+          create: (_) => BudgetLocalDataSourceImpl(),
+        ),
+
+        // Wallet sub-datasources (remote)
+        Provider<AccountRemoteDataSource>(
+          create: (_) => AccountRemoteDataSourceImpl(),
+        ),
+
+        Provider<GoalRemoteDataSource>(
+          create: (_) => GoalRemoteDataSourceImpl(),
+        ),
+
+        // Wallet facade datasources
+        ProxyProvider3<AccountLocalDataSource, GoalLocalDataSource,
+            BudgetLocalDataSource, WalletLocalDataSource>(
+          update: (_, accountLocal, goalLocal, budgetLocal, __) =>
+              WalletLocalDataSourceImpl(
+            accountLocal: accountLocal,
+            goalLocal: goalLocal,
+            budgetLocal: budgetLocal,
+          ),
         ),
 
         Provider<WalletRemoteDataSource>(
@@ -86,6 +123,23 @@ class AppProviders {
             WalletRepositoryImpl>(
           update: (_, local, remote, __) => WalletRepositoryImpl(
               localDataSource: local, remoteDataSource: remote),
+        ),
+
+        ProxyProvider2<AccountLocalDataSource, AccountRemoteDataSource,
+            AccountRepositoryImpl>(
+          update: (_, local, remote, __) => AccountRepositoryImpl(
+              localDataSource: local, remoteDataSource: remote),
+        ),
+
+        ProxyProvider2<GoalLocalDataSource, GoalRemoteDataSource,
+            SavingGoalRepositoryImpl>(
+          update: (_, local, remote, __) => SavingGoalRepositoryImpl(
+              localDataSource: local, remoteDataSource: remote),
+        ),
+
+        ProxyProvider<BudgetLocalDataSource, BudgetCategoryRepositoryImpl>(
+          update: (_, local, __) => BudgetCategoryRepositoryImpl(
+              localDataSource: local),
         ),
 
         // ==============================================================
@@ -115,31 +169,31 @@ class AppProviders {
         ProxyProvider<WalletRepositoryImpl, GetWalletSummaryUseCase>(
           update: (_, repo, __) => GetWalletSummaryUseCase(repo),
         ),
-        ProxyProvider<WalletRepositoryImpl, GetAccountsUseCase>(
+        ProxyProvider<AccountRepositoryImpl, GetAccountsUseCase>(
           update: (_, repo, __) => GetAccountsUseCase(repo),
         ),
-        ProxyProvider<WalletRepositoryImpl, GetGoalsUseCase>(
+        ProxyProvider<SavingGoalRepositoryImpl, GetGoalsUseCase>(
           update: (_, repo, __) => GetGoalsUseCase(repo),
         ),
-        ProxyProvider<WalletRepositoryImpl, CreateAccountUseCase>(
+        ProxyProvider<AccountRepositoryImpl, CreateAccountUseCase>(
           update: (_, repo, __) => CreateAccountUseCase(repo),
         ),
-        ProxyProvider<WalletRepositoryImpl, UpdateAccountUseCase>(
+        ProxyProvider<AccountRepositoryImpl, UpdateAccountUseCase>(
           update: (_, repo, __) => UpdateAccountUseCase(repo),
         ),
-        ProxyProvider<WalletRepositoryImpl, DeleteAccountUseCase>(
+        ProxyProvider<AccountRepositoryImpl, DeleteAccountUseCase>(
           update: (_, repo, __) => DeleteAccountUseCase(repo),
         ),
-        ProxyProvider<WalletRepositoryImpl, RestoreAccountUseCase>(
+        ProxyProvider<AccountRepositoryImpl, RestoreAccountUseCase>(
           update: (_, repo, __) => RestoreAccountUseCase(repo),
         ),
-        ProxyProvider<WalletRepositoryImpl, AddGoalUseCase>(
+        ProxyProvider<SavingGoalRepositoryImpl, AddGoalUseCase>(
           update: (_, repo, __) => AddGoalUseCase(repo),
         ),
-        ProxyProvider<WalletRepositoryImpl, GetCategoriesUseCase>(
+        ProxyProvider<BudgetCategoryRepositoryImpl, GetCategoriesUseCase>(
           update: (_, repo, __) => GetCategoriesUseCase(repo),
         ),
-        ProxyProvider<WalletRepositoryImpl, InitializeBudgetCategoriesUseCase>(
+        ProxyProvider<BudgetCategoryRepositoryImpl, InitializeBudgetCategoriesUseCase>(
           update: (_, repo, __) => InitializeBudgetCategoriesUseCase(repo),
         ),
 
@@ -199,15 +253,17 @@ class AppProviders {
         ),
 
         // Startup Coordinator
-        ProxyProvider2<AuthProvider, CheckWalletInitializationUseCase, StartupCoordinator>(
-          update: (context, authProvider, checkWalletInit, __) => StartupCoordinator(
+        ProxyProvider2<AuthProvider, CheckWalletInitializationUseCase,
+            StartupCoordinator>(
+          update: (context, authProvider, checkWalletInit, __) =>
+              StartupCoordinator(
             authProvider: authProvider,
             checkWalletInitializationUseCase: checkWalletInit,
             getCurrentUserUseCase: context.read<GetCurrentUserUseCase>(),
           ),
         ),
 
-        // Wallet VM 
+        // Wallet VM
         ChangeNotifierProxyProvider<AuthProvider, WalletViewModel>(
           create: (context) => WalletViewModel(
             getWalletSummaryUseCase: context.read<GetWalletSummaryUseCase>(),
@@ -219,21 +275,25 @@ class AppProviders {
             restoreAccountUseCase: context.read<RestoreAccountUseCase>(),
             addGoalUseCase: context.read<AddGoalUseCase>(),
             getCategoriesUseCase: context.read<GetCategoriesUseCase>(),
-            initializeBudgetCategoriesUseCase: context.read<InitializeBudgetCategoriesUseCase>(),
+            initializeBudgetCategoriesUseCase:
+                context.read<InitializeBudgetCategoriesUseCase>(),
           ),
           update: (context, authProvider, vm) {
-            final activeVm = vm ?? WalletViewModel(
-              getWalletSummaryUseCase: context.read<GetWalletSummaryUseCase>(),
-              getAccountsUseCase: context.read<GetAccountsUseCase>(),
-              getGoalsUseCase: context.read<GetGoalsUseCase>(),
-              createAccountUseCase: context.read<CreateAccountUseCase>(),
-              updateAccountUseCase: context.read<UpdateAccountUseCase>(),
-              deleteAccountUseCase: context.read<DeleteAccountUseCase>(),
-              restoreAccountUseCase: context.read<RestoreAccountUseCase>(),
-              addGoalUseCase: context.read<AddGoalUseCase>(),
-              getCategoriesUseCase: context.read<GetCategoriesUseCase>(),
-              initializeBudgetCategoriesUseCase: context.read<InitializeBudgetCategoriesUseCase>(),
-            );
+            final activeVm = vm ??
+                WalletViewModel(
+                  getWalletSummaryUseCase:
+                      context.read<GetWalletSummaryUseCase>(),
+                  getAccountsUseCase: context.read<GetAccountsUseCase>(),
+                  getGoalsUseCase: context.read<GetGoalsUseCase>(),
+                  createAccountUseCase: context.read<CreateAccountUseCase>(),
+                  updateAccountUseCase: context.read<UpdateAccountUseCase>(),
+                  deleteAccountUseCase: context.read<DeleteAccountUseCase>(),
+                  restoreAccountUseCase: context.read<RestoreAccountUseCase>(),
+                  addGoalUseCase: context.read<AddGoalUseCase>(),
+                  getCategoriesUseCase: context.read<GetCategoriesUseCase>(),
+                  initializeBudgetCategoriesUseCase:
+                      context.read<InitializeBudgetCategoriesUseCase>(),
+                );
             activeVm.updateUser(authProvider.currentUser?.toEntity());
             return activeVm;
           },
@@ -242,7 +302,8 @@ class AppProviders {
           create: (context) => DashboardViewModel(
             walletViewModel: context.read<WalletViewModel>(),
           ),
-          update: (_, walletVM, vm) => vm ?? DashboardViewModel(walletViewModel: walletVM),
+          update: (_, walletVM, vm) =>
+              vm ?? DashboardViewModel(walletViewModel: walletVM),
         ),
       ];
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_radius.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/core/utils/account_type_ext.dart';
@@ -44,19 +45,19 @@ class AccountBalanceCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(AppSizes.sm),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.24),
+                  color: AppColors.white.withValues(alpha: 0.24),
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: Icon(
                   account.icon,
-                  color: Colors.white,
+                  color: AppColors.white,
                   size: 28,
                 ),
               ),
               Text(
                 account.type.displayName.toUpperCase(),
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.7),
+                  color: AppColors.white.withValues(alpha: 0.7),
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                   letterSpacing: 1.2,
@@ -68,7 +69,7 @@ class AccountBalanceCard extends StatelessWidget {
           Text(
             'CURRENT BALANCE',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.6),
+              color: AppColors.white.withValues(alpha: 0.6),
               fontSize: 11,
               fontWeight: FontWeight.w600,
               letterSpacing: 1.0,
@@ -78,7 +79,7 @@ class AccountBalanceCard extends StatelessWidget {
           Text(
             CurrencyFormatter.format(account.balance),
             style: const TextStyle(
-              color: Colors.white,
+              color: AppColors.white,
               fontSize: 28,
               fontWeight: FontWeight.bold,
             ),

@@ -1,7 +1,7 @@
-import 'package:spend_io_app/features/wallet/domain/repositories/wallet_repository.dart';
+import 'package:spend_io_app/features/wallet/domain/repositories/account_repository.dart';
 
 class DeleteAccountUseCase {
-  final WalletRepository repository;
+  final AccountRepository repository;
 
   DeleteAccountUseCase(this.repository);
 

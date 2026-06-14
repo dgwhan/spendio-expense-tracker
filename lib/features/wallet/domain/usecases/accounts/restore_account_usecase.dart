@@ -1,7 +1,7 @@
-import 'package:spend_io_app/features/wallet/domain/repositories/wallet_repository.dart';
+import 'package:spend_io_app/features/wallet/domain/repositories/account_repository.dart';
 
 class RestoreAccountUseCase {
-  final WalletRepository repository;
+  final AccountRepository repository;
 
   RestoreAccountUseCase(this.repository);
 

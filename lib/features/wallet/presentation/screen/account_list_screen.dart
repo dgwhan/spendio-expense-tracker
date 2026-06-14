@@ -4,10 +4,9 @@ import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/account_entity.dart';
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
-import 'package:spend_io_app/features/wallet/presentation/widgets/accounts/account_details_bottom_sheet.dart';
+import 'package:spend_io_app/features/wallet/presentation/screen/account_details_screen.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/accounts/account_item_card.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/accounts/add_account_bottom_sheet.dart';
-import 'package:spend_io_app/features/wallet/presentation/widgets/accounts/edit_account_bottom_sheet.dart';
 import 'package:spend_io_app/shared/widgets/buttons/app_text_button.dart';
 import 'package:spend_io_app/core/widgets/common/app_empty_state.dart';
 
@@ -25,38 +24,31 @@ class AccountListScreen extends StatelessWidget {
   }
 
   void _handleAccountTap(BuildContext context, WalletViewModel viewModel, AccountEntity account) async {
-    final result = await showModalBottomSheet<String>(
-      context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => AccountDetailsBottomSheet(account: account),
+    final result = await Navigator.push<AccountDetailsAction>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AccountDetailsScreen(account: account),
+      ),
     );
 
-    if (!context.mounted) return;
+    if (!context.mounted) {
+      return;
+    }
 
-    if (result == 'edit') {
-      showModalBottomSheet(
-        context: context,
-        useRootNavigator: true,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (_) => EditAccountBottomSheet(
-          viewModel: viewModel,
-          account: account,
+    if (result == AccountDetailsAction.deleted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Account deleted successfully!'),
+          backgroundColor: Colors.redAccent,
         ),
       );
-    } else if (result == 'delete') {
-      viewModel.deleteAccount(account.id).then((_) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Account deleted successfully!'),
-              backgroundColor: Colors.redAccent,
-            ),
-          );
-        }
-      });
+    } else if (result == AccountDetailsAction.updated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Account updated successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
     }
   }
 

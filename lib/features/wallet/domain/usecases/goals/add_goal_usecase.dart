@@ -1,8 +1,8 @@
 import 'package:spend_io_app/features/wallet/domain/entities/saving_goal_entity.dart';
-import 'package:spend_io_app/features/wallet/domain/repositories/wallet_repository.dart';
+import 'package:spend_io_app/features/wallet/domain/repositories/saving_goal_repository.dart';
 
 class AddGoalUseCase {
-  final WalletRepository repository;
+  final SavingGoalRepository repository;
 
   AddGoalUseCase(this.repository);
 

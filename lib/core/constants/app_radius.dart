@@ -3,6 +3,7 @@ class AppRadius {
 
   static const double sm = 8;
   static const double md = 16;
-  static const double lg = 24;
-  static const double cardRadiusLg = 24;
+  static const double lg = 20;
+  static const double cardRadiusLg = 20;
+  static const double xl = 24;
 }

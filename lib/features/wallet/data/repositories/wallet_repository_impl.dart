@@ -1,12 +1,8 @@
 import 'package:flutter/foundation.dart';
-import 'package:spend_io_app/features/wallet/data/datasource/wallet_local_data_source.dart';
-import 'package:spend_io_app/features/wallet/data/datasource/wallet_remote_data_source.dart';
+import 'package:spend_io_app/features/wallet/data/datasources/wallet_local_data_source.dart';
+import 'package:spend_io_app/features/wallet/data/datasources/wallet_remote_data_source.dart';
 import 'package:spend_io_app/features/wallet/data/models/account_model.dart';
 import 'package:spend_io_app/features/wallet/data/models/saving_goal_model.dart';
-import 'package:spend_io_app/features/wallet/data/models/budget_category_model.dart';
-import 'package:spend_io_app/features/wallet/domain/entities/account_entity.dart';
-import 'package:spend_io_app/features/wallet/domain/entities/saving_goal_entity.dart';
-import 'package:spend_io_app/features/wallet/domain/entities/budget_category_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/wallet_summary_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/repositories/wallet_repository.dart';
 
@@ -39,127 +35,6 @@ class WalletRepositoryImpl implements WalletRepository {
       totalSaved: totalSaved,
       activeGoals: activeGoals,
     );
-  }
-
-  @override
-  Future<List<AccountEntity>> getAccounts(int localUserId, String remoteUid, {bool forceSync = false}) async {
-    // Luôn trả về từ SQLite cục bộ trước để giao diện tải tức thì
-    final localAccounts = await localDataSource.getAccounts(localUserId);
-    final activeLocalAccounts = localAccounts.where((a) => a.deletedAt == null).toList();
-
-    if (forceSync) {
-      await syncWithFirebase(localUserId, remoteUid);
-      final refreshed = await localDataSource.getAccounts(localUserId);
-      return refreshed.where((a) => a.deletedAt == null).toList();
-    } else {
-      // Gọi đồng bộ ngầm (background sync) không chặn luồng hiển thị
-      syncWithFirebase(localUserId, remoteUid).catchError((e) {
-        debugPrint('Lỗi đồng bộ ngầm wallets: $e');
-      });
-      return activeLocalAccounts;
-    }
-  }
-
-  @override
-  Future<void> saveAccount(int localUserId, String remoteUid, AccountEntity account) async {
-    final model = AccountModel.fromEntity(account);
-    await localDataSource.saveAccount(localUserId, model);
-    try {
-      await remoteDataSource.saveAccount(remoteUid, model).timeout(const Duration(seconds: 4));
-    } catch (e) {
-      debugPrint('Đang offline, lưu ví tạm thời vào local: $e');
-    }
-  }
-
-  @override
-  Future<void> createAccount(int localUserId, String remoteUid, AccountEntity account) async {
-    final model = AccountModel.fromEntity(account);
-    await localDataSource.createAccount(localUserId, model);
-    try {
-      await remoteDataSource.saveAccount(remoteUid, model).timeout(const Duration(seconds: 4));
-    } catch (e) {
-      debugPrint('Đang offline, tạo ví ở local: $e');
-    }
-  }
-
-  @override
-  Future<void> updateAccount(int localUserId, String remoteUid, AccountEntity account) async {
-    final model = AccountModel.fromEntity(account);
-    await localDataSource.updateAccount(localUserId, model);
-    try {
-      await remoteDataSource.saveAccount(remoteUid, model).timeout(const Duration(seconds: 4));
-    } catch (e) {
-      debugPrint('Đang offline, cập nhật ví ở local: $e');
-    }
-  }
-
-  @override
-  Future<void> deleteAccount(int localUserId, String remoteUid, String accountId) async {
-    // 1. Xóa mềm SQLite
-    await localDataSource.softDeleteAccount(accountId);
-
-    // 2. Lấy model đã cập nhật để đồng bộ lên Firestore
-    try {
-      final localAccounts = await localDataSource.getAccounts(localUserId);
-      final deletedAccount = localAccounts.firstWhere((a) => a.id == accountId);
-      await remoteDataSource.saveAccount(remoteUid, deletedAccount).timeout(const Duration(seconds: 4));
-    } catch (e) {
-      debugPrint('Đang offline, xóa mềm ví tạm thời ở local: $e');
-    }
-  }
-
-  @override
-  Future<void> restoreAccount(int localUserId, String remoteUid, String accountId) async {
-    // 1. Khôi phục SQLite
-    await localDataSource.restoreAccount(accountId);
-
-    // 2. Lấy model đã cập nhật để đồng bộ lên Firestore
-    try {
-      final localAccounts = await localDataSource.getAccounts(localUserId);
-      final restoredAccount = localAccounts.firstWhere((a) => a.id == accountId);
-      await remoteDataSource.saveAccount(remoteUid, restoredAccount).timeout(const Duration(seconds: 4));
-    } catch (e) {
-      debugPrint('Đang offline, khôi phục ví tạm thời ở local: $e');
-    }
-  }
-
-  @override
-  Future<List<SavingGoalEntity>> getGoals(int localUserId, String remoteUid, {bool forceSync = false}) async {
-    final localGoals = await localDataSource.getGoals(localUserId);
-
-    if (forceSync) {
-      await syncWithFirebase(localUserId, remoteUid);
-      return await localDataSource.getGoals(localUserId);
-    } else {
-      syncWithFirebase(localUserId, remoteUid).catchError((e) {
-        debugPrint('Lỗi đồng bộ ngầm goals: $e');
-      });
-      return localGoals;
-    }
-  }
-
-  @override
-  Future<void> saveGoal(int localUserId, String remoteUid, SavingGoalEntity goal) async {
-    final model = SavingGoalModel.fromEntity(goal);
-
-    await localDataSource.saveGoal(localUserId, model);
-
-    try {
-      await remoteDataSource.saveGoal(remoteUid, model).timeout(const Duration(seconds: 4));
-    } catch (e) {
-      debugPrint('Đang offline, lưu mục tiêu tạm thời vào local: $e');
-    }
-  }
-
-  @override
-  Future<void> deleteGoal(String remoteUid, String goalId) async {
-    await localDataSource.deleteGoal(goalId);
-
-    try {
-      await remoteDataSource.deleteGoal(remoteUid, goalId).timeout(const Duration(seconds: 4));
-    } catch (e) {
-      debugPrint('Đang offline, xóa mục tiêu tạm thời ở local: $e');
-    }
   }
 
   @override
@@ -231,43 +106,10 @@ class WalletRepositoryImpl implements WalletRepository {
   }
 
   @override
-  Future<List<BudgetCategoryEntity>> getCategories(int localUserId) async {
-    final models = await localDataSource.getCategories(localUserId);
-    return models.map((m) => m.toEntity()).toList();
-  }
-
-  @override
-  Future<void> createCategory(int localUserId, BudgetCategoryEntity category) async {
-    final model = BudgetCategoryModel.fromEntity(category);
-    await localDataSource.insertCategory(localUserId, model);
-  }
-
-  @override
-  Future<void> updateCategory(int localUserId, BudgetCategoryEntity category) async {
-    final model = BudgetCategoryModel.fromEntity(category);
-    await localDataSource.updateCategory(localUserId, model);
-  }
-
-  @override
   Future<bool> hasWalletData(int userId) async {
-    final accounts = await hasAccounts(userId);
-    final goals = await hasGoals(userId);
-    final categories = await hasCategories(userId);
+    final accounts = await localDataSource.hasAccounts(userId);
+    final goals = await localDataSource.hasGoals(userId);
+    final categories = await localDataSource.hasCategories(userId);
     return accounts || goals || categories;
-  }
-
-  @override
-  Future<bool> hasAccounts(int userId) {
-    return localDataSource.hasAccounts(userId);
-  }
-
-  @override
-  Future<bool> hasGoals(int userId) {
-    return localDataSource.hasGoals(userId);
-  }
-
-  @override
-  Future<bool> hasCategories(int userId) {
-    return localDataSource.hasCategories(userId);
   }
 }

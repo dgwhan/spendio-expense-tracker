@@ -44,10 +44,14 @@ class _AddGoalBottomSheetState extends State<AddGoalBottomSheet> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final keyboardPadding = MediaQuery.of(context).viewInsets.bottom;
 
-    final backgroundColor = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
-    final primaryTextColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
-    final mutedTextColor = isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
-    final inputFillColor = isDark ? AppColors.surfaceSecondaryDark : Colors.grey.shade50;
+    final backgroundColor =
+        isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
+    final primaryTextColor =
+        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final mutedTextColor =
+        isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
+    final inputFillColor =
+        isDark ? AppColors.surfaceSecondaryDark : Colors.grey.shade50;
     final borderColor = isDark ? AppColors.borderDark : Colors.grey.shade300;
     final containerColor = isDark ? AppColors.surfaceDark : Colors.white;
 
@@ -56,7 +60,10 @@ class _AddGoalBottomSheetState extends State<AddGoalBottomSheet> {
         AppSizes.lg,
         AppSizes.lg,
         AppSizes.lg,
-        AppSizes.lg + (keyboardPadding > 0 ? keyboardPadding : MediaQuery.of(context).padding.bottom),
+        AppSizes.lg +
+            (keyboardPadding > 0
+                ? keyboardPadding
+                : MediaQuery.of(context).padding.bottom),
       ),
       decoration: BoxDecoration(
         color: backgroundColor,
@@ -110,13 +117,15 @@ class _AddGoalBottomSheetState extends State<AddGoalBottomSheet> {
                   labelText: 'Goal Name',
                   hintText: 'e.g. Vacation, New Laptop, Car Deposit',
                   labelStyle: TextStyle(color: mutedTextColor),
-                  hintStyle: TextStyle(color: mutedTextColor.withValues(alpha: 0.7)),
+                  hintStyle:
+                      TextStyle(color: mutedTextColor.withValues(alpha: 0.7)),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppRadius.md),
-                    borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                    borderSide:
+                        const BorderSide(color: AppColors.primary, width: 2),
                   ),
                   filled: true,
                   fillColor: inputFillColor,
@@ -133,19 +142,22 @@ class _AddGoalBottomSheetState extends State<AddGoalBottomSheet> {
               // Target Amount input
               TextFormField(
                 controller: _targetAmountController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 style: TextStyle(color: primaryTextColor),
                 decoration: InputDecoration(
                   labelText: 'Target Amount',
                   hintText: '0.00',
                   labelStyle: TextStyle(color: mutedTextColor),
-                  hintStyle: TextStyle(color: mutedTextColor.withValues(alpha: 0.7)),
+                  hintStyle:
+                      TextStyle(color: mutedTextColor.withValues(alpha: 0.7)),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppRadius.md),
-                    borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                    borderSide:
+                        const BorderSide(color: AppColors.primary, width: 2),
                   ),
                   filled: true,
                   fillColor: inputFillColor,
@@ -166,19 +178,22 @@ class _AddGoalBottomSheetState extends State<AddGoalBottomSheet> {
               // Current Saved input
               TextFormField(
                 controller: _currentAmountController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 style: TextStyle(color: primaryTextColor),
                 decoration: InputDecoration(
                   labelText: 'Already Saved (Optional)',
                   hintText: '0.00',
                   labelStyle: TextStyle(color: mutedTextColor),
-                  hintStyle: TextStyle(color: mutedTextColor.withValues(alpha: 0.7)),
+                  hintStyle:
+                      TextStyle(color: mutedTextColor.withValues(alpha: 0.7)),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppRadius.md),
-                    borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                    borderSide:
+                        const BorderSide(color: AppColors.primary, width: 2),
                   ),
                   filled: true,
                   fillColor: inputFillColor,
@@ -202,7 +217,8 @@ class _AddGoalBottomSheetState extends State<AddGoalBottomSheet> {
                     context: context,
                     initialDate: _estimatedDate,
                     firstDate: DateTime.now(),
-                    lastDate: DateTime.now().add(const Duration(days: 365 * 20)),
+                    lastDate:
+                        DateTime.now().add(const Duration(days: 365 * 20)),
                     builder: (context, child) {
                       return Theme(
                         data: isDark
@@ -243,10 +259,12 @@ class _AddGoalBottomSheetState extends State<AddGoalBottomSheet> {
                       ),
                       filled: true,
                       fillColor: inputFillColor,
-                      suffixIcon: Icon(Icons.calendar_today, color: mutedTextColor),
+                      suffixIcon:
+                          Icon(Icons.calendar_today, color: mutedTextColor),
                     ),
                     controller: TextEditingController(
-                      text: "${_estimatedDate.day}/${_estimatedDate.month}/${_estimatedDate.year}",
+                      text:
+                          "${_estimatedDate.day}/${_estimatedDate.month}/${_estimatedDate.year}",
                     ),
                   ),
                 ),
@@ -277,7 +295,9 @@ class _AddGoalBottomSheetState extends State<AddGoalBottomSheet> {
                     child: Container(
                       padding: const EdgeInsets.all(AppSizes.sm),
                       decoration: BoxDecoration(
-                        color: isSelected ? AppColors.primary.withValues(alpha: 0.15) : containerColor,
+                        color: isSelected
+                            ? AppColors.primary.withValues(alpha: 0.15)
+                            : containerColor,
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: isSelected ? AppColors.primary : borderColor,
@@ -310,7 +330,10 @@ class _AddGoalBottomSheetState extends State<AddGoalBottomSheet> {
                       ),
                       child: Text(
                         'Cancel',
-                        style: TextStyle(color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight),
+                        style: TextStyle(
+                            color: isDark
+                                ? AppColors.textSecondaryDark
+                                : AppColors.textSecondaryLight),
                       ),
                     ),
                   ),
@@ -320,8 +343,12 @@ class _AddGoalBottomSheetState extends State<AddGoalBottomSheet> {
                       onPressed: () {
                         if (!_formKey.currentState!.validate()) return;
                         final name = _nameController.text.trim();
-                        final targetAmount = double.tryParse(_targetAmountController.text.trim()) ?? 0.0;
-                        final currentAmount = double.tryParse(_currentAmountController.text.trim()) ?? 0.0;
+                        final targetAmount = double.tryParse(
+                                _targetAmountController.text.trim()) ??
+                            0.0;
+                        final currentAmount = double.tryParse(
+                                _currentAmountController.text.trim()) ??
+                            0.0;
 
                         final newGoal = SavingGoalEntity(
                           id: 'goal_${DateTime.now().millisecondsSinceEpoch}',

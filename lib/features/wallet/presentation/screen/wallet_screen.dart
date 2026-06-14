@@ -4,17 +4,13 @@ import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
-import 'package:spend_io_app/features/wallet/presentation/widgets/accounts/account_details_bottom_sheet.dart';
+import 'package:spend_io_app/features/wallet/presentation/screen/account_details_screen.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/accounts/accounts_section.dart';
 import 'package:spend_io_app/features/wallet/presentation/screen/account_list_screen.dart';
-import 'package:spend_io_app/features/wallet/presentation/widgets/accounts/add_account_bottom_sheet.dart';
-import 'package:spend_io_app/features/wallet/presentation/widgets/accounts/edit_account_bottom_sheet.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/budget/budget_section.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/goals/goals_section.dart';
-import 'package:spend_io_app/features/wallet/presentation/widgets/goals/add_goal_bottom_sheet.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/header/wallet_header.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/hero/total_assets_card.dart';
-import 'package:spend_io_app/features/wallet/presentation/widgets/quick_actions/quick_actions_section.dart';
 import 'package:spend_io_app/core/widgets/dialogs/app_month_picker_dialog.dart';
 
 class WalletScreen extends StatefulWidget {
@@ -49,7 +45,8 @@ class _WalletScreenState extends State<WalletScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final backgroundColor = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
+    final backgroundColor =
+        isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
     final errorTextColor = isDark ? AppColors.textPrimaryDark : Colors.black87;
 
     return Scaffold(
@@ -84,7 +81,7 @@ class _WalletScreenState extends State<WalletScreen> {
                     const SizedBox(height: AppSizes.md),
                     ElevatedButton(
                       onPressed: () => viewModel.fetchWalletData(),
-                      child: const Text('Thử lại'),
+                      child: const Text('Try again'),
                     ),
                   ],
                 ),
@@ -132,44 +129,6 @@ class _WalletScreenState extends State<WalletScreen> {
                           healthStatus: viewModel.healthStatus,
                         ),
                         const SizedBox(height: AppSizes.xl),
-                        QuickActionsSection(
-                          onAddAccount: () {
-                            showModalBottomSheet(
-                              context: context,
-                              useRootNavigator: true,
-                              isScrollControlled: true,
-                              backgroundColor: Colors.transparent,
-                              builder: (_) =>
-                                  AddAccountBottomSheet(viewModel: viewModel),
-                            );
-                          },
-                          onAddGoal: () {
-                            showModalBottomSheet(
-                              context: context,
-                              useRootNavigator: true,
-                              isScrollControlled: true,
-                              backgroundColor: Colors.transparent,
-                              builder: (_) =>
-                                  AddGoalBottomSheet(viewModel: viewModel),
-                            );
-                          },
-                          onAddBudget: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Add Budget feature will be available in Phase 02'),
-                                backgroundColor: AppColors.primary,
-                              ),
-                            );
-                          },
-                          onTransfer: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Transfer feature will be available in Phase 02'),
-                                backgroundColor: AppColors.primary,
-                              ),
-                            );
-                          },
-                        ),
                         const SizedBox(height: AppSizes.xl),
                         BudgetSection(
                           totalSpent: viewModel.totalSpent,
@@ -196,39 +155,32 @@ class _WalletScreenState extends State<WalletScreen> {
                       );
                     },
                     onAccountTap: (account) async {
-                      final result = await showModalBottomSheet<String>(
-                        context: context,
-                        useRootNavigator: true,
-                        isScrollControlled: true,
-                        backgroundColor: Colors.transparent,
-                        builder: (_) =>
-                            AccountDetailsBottomSheet(account: account),
+                      final result = await Navigator.push<AccountDetailsAction>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              AccountDetailsScreen(account: account),
+                        ),
                       );
 
-                      if (!context.mounted) return;
+                      if (!context.mounted) {
+                        return;
+                      }
 
-                      if (result == 'edit') {
-                        showModalBottomSheet(
-                          context: context,
-                          useRootNavigator: true,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (_) => EditAccountBottomSheet(
-                            viewModel: viewModel,
-                            account: account,
+                      if (result == AccountDetailsAction.deleted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Account deleted successfully!'),
+                            backgroundColor: Colors.redAccent,
                           ),
                         );
-                      } else if (result == 'delete') {
-                        viewModel.deleteAccount(account.id).then((_) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Account deleted successfully!'),
-                                backgroundColor: Colors.redAccent,
-                              ),
-                            );
-                          }
-                        });
+                      } else if (result == AccountDetailsAction.updated) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Account updated successfully!'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
                       }
                     },
                   ),

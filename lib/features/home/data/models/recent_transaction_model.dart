@@ -1,3 +1,5 @@
+/// TEMPORARY MODEL (Phase 02B only)
+/// Will be replaced by TransactionEntity in Phase 03 Transaction Engine
 class RecentTransactionModel {
   final String id;
   final String title;
