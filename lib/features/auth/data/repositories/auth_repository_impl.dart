@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasource/auth_local_datasource.dart';
@@ -18,7 +19,6 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       final displayName = user.email.split('@').first;
 
-      // 1. Tạo tài khoản Firebase Auth & Firestore
       final credential = await remoteDatasource
           .registerUser(
             email: user.email,
@@ -28,7 +28,6 @@ class AuthRepositoryImpl implements AuthRepository {
           .timeout(const Duration(seconds: 5));
       firebaseUser = credential.user;
 
-      // 2. Lưu vào SQLite cục bộ để chạy offline-first
       final model = UserModel(
         id: user.id,
         email: user.email,
@@ -48,11 +47,9 @@ class AuthRepositoryImpl implements AuthRepository {
       return true;
     } catch (e) {
       debugPrint("===> Lỗi đăng ký tại AuthRepositoryImpl: $e");
-      // Rollback nếu có lỗi xảy ra sau khi Firebase đã tạo xong tài khoản
       if (firebaseUser != null) {
         await remoteDatasource.rollbackUser(user: firebaseUser);
       }
-      // Cleanup: Xóa dữ liệu SQLite khi đăng ký thất bại
       try {
         await localDatasource.deleteUserByEmail(user.email);
       } catch (_) {}
@@ -65,7 +62,6 @@ class AuthRepositoryImpl implements AuthRepository {
     fb.UserCredential? credential;
 
     try {
-      // 1. Đăng nhập qua Firebase Authentication (chờ tối đa 5s)
       credential = await remoteDatasource
           .loginUser(
             email: email,
@@ -73,7 +69,6 @@ class AuthRepositoryImpl implements AuthRepository {
           )
           .timeout(const Duration(seconds: 5));
     } catch (e) {
-      // Offline fallback: Nếu đăng nhập Firebase Auth thất bại, thử đăng nhập bằng SQLite cục bộ
       final localResult = await localDatasource.loginUser(
         email: email,
         password: password,
@@ -97,6 +92,7 @@ class AuthRepositoryImpl implements AuthRepository {
     final uid = user.uid;
     Map<String, dynamic> userData = {};
     double? walletBalance;
+    String? firestoreWalletId;
 
     try {
       final profileSnap = await remoteDatasource
@@ -105,15 +101,26 @@ class AuthRepositoryImpl implements AuthRepository {
 
       if (profileSnap.exists) {
         userData = profileSnap.data()!;
-        walletBalance = await remoteDatasource
-            .getWalletBalance(uid: uid)
+
+        // Truy vấn subcollection wallets để lấy ID thực tế của ví trên Firestore
+        final walletQuery = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .collection('wallets')
+            .limit(1)
+            .get()
             .timeout(const Duration(seconds: 2));
+
+        if (walletQuery.docs.isNotEmpty) {
+          final walletDoc = walletQuery.docs.first;
+          firestoreWalletId = walletDoc.id; // Lấy ID gốc (ví dụ: acc_178155...)
+          walletBalance = (walletDoc.data()['balance'] as num?)?.toDouble();
+        }
       }
     } catch (e) {
-      // Bỏ qua lỗi Firestore nếu bị treo/mất kết nối để không chặn quá trình đăng nhập thành công
+      debugPrint("Lỗi tải thông tin Firestore khi đăng nhập: $e");
     }
 
-    // 3. Đồng bộ hóa xuống SQLite local để offline-first
     final localModel = UserModel(
       email: email,
       password: password,
@@ -127,10 +134,13 @@ class AuthRepositoryImpl implements AuthRepository {
           : DateTime.now(),
     );
 
-    await localDatasource.syncUserFromFirebase(localModel,
-        walletBalance: walletBalance);
+    // Đồng bộ xuống SQLite kèm theo ID thực tế từ Firestore để không sinh ID 'main' lệch lạc
+    await localDatasource.syncUserFromFirebase(
+      localModel,
+      walletBalance: walletBalance,
+      firestoreWalletId: firestoreWalletId,
+    );
 
-    // 4. Trả về thực thể UserEntity với id chính xác từ SQLite
     final dbUsers = await localDatasource.getAllUsers();
     final loggedInUser = dbUsers.firstWhere((u) => u.email == email);
 
@@ -147,14 +157,12 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<bool> checkEmailExists(String email) async {
-    // 1. Kiểm tra Firebase TRƯỚC TIÊN (source of truth)
     try {
       final firebaseResult = await remoteDatasource
           .checkEmailExists(email: email)
           .timeout(const Duration(seconds: 2));
       return firebaseResult;
     } catch (e) {
-      // 2. Fallback: Nếu Firebase không khả dụng, kiểm tra SQLite cục bộ (offline mode)
       debugPrint("Firebase email check failed: $e, falling back to local");
       final users = await localDatasource.getAllUsers();
       return users.any((u) => u.email == email);
@@ -169,17 +177,17 @@ class AuthRepositoryImpl implements AuthRepository {
     final email = firebaseUser.email!;
     final users = await localDatasource.getAllUsers();
     final localUser = users.cast<UserModel?>().firstWhere(
-      (u) => u?.email == email,
-      orElse: () => null,
-    );
+          (u) => u?.email == email,
+          orElse: () => null,
+        );
 
     if (localUser != null) {
       return localUser.toEntity();
     }
 
-    // Local record is missing, download Firestore profile
     Map<String, dynamic> userData = {};
     double? walletBalance;
+    String? firestoreWalletId;
     bool exists = false;
 
     try {
@@ -190,9 +198,20 @@ class AuthRepositoryImpl implements AuthRepository {
       if (profileSnap.exists) {
         exists = true;
         userData = profileSnap.data()!;
-        walletBalance = await remoteDatasource
-            .getWalletBalance(uid: firebaseUser.uid)
+
+        final walletQuery = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(firebaseUser.uid)
+            .collection('wallets')
+            .limit(1)
+            .get()
             .timeout(const Duration(seconds: 2));
+
+        if (walletQuery.docs.isNotEmpty) {
+          final walletDoc = walletQuery.docs.first;
+          firestoreWalletId = walletDoc.id;
+          walletBalance = (walletDoc.data()['balance'] as num?)?.toDouble();
+        }
       }
     } catch (e) {
       debugPrint("Failed to load user profile in getCurrentUser: $e");
@@ -202,7 +221,6 @@ class AuthRepositoryImpl implements AuthRepository {
       return null;
     }
 
-    // Sync to SQLite
     final localModel = UserModel(
       email: email,
       password: '',
@@ -216,13 +234,17 @@ class AuthRepositoryImpl implements AuthRepository {
           : DateTime.now(),
     );
 
-    await localDatasource.syncUserFromFirebase(localModel, walletBalance: walletBalance);
+    await localDatasource.syncUserFromFirebase(
+      localModel,
+      walletBalance: walletBalance,
+      firestoreWalletId: firestoreWalletId,
+    );
 
     final dbUsers = await localDatasource.getAllUsers();
     final syncedUser = dbUsers.cast<UserModel?>().firstWhere(
-      (u) => u?.email == email,
-      orElse: () => null,
-    );
+          (u) => u?.email == email,
+          orElse: () => null,
+        );
 
     return syncedUser?.toEntity();
   }

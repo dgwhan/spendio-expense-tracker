@@ -15,10 +15,12 @@ class AccountRepositoryImpl implements AccountRepository {
   });
 
   @override
-  Future<List<AccountEntity>> getAccounts(int localUserId, String remoteUid, {bool forceSync = false}) async {
+  Future<List<AccountEntity>> getAccounts(int localUserId, String remoteUid,
+      {bool forceSync = false}) async {
     // Luôn trả về từ SQLite cục bộ trước để giao diện tải tức thì
     final localAccounts = await localDataSource.getAccounts(localUserId);
-    final activeLocalAccounts = localAccounts.where((a) => a.deletedAt == null).toList();
+    final activeLocalAccounts =
+        localAccounts.where((a) => a.deletedAt == null).toList();
 
     if (forceSync) {
       await _syncWithFirebase(localUserId, remoteUid);
@@ -34,40 +36,50 @@ class AccountRepositoryImpl implements AccountRepository {
   }
 
   @override
-  Future<void> saveAccount(int localUserId, String remoteUid, AccountEntity account) async {
+  Future<void> saveAccount(
+      int localUserId, String remoteUid, AccountEntity account) async {
     final model = AccountModel.fromEntity(account);
     await localDataSource.saveAccount(localUserId, model);
     try {
-      await remoteDataSource.saveAccount(remoteUid, model).timeout(const Duration(seconds: 4));
+      await remoteDataSource
+          .saveAccount(remoteUid, model)
+          .timeout(const Duration(seconds: 4));
     } catch (e) {
       debugPrint('Đang offline, lưu ví tạm thời vào local: $e');
     }
   }
 
   @override
-  Future<void> createAccount(int localUserId, String remoteUid, AccountEntity account) async {
+  Future<void> createAccount(
+      int localUserId, String remoteUid, AccountEntity account) async {
     final model = AccountModel.fromEntity(account);
     await localDataSource.createAccount(localUserId, model);
     try {
-      await remoteDataSource.saveAccount(remoteUid, model).timeout(const Duration(seconds: 4));
+      await remoteDataSource
+          .saveAccount(remoteUid, model)
+          .timeout(const Duration(seconds: 4));
     } catch (e) {
       debugPrint('Đang offline, tạo ví ở local: $e');
     }
   }
 
   @override
-  Future<void> updateAccount(int localUserId, String remoteUid, AccountEntity account) async {
+  Future<void> updateAccount(
+      int localUserId, String remoteUid, AccountEntity account) async {
     final model = AccountModel.fromEntity(account);
     await localDataSource.updateAccount(localUserId, model);
     try {
-      await remoteDataSource.saveAccount(remoteUid, model).timeout(const Duration(seconds: 4));
+      await remoteDataSource
+          .saveAccount(remoteUid, model)
+          .timeout(const Duration(seconds: 4));
     } catch (e) {
       debugPrint('Đang offline, cập nhật ví ở local: $e');
     }
   }
 
   @override
-  Future<void> deleteAccount(int localUserId, String remoteUid, String accountId) async {
+  Future<void> deleteAccount(
+      int localUserId, String remoteUid, String accountId) async {
     // 1. Xóa mềm SQLite
     await localDataSource.softDeleteAccount(accountId);
 
@@ -75,22 +87,28 @@ class AccountRepositoryImpl implements AccountRepository {
     try {
       final localAccounts = await localDataSource.getAccounts(localUserId);
       final deletedAccount = localAccounts.firstWhere((a) => a.id == accountId);
-      await remoteDataSource.saveAccount(remoteUid, deletedAccount).timeout(const Duration(seconds: 4));
+      await remoteDataSource
+          .saveAccount(remoteUid, deletedAccount)
+          .timeout(const Duration(seconds: 4));
     } catch (e) {
       debugPrint('Đang offline, xóa mềm ví tạm thời ở local: $e');
     }
   }
 
   @override
-  Future<void> restoreAccount(int localUserId, String remoteUid, String accountId) async {
+  Future<void> restoreAccount(
+      int localUserId, String remoteUid, String accountId) async {
     // 1. Khôi phục SQLite
     await localDataSource.restoreAccount(accountId);
 
     // 2. Lấy model đã cập nhật để đồng bộ lên Firestore
     try {
       final localAccounts = await localDataSource.getAccounts(localUserId);
-      final restoredAccount = localAccounts.firstWhere((a) => a.id == accountId);
-      await remoteDataSource.saveAccount(remoteUid, restoredAccount).timeout(const Duration(seconds: 4));
+      final restoredAccount =
+          localAccounts.firstWhere((a) => a.id == accountId);
+      await remoteDataSource
+          .saveAccount(remoteUid, restoredAccount)
+          .timeout(const Duration(seconds: 4));
     } catch (e) {
       debugPrint('Đang offline, khôi phục ví tạm thời ở local: $e');
     }
@@ -106,17 +124,19 @@ class AccountRepositoryImpl implements AccountRepository {
       final localWallets = await localDataSource.getAccounts(localUserId);
       final remoteWallets = await remoteDataSource.getAccounts(remoteUid);
 
-      final Map<String, AccountModel> localMap = {for (var w in localWallets) w.id: w};
-      final Map<String, AccountModel> remoteMap = {for (var w in remoteWallets) w.id: w};
+      final Map<String, AccountModel> localMap = {
+        for (var w in localWallets) w.id: w
+      };
+      final Map<String, AccountModel> remoteMap = {
+        for (var w in remoteWallets) w.id: w
+      };
 
       // 1. Duyệt remote check tải về local hoặc cập nhật chéo
       for (final remoteWallet in remoteWallets) {
         final localWallet = localMap[remoteWallet.id];
         if (localWallet == null) {
-          // Chưa có ở local -> tải xuống
           await localDataSource.saveAccount(localUserId, remoteWallet);
         } else {
-          // Trùng ID -> So sánh updatedAt
           if (remoteWallet.updatedAt.isAfter(localWallet.updatedAt)) {
             await localDataSource.saveAccount(localUserId, remoteWallet);
           } else if (localWallet.updatedAt.isAfter(remoteWallet.updatedAt)) {
@@ -132,7 +152,8 @@ class AccountRepositoryImpl implements AccountRepository {
         }
       }
     } catch (e) {
-      debugPrint('Đang offline, không thể đồng bộ hóa wallets với Firestore: $e');
+      debugPrint(
+          'Đang offline, không thể đồng bộ hóa wallets với Firestore: $e');
     }
   }
 }

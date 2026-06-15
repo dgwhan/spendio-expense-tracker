@@ -134,20 +134,17 @@ class WalletViewModel extends ChangeNotifier {
         final localId = _currentUser!.id ?? 1;
         await initializeCategories(localId);
         await loadSummary(localId);
-        await loadAccounts(localId);
         await loadGoals(localId);
         await loadCategories(localId);
 
         _isLoading = false;
         notifyListeners();
 
-        // Background sync and refresh UI with synced data
         final remoteUid = _remoteUid;
         if (remoteUid.isNotEmpty) {
           await getWalletSummaryUseCase.repository
               .syncWithFirebase(localId, remoteUid);
           await loadSummary(localId);
-          await loadAccounts(localId);
           await loadGoals(localId);
           notifyListeners();
         }

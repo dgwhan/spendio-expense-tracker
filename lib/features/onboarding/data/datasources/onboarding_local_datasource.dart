@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
-
 import '../../../../core/database/app_database.dart';
 import '../../../../core/database/tables/users_table.dart';
-
 import '../models/onboarding_model.dart';
 
 abstract class OnboardingLocalDataSource {
   Future<void> saveOnboarding({
     required String email,
     required OnboardingModel model,
+    required String walletId,
   });
 
   Future<bool> checkCompleted({
@@ -28,10 +27,10 @@ class OnboardingLocalDataSourceImpl implements OnboardingLocalDataSource {
   Future<void> saveOnboarding({
     required String email,
     required OnboardingModel model,
+    required String walletId,
   }) async {
     final db = await _db;
 
-    // Cập nhật thông tin User
     await db.update(
       UsersTable.tableName,
       {
@@ -46,7 +45,6 @@ class OnboardingLocalDataSourceImpl implements OnboardingLocalDataSource {
       whereArgs: [email],
     );
 
-    // Lấy ID của User để liên kết ví
     final userResult = await db.query(
       UsersTable.tableName,
       columns: ['id'],
@@ -58,7 +56,6 @@ class OnboardingLocalDataSourceImpl implements OnboardingLocalDataSource {
     if (userResult.isNotEmpty) {
       final userId = userResult.first['id'] as int;
 
-      // Kiểm tra xem ví chính đã tồn tại chưa
       final walletResult = await db.query(
         'wallets',
         where: 'user_id = ?',
@@ -67,9 +64,6 @@ class OnboardingLocalDataSourceImpl implements OnboardingLocalDataSource {
       );
 
       if (walletResult.isEmpty) {
-        // Tạo ví mới với số dư ban đầu
-        final walletId =
-            'wallet_main_${userId}_${DateTime.now().millisecondsSinceEpoch}';
         await db.insert('wallets', {
           'id': walletId,
           'user_id': userId,
@@ -83,7 +77,6 @@ class OnboardingLocalDataSourceImpl implements OnboardingLocalDataSource {
           'updated_at': DateTime.now().toIso8601String(),
         });
       } else {
-        // Cập nhật ví hiện tại
         await db.update(
           'wallets',
           {
@@ -137,7 +130,6 @@ class OnboardingLocalDataSourceImpl implements OnboardingLocalDataSource {
     final userMap = userResult.first;
     final userId = userMap['id'] as int;
 
-    // Lấy số dư ví (nếu có)
     final walletResult = await db.query(
       'wallets',
       columns: ['balance'],

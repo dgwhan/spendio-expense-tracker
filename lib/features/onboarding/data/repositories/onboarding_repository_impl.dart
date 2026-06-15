@@ -28,20 +28,27 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
       onboardingCompleted: entity.onboardingCompleted,
     );
 
-    // Lưu cục bộ ở SQLite để offline
+    // Sinh duy nhất một ID ví chung dạng acc_ để đồng bộ từ Local lên Remote
+    final String generatedWalletId =
+        'acc_${DateTime.now().millisecondsSinceEpoch}';
+
+    // Lưu cục bộ ở SQLite để offline (Truyền thêm walletId)
     await localDataSource.saveOnboarding(
       email: email,
       model: model,
+      walletId: generatedWalletId,
     );
 
     // Đồng bộ hóa lên Cloud Firestore nếu người dùng đã đăng nhập Firebase
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
-      // Chạy bất đồng bộ ngầm để tránh làm nghẽn quá trình chuyển bước trên UI
-      remoteDataSource.saveOnboarding(
+      remoteDataSource
+          .saveOnboarding(
         uid: uid,
         model: model,
-      ).catchError((e) {
+        walletId: generatedWalletId, // Truyền thêm walletId giống hệt local
+      )
+          .catchError((e) {
         // Bỏ qua lỗi đồng bộ khi offline hoặc lỗi Firestore
       });
     }
@@ -64,10 +71,18 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
 
     if (uid != null) {
       try {
-        // Lấy dữ liệu mới nhất từ Firestore để cập nhật cache SQLite
         final remoteModel = await remoteDataSource.getOnboarding(uid: uid);
         if (remoteModel != null) {
-          await localDataSource.saveOnboarding(email: email, model: remoteModel);
+          // Khi lấy dữ liệu từ Firebase về, sinh một ID mới cho local nếu chưa có ví
+          final String syncWalletId =
+              'acc_${DateTime.now().millisecondsSinceEpoch}';
+
+          await localDataSource.saveOnboarding(
+            email: email,
+            model: remoteModel,
+            walletId: syncWalletId,
+          );
+
           return OnboardingEntity(
             displayName: remoteModel.displayName,
             occupation: remoteModel.occupation,
@@ -78,7 +93,7 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
           );
         }
       } catch (_) {
-        //bỏ qua lỗi khi kh có mạng
+        // Bỏ qua lỗi khi không có mạng
       }
     }
 
