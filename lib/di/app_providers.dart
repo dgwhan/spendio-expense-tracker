@@ -4,6 +4,12 @@ import 'package:spend_io_app/features/wallet/data/datasources/wallet_remote_data
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
 import '../../../features/home/presentation/viewmodels/dashboard_viewmodel.dart';
 
+// PROFILE LAYER
+import 'package:spend_io_app/features/profile/data/datasources/profile_local_datasource.dart';
+import 'package:spend_io_app/features/profile/data/datasources/profile_remote_datasource.dart';
+import 'package:spend_io_app/features/profile/data/repositories/profile_repository_impl.dart';
+import 'package:spend_io_app/features/profile/presentation/viewmodels/profile_viewmodel.dart';
+
 // ONBOARDING LAYER
 import '../features/onboarding/data/datasources/onboarding_local_datasource.dart';
 import '../features/onboarding/data/datasources/onboarding_remote_datasource.dart';
@@ -93,6 +99,15 @@ class AppProviders {
           create: (_) => GoalRemoteDataSourceImpl(),
         ),
 
+        // Profile sub-datasources
+        Provider<ProfileLocalDataSource>(
+          create: (_) => ProfileLocalDataSource(),
+        ),
+
+        Provider<ProfileRemoteDataSource>(
+          create: (_) => ProfileRemoteDataSource(),
+        ),
+
         // Wallet facade datasources
         ProxyProvider3<AccountLocalDataSource, GoalLocalDataSource,
             BudgetLocalDataSource, WalletLocalDataSource>(
@@ -137,9 +152,17 @@ class AppProviders {
               localDataSource: local, remoteDataSource: remote),
         ),
 
+        ProxyProvider2<ProfileLocalDataSource, ProfileRemoteDataSource,
+            ProfileRepositoryImpl>(
+          update: (_, local, remote, __) => ProfileRepositoryImpl(
+            localDataSource: local,
+            remoteDataSource: remote,
+          ),
+        ),
+
         ProxyProvider<BudgetLocalDataSource, BudgetCategoryRepositoryImpl>(
-          update: (_, local, __) => BudgetCategoryRepositoryImpl(
-              localDataSource: local),
+          update: (_, local, __) =>
+              BudgetCategoryRepositoryImpl(localDataSource: local),
         ),
 
         // ==============================================================
@@ -193,7 +216,8 @@ class AppProviders {
         ProxyProvider<BudgetCategoryRepositoryImpl, GetCategoriesUseCase>(
           update: (_, repo, __) => GetCategoriesUseCase(repo),
         ),
-        ProxyProvider<BudgetCategoryRepositoryImpl, InitializeBudgetCategoriesUseCase>(
+        ProxyProvider<BudgetCategoryRepositoryImpl,
+            InitializeBudgetCategoriesUseCase>(
           update: (_, repo, __) => InitializeBudgetCategoriesUseCase(repo),
         ),
 
@@ -298,12 +322,22 @@ class AppProviders {
             return activeVm;
           },
         ),
+
         ChangeNotifierProxyProvider<WalletViewModel, DashboardViewModel>(
           create: (context) => DashboardViewModel(
             walletViewModel: context.read<WalletViewModel>(),
           ),
           update: (_, walletVM, vm) =>
               vm ?? DashboardViewModel(walletViewModel: walletVM),
+        ),
+
+        // Profile VM
+        ChangeNotifierProxyProvider<ProfileRepositoryImpl, ProfileViewModel>(
+          create: (context) => ProfileViewModel(
+            profileRepository: context.read<ProfileRepositoryImpl>(),
+          ),
+          update: (_, repo, vm) =>
+              vm ?? ProfileViewModel(profileRepository: repo),
         ),
       ];
 }

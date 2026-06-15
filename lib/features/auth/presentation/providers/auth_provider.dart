@@ -15,7 +15,8 @@ class AuthProvider extends ChangeNotifier {
   });
 
   /// Register new account
-  Future<bool> register({
+  /// Trả về null nếu thành công, trả về String chứa thông báo lỗi chi tiết nếu thất bại
+  Future<String?> register({
     required String email,
     required String password,
   }) async {
@@ -35,19 +36,27 @@ class AuthProvider extends ChangeNotifier {
 
       if (success) {
         // Tự động đăng nhập để thiết lập session
-        await login(email: email, password: password);
+        final loginSuccess = await login(email: email, password: password);
+
+        isLoading = false;
+        notifyListeners();
+
+        if (loginSuccess) {
+          return null; // Đăng ký và Đăng nhập thành công trọn vẹn
+        } else {
+          return "Tài khoản đã tạo thành công, nhưng không thể thiết lập phiên đăng nhập tự động.";
+        }
       } else {
         isLoading = false;
         notifyListeners();
+        return "Đăng ký thất bại. Email có thể đã tồn tại hoặc dữ liệu SQLite local bị từ chối.";
       }
-
-      return success;
     } catch (e) {
-      //demo tạm thời
       debugPrint("Lỗi tại AuthProvider.register: $e");
       isLoading = false;
       notifyListeners();
-      return false;
+      return e
+          .toString(); // Trả về thông báo lỗi thực tế (ví dụ: email-already-in-use từ Firebase)
     }
   }
 
@@ -147,7 +156,8 @@ class AuthProvider extends ChangeNotifier {
   Future<void> reloadUser() async {
     if (currentUser == null) return;
     try {
-      final result = await repository.login(currentUser!.email, currentUser!.password);
+      final result =
+          await repository.login(currentUser!.email, currentUser!.password);
       if (result != null) {
         currentUser = UserModel(
           id: result.id,

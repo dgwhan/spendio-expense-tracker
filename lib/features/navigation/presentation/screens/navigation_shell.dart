@@ -4,6 +4,7 @@ import 'package:spend_io_app/features/home/presentation/screens/home_screen.dart
 import 'package:spend_io_app/features/navigation/presentation/providers/navigation_provider.dart';
 import 'package:spend_io_app/features/navigation/presentation/widgets/bottom_navigation_bar.dart';
 import 'package:spend_io_app/features/navigation/presentation/widgets/center_action_button.dart';
+import 'package:spend_io_app/features/profile/presentation/screens/profile_screen.dart';
 import 'package:spend_io_app/features/wallet/presentation/screen/wallet_screen.dart';
 
 //Nguồn tham khảo ý tưởng cấu trúc:
@@ -59,8 +60,7 @@ class _NavigationShellState extends State<NavigationShell> {
           index: currentIndex,
           children: [
             _buildTabWorkspace(
-                navigatorKey: _navigatorKeys[0],
-                rootPage: const HomeScreen()),
+                navigatorKey: _navigatorKeys[0], rootPage: const HomeScreen()),
             _buildTabWorkspace(
                 navigatorKey: _navigatorKeys[1],
                 rootPage: const WalletScreen()),
@@ -69,7 +69,7 @@ class _NavigationShellState extends State<NavigationShell> {
                 rootPage: const Center(child: Text('Insights Workspace'))),
             _buildTabWorkspace(
                 navigatorKey: _navigatorKeys[3],
-                rootPage: const Center(child: Text('Profile Workspace'))),
+                rootPage: const ProfileScreen()),
           ],
         ),
         bottomNavigationBar: Stack(

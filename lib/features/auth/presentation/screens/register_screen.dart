@@ -46,6 +46,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     final formVM = context.read<RegisterFormViewModel>();
+
     if (formVM.isEmailChecking) {
       return;
     }
@@ -58,7 +59,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final authProvider = context.read<AuthProvider>();
     final emailText = emailController.text.trim();
 
-    final success = await authProvider.register(
+    final String? errorMessage = await authProvider.register(
       email: emailText,
       password: passwordController.text.trim(),
     );
@@ -67,7 +68,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    if (success) {
+    if (errorMessage == null) {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
@@ -76,7 +77,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
         (route) => false,
       );
     } else {
-      await AppDialogs.emailExists(context);
+      if (errorMessage.contains('email-already-in-use') ||
+          errorMessage.contains('exists')) {
+        await AppDialogs.emailExists(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage.isNotEmpty
+                ? errorMessage
+                : 'Registration failed. Please try again.'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
     }
   }
 
