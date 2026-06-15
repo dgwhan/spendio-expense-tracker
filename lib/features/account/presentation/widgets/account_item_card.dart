@@ -10,8 +10,6 @@ import 'package:spend_io_app/features/account/domain/entities/account_entity.dar
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
 import 'package:spend_io_app/features/account/presentation/widgets/edit_account_bottom_sheet.dart';
 
-/// [App Location] Account List Screen / Home Screen -> Account Scroll Feed.
-/// [Core Function] Adaptive dashboard card grid displaying balance asset metrics, contextual multi-tone branding icons, and decentralized quick CRUD pop-up actions.
 class AccountItemCard extends StatelessWidget {
   final AccountEntity account;
   final VoidCallback? onTap;
@@ -36,68 +34,8 @@ class AccountItemCard extends StatelessWidget {
         return Icons.credit_card_rounded;
       case AccountType.eWallet:
         return Icons.account_balance_wallet_rounded;
-      case AccountType.savingsAccount:
-        return Icons.savings_rounded;
-    }
-  }
-
-  Color _getBgColor(AccountType type, bool isDark) {
-    if (isDark) {
-      switch (type) {
-        case AccountType.cash:
-          return AppColors.cashBgDark;
-        case AccountType.bank:
-          return AppColors.bankBgDark;
-        case AccountType.creditCard:
-          return AppColors.creditCardBgDark;
-        case AccountType.eWallet:
-          return AppColors.eWalletBgDark;
-        case AccountType.savingsAccount:
-          return AppColors.savingsAccountBgDark;
-      }
-    } else {
-      switch (type) {
-        case AccountType.cash:
-          return AppColors.cashBgLight;
-        case AccountType.bank:
-          return AppColors.bankBgLight;
-        case AccountType.creditCard:
-          return AppColors.creditCardBgLight;
-        case AccountType.eWallet:
-          return AppColors.eWalletBgLight;
-        case AccountType.savingsAccount:
-          return AppColors.savingsAccountBgLight;
-      }
-    }
-  }
-
-  Color _getIconColor(AccountType type, bool isDark) {
-    if (isDark) {
-      switch (type) {
-        case AccountType.cash:
-          return AppColors.cashDark;
-        case AccountType.bank:
-          return AppColors.bankDark;
-        case AccountType.creditCard:
-          return AppColors.creditCardDark;
-        case AccountType.eWallet:
-          return AppColors.eWalletDark;
-        case AccountType.savingsAccount:
-          return AppColors.savingsAccountDark;
-      }
-    } else {
-      switch (type) {
-        case AccountType.cash:
-          return AppColors.cashLight;
-        case AccountType.bank:
-          return AppColors.bankLight;
-        case AccountType.creditCard:
-          return AppColors.creditCardLight;
-        case AccountType.eWallet:
-          return AppColors.eWalletLight;
-        case AccountType.savingsAccount:
-          return AppColors.savingsAccountLight;
-      }
+      default:
+        return Icons.help_outline_rounded;
     }
   }
 
@@ -133,7 +71,11 @@ class AccountItemCard extends StatelessWidget {
         isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
     final outlineColor =
         isDark ? AppColors.outlineDark : const Color(0xFFF1F1F1);
-    final accentColor = _getIconColor(account.type, isDark);
+
+    // ĐỒNG BỘ MÀU: Lấy trực tiếp từ Extension, dẹp bỏ các hàm switch-case thừa
+    final accentColor = account.type.mainColor;
+    final iconBgColor = account.type.bgColor;
+
     final walletVM = context.read<WalletViewModel>();
 
     final institutionText = (switch (account.type) {
@@ -192,8 +134,7 @@ class AccountItemCard extends StatelessWidget {
                         width: 46,
                         height: 46,
                         decoration: BoxDecoration(
-                          color: _getBgColor(account.type, isDark)
-                              .withValues(alpha: isDark ? 0.2 : 0.6),
+                          color: iconBgColor,
                           borderRadius:
                               BorderRadius.circular(AppRadius.md * 1.1),
                         ),
@@ -255,11 +196,13 @@ class AccountItemCard extends StatelessWidget {
                                   color: mutedTextColor.withValues(alpha: 0.5)),
                               onSelected: (value) async {
                                 if (value == 'edit') {
+                                  // Sử dụng màn hình an toàn, đóng mở nhịp nhàng
                                   final result = await showModalBottomSheet(
                                     context: context,
-                                    useRootNavigator: true,
+                                    useRootNavigator:
+                                        false, // Đồng bộ chặn đứng bug đóng nhầm tầng UI
                                     isScrollControlled: true,
-                                    backgroundColor: AppColors.transparent,
+                                    backgroundColor: Colors.transparent,
                                     builder: (_) => EditAccountBottomSheet(
                                         viewModel: walletVM, account: account),
                                   );

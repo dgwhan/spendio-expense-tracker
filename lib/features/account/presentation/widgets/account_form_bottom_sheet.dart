@@ -3,10 +3,8 @@ import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/core/constants/app_radius.dart';
 import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
-import 'package:spend_io_app/features/account/presentation/widgets/widgets/account_type_grid_selector.dart';
+import 'package:spend_io_app/features/account/presentation/widgets/account_type_grid_selector.dart';
 
-/// [App Location] Account Feature -> Presentation Layer -> Form Templates.
-/// [Core Function] Stateless atomic layout blueprint handling raw form inputs, generic validations, and textfield focus parameters without direct database access.
 class AccountFormBottomSheet extends StatefulWidget {
   final AccountEntity? account;
   final String title;
@@ -140,10 +138,12 @@ class _AccountFormBottomSheetState extends State<AccountFormBottomSheet> {
                           fillColor: inputFillColor,
                         ),
                         validator: (value) {
-                          if (value == null || value.trim().isEmpty)
+                          if (value == null || value.trim().isEmpty) {
                             return 'Account name is required';
-                          if (value.trim().length < 2)
+                          }
+                          if (value.trim().length < 2) {
                             return 'Account name must be at least 2 characters';
+                          }
                           return null;
                         },
                       ),
@@ -155,7 +155,7 @@ class _AccountFormBottomSheetState extends State<AccountFormBottomSheet> {
                         style: TextStyle(color: primaryTextColor),
                         decoration: InputDecoration(
                           labelText: 'Balance',
-                          hintText: '0.00',
+                          hintText: '0',
                           labelStyle: TextStyle(color: mutedTextColor),
                           hintStyle: TextStyle(
                               color: mutedTextColor.withValues(alpha: 0.7)),
@@ -171,10 +171,12 @@ class _AccountFormBottomSheetState extends State<AccountFormBottomSheet> {
                           fillColor: inputFillColor,
                         ),
                         validator: (value) {
-                          if (value == null || value.trim().isEmpty)
+                          if (value == null || value.trim().isEmpty) {
                             return 'Balance is required';
-                          if (double.tryParse(value.trim()) == null)
+                          }
+                          if (double.tryParse(value.trim()) == null) {
                             return 'Please enter a valid numeric value';
+                          }
                           return null;
                         },
                       ),
@@ -189,8 +191,11 @@ class _AccountFormBottomSheetState extends State<AccountFormBottomSheet> {
                       const SizedBox(height: AppSizes.sm),
                       AccountTypeGridSelector(
                         selectedType: _selectedType,
-                        onTypeSelected: (type) =>
-                            setState(() => _selectedType = type),
+                        onTypeSelected: (type) {
+                          setState(() {
+                            _selectedType = type;
+                          });
+                        },
                       ),
                     ],
                   ),
@@ -226,7 +231,6 @@ class _AccountFormBottomSheetState extends State<AccountFormBottomSheet> {
                         final balance =
                             double.parse(_balanceController.text.trim());
 
-                        // Pure submission delegate - lets parent containers handle state pops safely
                         widget.onSubmit(name, _selectedType, balance);
                       },
                       style: ElevatedButton.styleFrom(

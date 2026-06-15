@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
+import 'package:spend_io_app/features/account/presentation/widgets/account_form_bottom_sheet.dart';
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
-import 'account_form_bottom_sheet.dart';
 
 class EditAccountBottomSheet extends StatelessWidget {
   final WalletViewModel viewModel;
@@ -23,8 +23,8 @@ class EditAccountBottomSheet extends StatelessWidget {
         return Icons.account_balance_wallet;
       case AccountType.creditCard:
         return Icons.credit_card;
-      case AccountType.savingsAccount:
-        return Icons.savings;
+      default:
+        return Icons.help_outline;
     }
   }
 
@@ -34,7 +34,7 @@ class EditAccountBottomSheet extends StatelessWidget {
       account: account,
       title: 'Edit Account',
       actionLabel: 'Update',
-      onSubmit: (name, type, balance) {
+      onSubmit: (name, type, balance) async {
         final icon = _getDefaultIcon(type);
 
         final updatedAccount = AccountEntity(
@@ -49,17 +49,25 @@ class EditAccountBottomSheet extends StatelessWidget {
           deletedAt: account.deletedAt,
         );
 
-        Navigator.of(context, rootNavigator: true).pop(true);
-
         final messenger = ScaffoldMessenger.of(context);
-        viewModel.updateAccount(updatedAccount).then((_) {
+
+        try {
+          await viewModel.updateAccount(updatedAccount);
+
           messenger.showSnackBar(
             const SnackBar(
               content: Text('Account updated successfully!'),
               backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
             ),
           );
-        });
+
+          if (context.mounted) {
+            Navigator.of(context).pop(true);
+          }
+        } catch (e) {
+          debugPrint('Lỗi cập nhật tài khoản: $e');
+        }
       },
     );
   }

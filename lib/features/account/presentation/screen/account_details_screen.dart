@@ -8,16 +8,16 @@ import 'package:spend_io_app/core/utils/transaction_grouping.dart';
 import 'package:spend_io_app/core/widgets/dialogs/app_confirmation_dialog.dart';
 import 'package:spend_io_app/core/widgets/input/app_search_bar.dart';
 import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
+import 'package:spend_io_app/features/account/presentation/widgets/filter/account_detail_filter_capsule.dart';
+import 'package:spend_io_app/features/account/presentation/widgets/hero/account_detail_hero_card.dart';
+import 'package:spend_io_app/features/account/presentation/widgets/transaction/account_detail_summary_pills.dart';
+import 'package:spend_io_app/features/account/presentation/widgets/transaction/account_detail_transaction_tile.dart';
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
 import 'package:spend_io_app/features/account/presentation/viewmodels/account_details_viewmodel.dart';
 import 'package:spend_io_app/features/account/presentation/screen/utils/account_actions.dart'; // Import Shared Enum
 import 'package:spend_io_app/features/account/presentation/screen/widgets/account_filter_bottom_sheet.dart'; // Import Sheet
 
 import 'package:spend_io_app/features/account/presentation/widgets/edit_account_bottom_sheet.dart';
-import 'package:spend_io_app/features/account/presentation/widgets/widgets/hero/account_detail_hero_card.dart';
-import 'package:spend_io_app/features/account/presentation/widgets/widgets/filter/account_detail_filter_capsule.dart';
-import 'package:spend_io_app/features/account/presentation/widgets/widgets/transaction/account_detail_summary_pills.dart';
-import 'package:spend_io_app/features/account/presentation/widgets/widgets/transaction/account_detail_transaction_tile.dart';
 
 /// [App Location] Navigation Stack -> Account Details Screen.
 /// [Core Function] Clean orchestrator managing structural views for individual wallet data pipelines.
@@ -67,7 +67,7 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
       BuildContext context, WalletViewModel walletVM, AccountEntity account) {
     showDialog(
       context: context,
-      useRootNavigator: false, 
+      useRootNavigator: false,
       builder: (dialogCtx) => AppConfirmationDialog(
         title: 'Delete Account',
         content:

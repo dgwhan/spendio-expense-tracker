@@ -13,7 +13,8 @@ class AccountBalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color typeColor = account.type.mainColor;
+    // ✅ THAY THẾ: Dùng màu chủ đạo của app thay vì màu riêng của từng Type
+    const Color cardColor = AppColors.primary;
 
     return Container(
       width: double.infinity,
@@ -21,8 +22,8 @@ class AccountBalanceCard extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            typeColor,
-            typeColor.withValues(alpha: 0.8),
+            cardColor,
+            cardColor.withValues(alpha: 0.8),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -30,7 +31,7 @@ class AccountBalanceCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.cardRadiusLg),
         boxShadow: [
           BoxShadow(
-            color: typeColor.withValues(alpha: 0.3),
+            color: cardColor.withValues(alpha: 0.3),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),

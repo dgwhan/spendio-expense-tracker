@@ -28,7 +28,6 @@ class AccountModel extends AccountEntity {
     );
   }
 
-  //lưu dữ liệu vào sqflite/firebase
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -58,18 +57,19 @@ class AccountModel extends AccountEntity {
         map['icon_code_point'] as int? ?? Icons.wallet.codePoint,
         fontFamily: map['icon_font_family'] as String? ?? 'MaterialIcons',
       ),
-      createdAt: map['created_at'] != null 
+      createdAt: map['created_at'] != null
           ? DateTime.parse(map['created_at'] as String)
           : DateTime.now(),
-      updatedAt: map['updated_at'] != null 
+      updatedAt: map['updated_at'] != null
           ? DateTime.parse(map['updated_at'] as String)
           : DateTime.now(),
-      deletedAt: map['deleted_at'] != null 
+      deletedAt: map['deleted_at'] != null
           ? DateTime.parse(map['deleted_at'] as String)
           : null,
     );
   }
 
+  @override
   AccountModel copyWith({
     String? id,
     int? userId,

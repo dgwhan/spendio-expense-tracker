@@ -25,16 +25,19 @@ class AccountTypeGridSelector extends StatelessWidget {
         return Icons.account_balance_wallet;
       case AccountType.creditCard:
         return Icons.credit_card;
-      case AccountType.savingsAccount:
-        return Icons.savings;
+      default:
+        return Icons
+            .help_outline; // Xử lý nhánh an toàn cho loại Other thay thế savingsAccount cũ
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryTextColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
-    final mutedTextColor = isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
+    final primaryTextColor =
+        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final mutedTextColor =
+        isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
     final borderColor = isDark ? AppColors.borderDark : AppColors.borderLight;
     final itemBgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
 
@@ -52,7 +55,8 @@ class AccountTypeGridSelector extends StatelessWidget {
         final type = AccountType.values[index];
         final isSelected = selectedType == type;
         final Color typeColor = type.mainColor;
-        final Color bgColor = isDark ? typeColor.withValues(alpha: 0.2) : type.bgColor;
+        final Color bgColor =
+            isDark ? typeColor.withValues(alpha: 0.2) : type.bgColor;
 
         return GestureDetector(
           onTap: () => onTypeSelected(type),
@@ -79,10 +83,13 @@ class AccountTypeGridSelector extends StatelessWidget {
                     type.displayName,
                     style: TextStyle(
                       fontSize: 13,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.normal,
                       color: isSelected
                           ? primaryTextColor
-                          : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight),
+                          : (isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondaryLight),
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),

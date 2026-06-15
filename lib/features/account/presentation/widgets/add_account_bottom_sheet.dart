@@ -18,8 +18,8 @@ class AddAccountBottomSheet extends StatelessWidget {
         return Icons.account_balance_wallet;
       case AccountType.creditCard:
         return Icons.credit_card;
-      case AccountType.savingsAccount:
-        return Icons.savings;
+      default:
+        return Icons.help_outline; // Đồng bộ thay thế cho savingsAccount cũ
     }
   }
 
@@ -28,30 +28,39 @@ class AddAccountBottomSheet extends StatelessWidget {
     return AccountFormBottomSheet(
       title: 'Create New Account',
       actionLabel: 'Create',
-      onSubmit: (name, type, balance) {
+      onSubmit: (name, type, balance) async {
         final icon = _getDefaultIcon(type);
+
         final newAccount = AccountEntity(
           id: 'acc_${DateTime.now().millisecondsSinceEpoch}',
           userId: 1,
           name: name,
           type: type,
           balance: balance,
-          icon: icon,
+          icon: icon, // Đã loại bỏ hoàn toàn thuộc tính color thừa ở đây
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );
 
-        Navigator.of(context, rootNavigator: true).pop(true);
-
         final messenger = ScaffoldMessenger.of(context);
-        viewModel.createAccount(newAccount).then((_) {
+
+        try {
+          await viewModel.createAccount(newAccount);
+
           messenger.showSnackBar(
             const SnackBar(
               content: Text('Account created successfully!'),
               backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
             ),
           );
-        });
+
+          if (context.mounted) {
+            Navigator.of(context).pop(true);
+          }
+        } catch (e) {
+          debugPrint('Lỗi tạo tài khoản mới: $e');
+        }
       },
     );
   }
