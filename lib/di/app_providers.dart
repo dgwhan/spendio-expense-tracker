@@ -55,7 +55,6 @@ import '../../../features/wallet/domain/usecases/get_categories_usecase.dart';
 import '../../../features/wallet/domain/usecases/initialize_budget_categories_usecase.dart';
 import '../../../features/wallet/domain/usecases/check_wallet_initialization_usecase.dart';
 
-// ACCOUNT VM LAYER
 import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
 
 class AppProviders {
@@ -128,8 +127,9 @@ class AppProviders {
           update: (_, local, remote, __) => AuthRepositoryImpl(local, remote),
         ),
 
+        // 🔥 FIX DỨT ĐIỂM: Đổi kiểu trả về thứ 3 từ OnboardingRepositoryImpl sang OnboardingRepository trừu tượng
         ProxyProvider2<OnboardingLocalDataSource, OnboardingRemoteDataSource,
-            OnboardingRepositoryImpl>(
+            OnboardingRepository>(
           update: (_, local, remote, __) => OnboardingRepositoryImpl(
               localDataSource: local, remoteDataSource: remote),
         ),
@@ -176,16 +176,17 @@ class AppProviders {
           update: (_, repo, __) => GetCurrentUserUseCase(repo),
         ),
 
-        ProxyProvider<OnboardingRepositoryImpl, SaveOnboardingUseCase>(
+        // 🔥 ĐỒNG BỘ KIỂU TRUY XUẤT: Trỏ Use Cases vào nhận dạng đúng Interface gốc
+        ProxyProvider<OnboardingRepository, SaveOnboardingUseCase>(
           update: (_, repo, __) => SaveOnboardingUseCase(repository: repo),
         ),
-        ProxyProvider<OnboardingRepositoryImpl, GetOnboardingUseCase>(
+        ProxyProvider<OnboardingRepository, GetOnboardingUseCase>(
           update: (_, repo, __) => GetOnboardingUseCase(repository: repo),
         ),
-        ProxyProvider<OnboardingRepositoryImpl, CheckOnboardingUseCase>(
+        ProxyProvider<OnboardingRepository, CheckOnboardingUseCase>(
           update: (_, repo, __) => CheckOnboardingUseCase(repository: repo),
         ),
-        ProxyProvider<OnboardingRepositoryImpl, CompleteOnboardingUseCase>(
+        ProxyProvider<OnboardingRepository, CompleteOnboardingUseCase>(
           update: (_, repo, __) => CompleteOnboardingUseCase(repository: repo),
         ),
 
@@ -280,7 +281,6 @@ class AppProviders {
           ),
         ),
 
-        // 🔥 ĐÃ FIX HOÀN TOÀN: Khóa luồng gọi load ngầm lặp trận của AccountViewModel
         ChangeNotifierProxyProvider<AuthProvider, AccountViewModel>(
           create: (context) => AccountViewModel(
             getAccountsUseCase: context.read<GetAccountsUseCase>(),
@@ -311,7 +311,8 @@ class AppProviders {
                 activeVm.loadAccounts(
                   localId,
                   remoteUid,
-                  onboardingRepo: context.read<OnboardingRepository>(),
+                  onboardingRepo: context.read<
+                      OnboardingRepository>(), // Đã tìm thấy chuẩn xác kiểu dữ liệu!
                   userEmail: userEmail,
                 );
               }
