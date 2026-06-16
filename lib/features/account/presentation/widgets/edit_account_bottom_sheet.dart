@@ -1,10 +1,8 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
 import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
 import 'package:spend_io_app/features/account/presentation/widgets/account_form_bottom_sheet.dart';
-import 'package:spend_io_app/features/onboarding/domain/repositories/onboarding_repository.dart';
 
 class EditAccountBottomSheet extends StatelessWidget {
   final AccountViewModel viewModel;
@@ -57,17 +55,13 @@ class EditAccountBottomSheet extends StatelessWidget {
 
         try {
           final localId = account.userId;
-
           final currentUser = FirebaseAuth.instance.currentUser;
           final String remoteUid = currentUser?.uid ?? '';
-          final String userEmail = currentUser?.email ?? '';
 
           final success = await viewModel.updateAccount(
             localId,
             remoteUid,
             updatedAccount,
-            onboardingRepo: context.read<OnboardingRepository>(),
-            userEmail: userEmail,
           );
 
           if (success) {
@@ -96,7 +90,8 @@ class EditAccountBottomSheet extends StatelessWidget {
             }
           }
         } catch (e) {
-          debugPrint('Error when update account in: $e');
+          debugPrint(
+              '[Edit Account Sheet] Failed to execute update pipeline: $e');
         }
       },
     );

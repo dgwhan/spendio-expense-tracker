@@ -26,7 +26,6 @@ class WalletRepositoryImpl implements WalletRepository {
     final totalSaved = goals.fold(0.0, (sum, goal) => sum + goal.currentAmount);
     final activeGoals = goals.length;
 
-    // Tính ngân sách từ tổng ngân sách các danh mục
     final categories = await localDataSource.getCategories(localUserId);
     final monthlyBudget = categories.fold(0.0, (sum, cat) => sum + cat.budget);
 
@@ -50,53 +49,103 @@ class WalletRepositoryImpl implements WalletRepository {
 
     try {
       // ----------------------------------------------------
-      // A. ĐỒNG BỘ WALLETS (TÀI KHOẢN)
+      // A. WALLET SYNCHRONIZATION WITH STRICT FINTECH MERGE
       // ----------------------------------------------------
       final localWallets = await localDataSource.getAccounts(localUserId);
       final remoteWallets = await remoteDataSource.getAccounts(remoteUid);
 
-      final Map<String, AccountModel> localMap = {
-        for (var w in localWallets) w.id: w
-      };
+      // ─── RULE 1: Filter Duplicate Primary Cash Wallets ───
+      final List<AccountModel> cleanLocalWallets = [];
+      bool primaryCashLocalExists = false;
 
-      // Lọc sạch các ví trống hoặc không có thông tin hợp lệ từ phía Remote để tránh nạp đè lung tung
-      final cleanRemoteWallets = remoteWallets
-          .where((w) => w.id.trim().isNotEmpty && w.name.trim().isNotEmpty)
-          .toList();
+      for (var w in localWallets) {
+        if (w.type.name == 'cash' && w.deletedAt == null) {
+          if (primaryCashLocalExists) {
+            debugPrint(
+                '[Wallet Sync Guard]: Detected duplicated local primary cash wallet (ID: ${w.id}). Skipping to ensure uniqueness.');
+            continue;
+          }
+          primaryCashLocalExists = true;
+        }
+        cleanLocalWallets.add(w);
+      }
+
+      final List<AccountModel> cleanRemoteWallets = [];
+      bool primaryCashRemoteExists = false;
+
+      for (var w in remoteWallets) {
+        if (w.id.trim().isEmpty || w.name.trim().isEmpty) continue;
+
+        if (w.type.name == 'cash' && w.deletedAt == null) {
+          if (primaryCashRemoteExists) {
+            debugPrint(
+                '[Wallet Sync Guard]: Detected duplicated remote primary cash wallet (ID: ${w.id}). Skipping payload integration.');
+            continue;
+          }
+          primaryCashRemoteExists = true;
+        }
+        cleanRemoteWallets.add(w);
+      }
+
+      final Map<String, AccountModel> localMap = {
+        for (var w in cleanLocalWallets) w.id: w
+      };
       final Map<String, AccountModel> remoteMap = {
         for (var w in cleanRemoteWallets) w.id: w
       };
 
-      // 1. Duyệt remote check tải về local hoặc cập nhật chéo
+      // 1. Process Remote Updates into Local Engine
       for (final remoteWallet in cleanRemoteWallets) {
         final localWallet = localMap[remoteWallet.id];
+
         if (localWallet == null) {
           if (remoteWallet.deletedAt == null) {
             await localDataSource.saveAccount(localUserId, remoteWallet);
           }
         } else {
-          // Trùng ID -> So sánh mốc thời gian để đồng bộ nâng cấp
-          if (remoteWallet.updatedAt.isAfter(localWallet.updatedAt)) {
+          if (remoteWallet.deletedAt != null && localWallet.deletedAt == null) {
+            // Soft-deletions on remote are authoritative over active local states
             await localDataSource.saveAccount(localUserId, remoteWallet);
+          } else if (remoteWallet.updatedAt.isAfter(localWallet.updatedAt)) {
+            // REMOTE WINS FOR METADATA ONLY: Preserve local balance at all costs
+            final AccountModel mergedWallet = remoteWallet.copyWith(
+              balance: localWallet.balance,
+            );
+            await localDataSource.saveAccount(localUserId, mergedWallet);
           } else if (localWallet.updatedAt.isAfter(remoteWallet.updatedAt)) {
-            await remoteDataSource.saveAccount(remoteUid, localWallet);
+            // LOCAL WINS FOR METADATA: Push local metadata changes safely up to Firestore
+            final AccountModel mergedRemoteWallet = localWallet.copyWith(
+              balance: localWallet.balance,
+            );
+            await remoteDataSource.saveAccount(remoteUid, mergedRemoteWallet);
           }
         }
       }
 
-      // 2. Duyệt local để upload dữ liệu tạo offline lên remote
-      for (final localWallet in localWallets) {
-        if (!remoteMap.containsKey(localWallet.id)) {
+      // 2. Process Offline Local Entries up to Server Hub (Race-Condition & Floating-Point Protected)
+      for (final localWallet in cleanLocalWallets) {
+        final remoteWallet = remoteMap[localWallet.id];
+
+        if (remoteWallet == null) {
           if (localWallet.id.trim().isNotEmpty &&
               localWallet.name.trim().isNotEmpty &&
               localWallet.deletedAt == null) {
+            await remoteDataSource.saveAccount(remoteUid, localWallet);
+          }
+        } else {
+          // 🔥 FINTECH SAFEGUARD: Safe absolute precision comparison (No float equality issues)
+          final bool isBalanceIdentical =
+              (localWallet.balance - remoteWallet.balance).abs() < 0.0001;
+
+          if (localWallet.updatedAt.isAtLeast(remoteWallet.updatedAt) &&
+              isBalanceIdentical) {
             await remoteDataSource.saveAccount(remoteUid, localWallet);
           }
         }
       }
 
       // ----------------------------------------------------
-      // B. ĐỒNG BỘ GOALS (MỤC TIÊU TIẾT KIỆM) - GIỮ NGUYÊN 100% GỐC
+      // B. GOAL SYNCHRONIZATION PIPELINE
       // ----------------------------------------------------
       final localGoals = await localDataSource.getGoals(localUserId);
       final remoteGoals = await remoteDataSource.getGoals(remoteUid);
@@ -141,5 +190,15 @@ class WalletRepositoryImpl implements WalletRepository {
     final goals = await localDataSource.hasGoals(userId);
     final categories = await localDataSource.hasCategories(userId);
     return accounts || goals || categories;
+  }
+}
+
+extension DateTimeComparison on DateTime {
+  bool isAtLeast(DateTime other) {
+    return isAfter(other) || isAtEqual(other);
+  }
+
+  bool isAtEqual(DateTime other) {
+    return millisecondsSinceEpoch == other.millisecondsSinceEpoch;
   }
 }

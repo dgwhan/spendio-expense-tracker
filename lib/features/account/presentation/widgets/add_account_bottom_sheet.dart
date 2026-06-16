@@ -1,10 +1,10 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
 import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
 import 'package:spend_io_app/features/account/presentation/widgets/account_form_bottom_sheet.dart';
-import 'package:spend_io_app/features/onboarding/domain/repositories/onboarding_repository.dart';
+import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
 
 class AddAccountBottomSheet extends StatelessWidget {
   final AccountViewModel viewModel;
@@ -35,6 +35,22 @@ class AddAccountBottomSheet extends StatelessWidget {
         final icon = _getDefaultIcon(type);
         final messenger = ScaffoldMessenger.of(context);
 
+        // Fetch the authentic internal app auth state provider cleanly now
+        final authProvider = context.read<AuthProvider>();
+        final int activeLocalUserId = authProvider.currentUser?.id ?? 0;
+
+        if (activeLocalUserId <= 0) {
+          messenger.removeCurrentSnackBar();
+          messenger.showSnackBar(
+            const SnackBar(
+              content: Text(
+                  'Critical Session Error: Access denied due to unauthenticated user session.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+
         final String? currentDbCurrency = viewModel.userCurrency;
 
         if (currentDbCurrency == null || currentDbCurrency.trim().isEmpty) {
@@ -51,7 +67,7 @@ class AddAccountBottomSheet extends StatelessWidget {
 
         final newAccount = AccountEntity(
           id: 'acc_${DateTime.now().millisecondsSinceEpoch}',
-          userId: 0,
+          userId: activeLocalUserId,
           name: name,
           type: type,
           balance: balance,
@@ -62,18 +78,13 @@ class AddAccountBottomSheet extends StatelessWidget {
         );
 
         try {
-          final localId = newAccount.userId;
-
           final currentUser = FirebaseAuth.instance.currentUser;
           final String remoteUid = currentUser?.uid ?? '';
-          final String userEmail = currentUser?.email ?? '';
 
           final success = await viewModel.createAccount(
-            localId,
+            activeLocalUserId,
             remoteUid,
             newAccount,
-            onboardingRepo: context.read<OnboardingRepository>(),
-            userEmail: userEmail,
           );
 
           if (success) {
@@ -93,7 +104,8 @@ class AddAccountBottomSheet extends StatelessWidget {
             }
           }
         } catch (e) {
-          debugPrint('Error when create account in: $e');
+          debugPrint(
+              '[Add Account Sheet] Failed to execute creation pipeline: $e');
         }
       },
     );

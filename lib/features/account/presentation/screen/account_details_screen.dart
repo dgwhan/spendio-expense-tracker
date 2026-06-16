@@ -16,7 +16,6 @@ import 'package:spend_io_app/features/account/presentation/viewmodels/account_de
 import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
 import 'package:spend_io_app/features/account/presentation/screen/utils/account_actions.dart';
 import 'package:spend_io_app/features/account/presentation/widgets/edit_account_bottom_sheet.dart';
-import 'package:spend_io_app/features/onboarding/domain/repositories/onboarding_repository.dart';
 
 class AccountDetailsScreen extends StatelessWidget {
   final AccountEntity account;
@@ -70,18 +69,14 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
         isDestructive: true,
         onConfirm: () {
           final localId = account.userId;
-
           final currentUser = FirebaseAuth.instance.currentUser;
           final String remoteUid = currentUser?.uid ?? '';
-          final String userEmail = currentUser?.email ?? '';
 
           accountVM
               .deleteAccount(
             localId,
             remoteUid,
             account.id,
-            onboardingRepo: context.read<OnboardingRepository>(),
-            userEmail: userEmail,
           )
               .then((_) {
             if (context.mounted && Navigator.canPop(context)) {

@@ -9,7 +9,6 @@ import 'package:spend_io_app/core/utils/currency_formatter.dart';
 import 'package:spend_io_app/core/widgets/dialogs/app_confirmation_dialog.dart';
 import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
 import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
-import 'package:spend_io_app/features/onboarding/domain/repositories/onboarding_repository.dart';
 import 'package:spend_io_app/features/account/presentation/widgets/edit_account_bottom_sheet.dart';
 
 class AccountItemCard extends StatelessWidget {
@@ -56,18 +55,15 @@ class AccountItemCard extends StatelessWidget {
           isDestructive: true,
           onConfirm: () {
             final localId = account.userId;
-
             final currentUser = FirebaseAuth.instance.currentUser;
             final String remoteUid = currentUser?.uid ?? '';
-            final String userEmail = currentUser?.email ?? '';
 
+            // 🔥 FIXED: Dispatched clean metadata mutation architecture signature for Phase 02
             accountVM
                 .deleteAccount(
               localId,
               remoteUid,
               account.id,
-              onboardingRepo: context.read<OnboardingRepository>(),
-              userEmail: userEmail,
             )
                 .then((_) {
               onDelete?.call();

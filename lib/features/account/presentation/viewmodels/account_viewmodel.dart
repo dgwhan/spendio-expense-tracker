@@ -4,8 +4,6 @@ import 'package:spend_io_app/features/account/domain/usecase/create_account_usec
 import 'package:spend_io_app/features/account/domain/usecase/delete_account_usecase.dart';
 import 'package:spend_io_app/features/account/domain/usecase/get_accounts_usecase.dart';
 import 'package:spend_io_app/features/account/domain/usecase/update_account_usecase.dart';
-// 🔥 BỔ SUNG IMPORT: Để đọc dữ liệu profile cứu hộ
-import 'package:spend_io_app/features/onboarding/domain/repositories/onboarding_repository.dart';
 
 class AccountViewModel extends ChangeNotifier {
   final GetAccountsUseCase getAccountsUseCase;
@@ -41,8 +39,7 @@ class AccountViewModel extends ChangeNotifier {
   String? get deleteAccountError => _deleteAccountError;
 
   int? _lastLoadedUserId;
-
-  String? _profileCurrency;
+  String? _fallbackProfileCurrency;
 
   List<AccountEntity> get accounts =>
       _rawAccounts.where((account) => account.deletedAt == null).toList();
@@ -52,18 +49,31 @@ class AccountViewModel extends ChangeNotifier {
     if (activeAccounts.isNotEmpty) {
       return activeAccounts.first.currencyCode;
     }
-    // Nếu chưa có ví (User mới), bốc thẳng mã tiền tệ lấy từ cấu hình User Profile dưới DB lên RAM
-    return _profileCurrency;
+    // Returns the runtime cached currency from profile initialization if no wallets exist yet
+    return _fallbackProfileCurrency;
   }
 
-  /// Tải danh sách ví từ DB Local / Server
+  /// Explicitly seed the fallback currency from the app initiation or onboarding context
+  void setFallbackCurrency(String currencyCode) {
+    if (currencyCode.trim().isEmpty) return;
+    _fallbackProfileCurrency = currencyCode;
+    notifyListeners();
+  }
+
+  /// Loads accounts linked strictly to the active authenticated local identity
   Future<void> loadAccounts(
     int localId,
     String remoteUid, {
     bool forceRefresh = false,
-    required OnboardingRepository onboardingRepo,
-    required String userEmail,
   }) async {
+    // ─── CRITICAL GUARD CLAUSE ───
+    // Averts Foreign Key Constraint failures downstream if the user identity loop drops to zero
+    if (localId <= 0) {
+      debugPrint(
+          '[Account VM]: Load operation aborted. Invalid user session handle (localId: $localId).');
+      return;
+    }
+
     if (!forceRefresh &&
         _lastLoadedUserId == localId &&
         _rawAccounts.isNotEmpty) {
@@ -72,52 +82,52 @@ class AccountViewModel extends ChangeNotifier {
 
     _isLoading = true;
     _lastLoadedUserId = localId;
+    _createAccountError = null;
     notifyListeners();
 
     try {
-      // 1. Cứu hộ chặng đầu: Đồng bộ mã tiền tệ từ Profile User trước khi quét danh sách ví
-      final profile = await onboardingRepo.getOnboarding(email: userEmail);
-      if (profile != null) {
-        _profileCurrency = profile.currencyCode;
-      }
-
-      // 2. Tải danh sách ví vật lý
+      // Stripped of unnecessary cross-boundary parameter leakage
       _rawAccounts = await getAccountsUseCase(localId, remoteUid);
     } catch (e) {
-      debugPrint('Error loading accounts: $e');
+      debugPrint('[Account VM] Failed to resolve account data records: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  /// Dọn dẹp sạch vùng nhớ khi user đăng xuất
+  /// Completely flushes user data matrices from active RAM state upon logging out
   void clearAccounts() {
     _rawAccounts = [];
     _lastLoadedUserId = null;
-    _profileCurrency = null;
+    _fallbackProfileCurrency = null;
     notifyListeners();
   }
 
-  /// Thêm tài khoản ví mới
+  /// Appends a new financial vehicle record inside local and cloud storage clusters
   Future<bool> createAccount(
-      int localId, String remoteUid, AccountEntity account,
-      {required OnboardingRepository onboardingRepo,
-      required String userEmail}) async {
+      int localId, String remoteUid, AccountEntity account) async {
+    if (localId <= 0 || account.userId <= 0) {
+      _createAccountError =
+          "Critical Session Error: Cannot commit records using an unauthenticated ID (ID = 0).";
+      debugPrint(
+          '🚨 [Account VM]: Intercepted write action block. Forbidden anonymous foreign user key rejected.');
+      notifyListeners();
+      return false;
+    }
+
     _isCreatingAccount = true;
     _createAccountError = null;
     notifyListeners();
 
     try {
       await createAccountUseCase(localId, remoteUid, account);
-      await loadAccounts(localId, remoteUid,
-          forceRefresh: true,
-          onboardingRepo: onboardingRepo,
-          userEmail: userEmail);
+      await loadAccounts(localId, remoteUid, forceRefresh: true);
       return true;
     } catch (e) {
       _createAccountError = e.toString();
-      debugPrint('Error creating account: $e');
+      debugPrint(
+          '[Account VM] Execution failure during account creation call: $e');
       return false;
     } finally {
       _isCreatingAccount = false;
@@ -125,25 +135,28 @@ class AccountViewModel extends ChangeNotifier {
     }
   }
 
-  /// Cập nhật thông tin tài khoản ví
+  /// Commits updated static metadata parameters down to storage drivers
   Future<bool> updateAccount(
-      int localId, String remoteUid, AccountEntity account,
-      {required OnboardingRepository onboardingRepo,
-      required String userEmail}) async {
+      int localId, String remoteUid, AccountEntity account) async {
+    if (localId <= 0 || account.userId <= 0) {
+      _updateAccountError =
+          "Critical Session Error: Invalid modification reference identity context.";
+      notifyListeners();
+      return false;
+    }
+
     _isUpdatingAccount = true;
     _updateAccountError = null;
     notifyListeners();
 
     try {
       await updateAccountUseCase(localId, remoteUid, account);
-      await loadAccounts(localId, remoteUid,
-          forceRefresh: true,
-          onboardingRepo: onboardingRepo,
-          userEmail: userEmail);
+      await loadAccounts(localId, remoteUid, forceRefresh: true);
       return true;
     } catch (e) {
       _updateAccountError = e.toString();
-      debugPrint('Error updating account: $e');
+      debugPrint(
+          '[Account VM] Execution failure during record synchronization updates: $e');
       return false;
     } finally {
       _isUpdatingAccount = false;
@@ -151,12 +164,12 @@ class AccountViewModel extends ChangeNotifier {
     }
   }
 
-  /// Xóa tài khoản ví
-  Future<void> deleteAccount(int localId, String remoteUid, String accountId,
-      {required OnboardingRepository onboardingRepo,
-      required String userEmail}) async {
-    if (accountId.trim().isEmpty) {
-      _deleteAccountError = "Invalid Account ID";
+  /// Registers a soft-deletion marker state locally and propagates mutations outward
+  Future<void> deleteAccount(
+      int localId, String remoteUid, String accountId) async {
+    if (localId <= 0 || accountId.trim().isEmpty) {
+      _deleteAccountError =
+          "Structural Mutation Denied: Invalid resource identity signature.";
       return;
     }
 
@@ -164,9 +177,10 @@ class AccountViewModel extends ChangeNotifier {
     _deleteAccountError = null;
 
     final targetIndex = _rawAccounts.indexWhere((acc) => acc.id == accountId);
-    AccountEntity? backupAccount;
+    AccountEntity? optimisticRollbackBackup;
+
     if (targetIndex != -1) {
-      backupAccount = _rawAccounts[targetIndex];
+      optimisticRollbackBackup = _rawAccounts[targetIndex];
       _rawAccounts[targetIndex] = _rawAccounts[targetIndex].copyWith(
         deletedAt: DateTime.now(),
       );
@@ -175,16 +189,14 @@ class AccountViewModel extends ChangeNotifier {
 
     try {
       await deleteAccountUseCase(localId, remoteUid, accountId);
-      await loadAccounts(localId, remoteUid,
-          forceRefresh: true,
-          onboardingRepo: onboardingRepo,
-          userEmail: userEmail);
+      await loadAccounts(localId, remoteUid, forceRefresh: true);
     } catch (e) {
       _deleteAccountError = e.toString();
-      debugPrint('Error deleting account: $e');
+      debugPrint(
+          '[Account VM] Cloud storage replication rejected. Running optimistic UI rollback cache repair: $e');
 
-      if (backupAccount != null && targetIndex != -1) {
-        _rawAccounts[targetIndex] = backupAccount;
+      if (optimisticRollbackBackup != null && targetIndex != -1) {
+        _rawAccounts[targetIndex] = optimisticRollbackBackup;
         notifyListeners();
       }
     } finally {

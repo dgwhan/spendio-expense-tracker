@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 import 'package:spend_io_app/features/onboarding/domain/repositories/onboarding_repository.dart';
@@ -127,7 +128,6 @@ class AppProviders {
           update: (_, local, remote, __) => AuthRepositoryImpl(local, remote),
         ),
 
-        // 🔥 FIX DỨT ĐIỂM: Đổi kiểu trả về thứ 3 từ OnboardingRepositoryImpl sang OnboardingRepository trừu tượng
         ProxyProvider2<OnboardingLocalDataSource, OnboardingRemoteDataSource,
             OnboardingRepository>(
           update: (_, local, remote, __) => OnboardingRepositoryImpl(
@@ -166,67 +166,73 @@ class AppProviders {
         ),
 
         // ==============================================================
-        // 2. DOMAIN LAYER (USE CASES)
+        // 2. DOMAIN LAYER (USE CASES) - SECURED CONVERGENCE STRUCTURE
         // ==============================================================
         ProxyProvider<AuthRepositoryImpl, CheckEmailUseCase>(
-          update: (_, repo, __) => CheckEmailUseCase(repo),
+          update: (_, repo, previous) => previous ?? CheckEmailUseCase(repo),
         ),
 
         ProxyProvider<AuthRepositoryImpl, GetCurrentUserUseCase>(
-          update: (_, repo, __) => GetCurrentUserUseCase(repo),
+          update: (_, repo, previous) =>
+              previous ?? GetCurrentUserUseCase(repo),
         ),
 
-        // 🔥 ĐỒNG BỘ KIỂU TRUY XUẤT: Trỏ Use Cases vào nhận dạng đúng Interface gốc
         ProxyProvider<OnboardingRepository, SaveOnboardingUseCase>(
-          update: (_, repo, __) => SaveOnboardingUseCase(repository: repo),
+          update: (_, repo, previous) =>
+              previous ?? SaveOnboardingUseCase(repository: repo),
         ),
         ProxyProvider<OnboardingRepository, GetOnboardingUseCase>(
-          update: (_, repo, __) => GetOnboardingUseCase(repository: repo),
+          update: (_, repo, previous) =>
+              previous ?? GetOnboardingUseCase(repository: repo),
         ),
         ProxyProvider<OnboardingRepository, CheckOnboardingUseCase>(
-          update: (_, repo, __) => CheckOnboardingUseCase(repository: repo),
+          update: (_, repo, previous) =>
+              previous ?? CheckOnboardingUseCase(repository: repo),
         ),
         ProxyProvider<OnboardingRepository, CompleteOnboardingUseCase>(
-          update: (_, repo, __) => CompleteOnboardingUseCase(repository: repo),
+          update: (_, repo, previous) =>
+              previous ?? CompleteOnboardingUseCase(repository: repo),
         ),
 
         ProxyProvider<WalletRepositoryImpl, GetWalletSummaryUseCase>(
-          update: (_, repo, __) => GetWalletSummaryUseCase(repo),
+          update: (_, repo, previous) =>
+              previous ?? GetWalletSummaryUseCase(repo),
         ),
         ProxyProvider<AccountRepositoryImpl, GetAccountsUseCase>(
-          update: (_, repo, __) => GetAccountsUseCase(repo),
+          update: (_, repo, previous) => previous ?? GetAccountsUseCase(repo),
         ),
         ProxyProvider<SavingGoalRepositoryImpl, GetGoalsUseCase>(
-          update: (_, repo, __) => GetGoalsUseCase(repo),
+          update: (_, repo, previous) => previous ?? GetGoalsUseCase(repo),
         ),
         ProxyProvider<AccountRepositoryImpl, CreateAccountUseCase>(
-          update: (_, repo, __) => CreateAccountUseCase(repo),
+          update: (_, repo, previous) => previous ?? CreateAccountUseCase(repo),
         ),
         ProxyProvider<AccountRepositoryImpl, UpdateAccountUseCase>(
-          update: (_, repo, __) => UpdateAccountUseCase(repo),
+          update: (_, repo, previous) => previous ?? UpdateAccountUseCase(repo),
         ),
         ProxyProvider<AccountRepositoryImpl, DeleteAccountUseCase>(
-          update: (_, repo, __) => DeleteAccountUseCase(repo),
+          update: (_, repo, previous) => previous ?? DeleteAccountUseCase(repo),
         ),
         ProxyProvider<SavingGoalRepositoryImpl, AddGoalUseCase>(
-          update: (_, repo, __) => AddGoalUseCase(repo),
+          update: (_, repo, previous) => previous ?? AddGoalUseCase(repo),
         ),
         ProxyProvider<BudgetCategoryRepositoryImpl, GetCategoriesUseCase>(
-          update: (_, repo, __) => GetCategoriesUseCase(repo),
+          update: (_, repo, previous) => previous ?? GetCategoriesUseCase(repo),
         ),
         ProxyProvider<BudgetCategoryRepositoryImpl,
             InitializeBudgetCategoriesUseCase>(
-          update: (_, repo, __) => InitializeBudgetCategoriesUseCase(repo),
+          update: (_, repo, previous) =>
+              previous ?? InitializeBudgetCategoriesUseCase(repo),
         ),
 
         ProxyProvider<WalletRepositoryImpl, CheckWalletInitializationUseCase>(
-          update: (_, repo, __) => CheckWalletInitializationUseCase(repo),
+          update: (_, repo, previous) =>
+              previous ?? CheckWalletInitializationUseCase(repo),
         ),
 
         // ==============================================================
         // 3. PRESENTATION LAYER (VIEWMODELS & PROVIDERS)
         // ==============================================================
-
         ChangeNotifierProxyProvider<CheckEmailUseCase, RegisterFormViewModel>(
           create: (context) => RegisterFormViewModel(
             checkEmailUseCase: context.read<CheckEmailUseCase>(),
@@ -273,14 +279,16 @@ class AppProviders {
         // Startup Coordinator
         ProxyProvider2<AuthProvider, CheckWalletInitializationUseCase,
             StartupCoordinator>(
-          update: (context, authProvider, checkWalletInit, __) =>
+          update: (context, authProvider, checkWalletInit, previous) =>
+              previous ??
               StartupCoordinator(
-            authProvider: authProvider,
-            checkWalletInitializationUseCase: checkWalletInit,
-            getCurrentUserUseCase: context.read<GetCurrentUserUseCase>(),
-          ),
+                authProvider: authProvider,
+                checkWalletInitializationUseCase: checkWalletInit,
+                getCurrentUserUseCase: context.read<GetCurrentUserUseCase>(),
+              ),
         ),
 
+        // 🔥 ACCOUNT VIEWMODEL INJECTOR LOCKED DOWN FOR PHASE 02
         ChangeNotifierProxyProvider<AuthProvider, AccountViewModel>(
           create: (context) => AccountViewModel(
             getAccountsUseCase: context.read<GetAccountsUseCase>(),
@@ -304,17 +312,10 @@ class AppProviders {
               final String remoteUid =
                   fb_auth.FirebaseAuth.instance.currentUser?.uid ?? '';
 
-              final String userEmail = authProvider.currentUser?.email ?? '';
-
-              if (remoteUid.isNotEmpty &&
+              if (localId > 0 &&
+                  remoteUid.isNotEmpty &&
                   userEntity.onboardingCompleted == true) {
-                activeVm.loadAccounts(
-                  localId,
-                  remoteUid,
-                  onboardingRepo: context.read<
-                      OnboardingRepository>(), // Đã tìm thấy chuẩn xác kiểu dữ liệu!
-                  userEmail: userEmail,
-                );
+                activeVm.loadAccounts(localId, remoteUid);
               }
             } else {
               activeVm.clearAccounts();

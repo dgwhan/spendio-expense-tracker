@@ -14,7 +14,6 @@ import 'package:spend_io_app/features/wallet/presentation/widgets/goals/goals_se
 import 'package:spend_io_app/features/wallet/presentation/widgets/header/wallet_header.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/hero/total_assets_card.dart';
 import 'package:spend_io_app/core/widgets/dialogs/app_month_picker_dialog.dart';
-import 'package:spend_io_app/features/onboarding/domain/repositories/onboarding_repository.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -48,7 +47,6 @@ class _WalletScreenState extends State<WalletScreen> {
   Future<void> _refreshAllWalletData(BuildContext context) async {
     final auth = context.read<AuthProvider>();
     final userEntity = auth.currentUser?.toEntity();
-    final String userEmail = auth.currentUser?.email ?? '';
 
     await context.read<WalletViewModel>().initialize();
 
@@ -59,8 +57,7 @@ class _WalletScreenState extends State<WalletScreen> {
       await context.read<AccountViewModel>().loadAccounts(
             localId,
             remoteUid,
-            onboardingRepo: context.read<OnboardingRepository>(),
-            userEmail: userEmail,
+            forceRefresh: true,
           );
     }
   }

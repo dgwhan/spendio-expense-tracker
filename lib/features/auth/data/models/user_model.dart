@@ -12,6 +12,7 @@ class UserModel {
   final bool onboardingCompleted;
   final DateTime createdAt;
   final DateTime updatedAt;
+
   const UserModel({
     this.id,
     required this.email,
@@ -38,7 +39,7 @@ class UserModel {
       'currency_code': currency,
       'onboarding_completed': onboardingCompleted ? 1 : 0,
       'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(), // Lưu trữ SQLite
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
 
@@ -52,7 +53,8 @@ class UserModel {
       occupation: map['occupation'],
       financialGoal: map['financial_goal'],
       currency: map['currency_code'] ?? map['currency'],
-      onboardingCompleted: map['onboarding_completed'] == 1,
+      onboardingCompleted: map['onboarding_completed']?.toString() == '1' ||
+          map['onboarding_completed']?.toString() == 'true',
       createdAt: map['created_at'] != null
           ? DateTime.parse(map['created_at'] as String)
           : DateTime.now(),

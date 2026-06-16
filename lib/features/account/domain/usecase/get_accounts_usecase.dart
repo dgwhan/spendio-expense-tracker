@@ -6,7 +6,15 @@ class GetAccountsUseCase {
 
   GetAccountsUseCase(this.repository);
 
-  Future<List<AccountEntity>> call(int localUserId, String remoteUid, {bool forceSync = false}) {
-    return repository.getAccounts(localUserId, remoteUid, forceSync: forceSync);
+  Future<List<AccountEntity>> call(
+    int localUserId,
+    String remoteUid, {
+    bool forceSync = false,
+  }) {
+    return repository.getAccounts(
+      localUserId,
+      remoteUid,
+      forceSync: forceSync,
+    );
   }
 }

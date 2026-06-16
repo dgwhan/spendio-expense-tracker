@@ -8,7 +8,10 @@ import 'budget/budget_local_data_source.dart';
 /// Facade that aggregates all local datasources.
 /// Consumers depend on this single contract; sub-sources handle the detail.
 abstract class WalletLocalDataSource
-    implements AccountLocalDataSource, GoalLocalDataSource, BudgetLocalDataSource {}
+    implements
+        AccountLocalDataSource,
+        GoalLocalDataSource,
+        BudgetLocalDataSource {}
 
 class WalletLocalDataSourceImpl implements WalletLocalDataSource {
   final AccountLocalDataSource _accountLocal;
@@ -23,7 +26,7 @@ class WalletLocalDataSourceImpl implements WalletLocalDataSource {
         _goalLocal = goalLocal,
         _budgetLocal = budgetLocal;
 
-  // ── Account ────────────────────────────────────────────────────────────────
+  // Account
 
   @override
   Future<List<AccountModel>> getAccounts(int userId) =>
@@ -54,10 +57,9 @@ class WalletLocalDataSourceImpl implements WalletLocalDataSource {
       _accountLocal.restoreAccount(accountId);
 
   @override
-  Future<bool> hasAccounts(int userId) =>
-      _accountLocal.hasAccounts(userId);
+  Future<bool> hasAccounts(int userId) => _accountLocal.hasAccounts(userId);
 
-  // ── Goal ──────────────────────────────────────────────────────────────────
+  // Goal
 
   @override
   Future<List<SavingGoalModel>> getGoals(int userId) =>
@@ -68,14 +70,12 @@ class WalletLocalDataSourceImpl implements WalletLocalDataSource {
       _goalLocal.saveGoal(userId, goal);
 
   @override
-  Future<void> deleteGoal(String goalId) =>
-      _goalLocal.deleteGoal(goalId);
+  Future<void> deleteGoal(String goalId) => _goalLocal.deleteGoal(goalId);
 
   @override
-  Future<bool> hasGoals(int userId) =>
-      _goalLocal.hasGoals(userId);
+  Future<bool> hasGoals(int userId) => _goalLocal.hasGoals(userId);
 
-  // ── Budget ────────────────────────────────────────────────────────────────
+  //Budget
 
   @override
   Future<List<BudgetCategoryModel>> getCategories(int userId) =>
@@ -90,6 +90,5 @@ class WalletLocalDataSourceImpl implements WalletLocalDataSource {
       _budgetLocal.updateCategory(userId, category);
 
   @override
-  Future<bool> hasCategories(int userId) =>
-      _budgetLocal.hasCategories(userId);
+  Future<bool> hasCategories(int userId) => _budgetLocal.hasCategories(userId);
 }

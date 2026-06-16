@@ -1,4 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart'; // 🔥 BỔ SUNG: Để lấy email user hiện tại làm tham số đồng bộ
+import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
@@ -6,8 +6,7 @@ import 'package:spend_io_app/core/constants/app_radius.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
 import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
-// 🔥 BỔ SUNG IMPORT: Để lấy OnboardingRepository nạp vào hàm ViewModel
-import 'package:spend_io_app/features/onboarding/domain/repositories/onboarding_repository.dart';
+import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
 
 class AccountFormView extends StatefulWidget {
   final AccountEntity? account;
@@ -30,21 +29,15 @@ class _AccountFormViewState extends State<AccountFormView> {
 
   late final TextEditingController _nameController;
   late final TextEditingController _balanceController;
-
   late AccountType _selectedType;
 
   @override
   void initState() {
     super.initState();
-
-    _nameController = TextEditingController(
-      text: widget.account?.name ?? '',
-    );
-
+    _nameController = TextEditingController(text: widget.account?.name ?? '');
     _balanceController = TextEditingController(
       text: widget.account?.balance.toStringAsFixed(0) ?? '',
     );
-
     _selectedType = widget.account?.type ?? AccountType.cash;
   }
 
@@ -74,89 +67,90 @@ class _AccountFormViewState extends State<AccountFormView> {
     if (!_formKey.currentState!.validate()) return;
 
     final accountVM = context.read<AccountViewModel>();
-    // 🔥 BỐC REPO CỨU HỘ: Lấy OnboardingRepository đang được Provider cung cấp trong context
-    final onboardingRepo = context.read<OnboardingRepository>();
+    final authProvider = context.read<AuthProvider>();
+
+    // Extract authentic verified local session ID safely
+    final int resolvedLocalUserId =
+        authProvider.currentUser?.id ?? widget.account?.userId ?? 0;
+
+    if (resolvedLocalUserId <= 0) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Critical Session Error: Unable to determine authenticated user context.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     final name = _nameController.text.trim();
     final balance = double.tryParse(_balanceController.text.trim()) ?? 0.0;
 
-    final int localId = widget.account?.userId ?? 0;
-
-    // 🔥 BỐC SESSION EMAIL DỘNG: Lấy email của user hiện tại đang đăng nhập hệ thống từ Firebase Auth
-    final currentUser = FirebaseAuth.instance.currentUser;
-    final String userEmail = currentUser?.email ?? '';
+    final currentUser = fb_auth.FirebaseAuth.instance.currentUser;
     final String remoteUid = currentUser?.uid ?? '';
 
     try {
       if (widget.account == null) {
-        // 🔥 ĐỌC TIỀN TỆ ĐỘNG TỪ TRẠNG THÁI DANH SÁCH VÍ TRÊN RAM
         final String? detectedCurrency = accountVM.userCurrency;
 
-        // 🔥 CHỐT CHẶN BẢO VỆ PHÒNG DỊCH: Nếu CSDL trống rỗng/chưa tải xong, chặn ghi dữ liệu rác
         if (detectedCurrency == null || detectedCurrency.trim().isEmpty) {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(
-                  'Unable to detect active wallet currency. Please ensure your configuration is loaded.'),
+                  'Unable to detect active wallet currency. Please ensure configuration is loaded.'),
               backgroundColor: Colors.orange,
             ),
           );
           return;
         }
 
-        // TRƯỜNG HỢP THÊM VÍ MỚI: Khởi sinh thực thể hoàn chỉnh
         final account = AccountEntity(
           id: 'acc_${DateTime.now().millisecondsSinceEpoch}',
-          userId: localId,
+          userId: resolvedLocalUserId,
           name: name,
           type: _selectedType,
           balance: balance,
-          currencyCode:
-              detectedCurrency, // Đã nạp động hoàn toàn không gán cứng
+          currencyCode: detectedCurrency,
           icon: _getIcon(_selectedType),
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );
 
-        // 🔥 ĐÃ FIX: Truyền thêm 2 tham số bắt buộc onboardingRepo và userEmail vào hàm
+        // 🔥 FIXED: Invoked clean creation contract matching our minimalist Phase 02 scope
         await accountVM.createAccount(
-          localId,
+          resolvedLocalUserId,
           remoteUid,
           account,
-          onboardingRepo: onboardingRepo,
-          userEmail: userEmail,
         );
       } else {
-        // TRƯỜNG HỢP CẬP NHẬT VÍ: Giữ nguyên vẹn mã tiền tệ gốc của ví, không ghi đè lung tung
         final account = AccountEntity(
           id: widget.account!.id,
-          userId: widget.account!.userId,
+          userId: resolvedLocalUserId,
           name: name,
           type: _selectedType,
           balance: balance,
-          currencyCode: widget
-              .account!.currencyCode, // Giữ vững liên kết tiền tệ của ví cũ
+          currencyCode: widget.account!.currencyCode,
           icon: _getIcon(_selectedType),
           createdAt: widget.account!.createdAt,
           updatedAt: DateTime.now(),
           deletedAt: widget.account!.deletedAt,
         );
 
-        // 🔥 ĐÃ FIX: Truyền thêm 2 tham số bắt buộc onboardingRepo và userEmail vào hàm
+        // 🔥 FIXED: Invoked clean update contract matching our minimalist Phase 02 scope
         await accountVM.updateAccount(
-          localId,
+          resolvedLocalUserId,
           remoteUid,
           account,
-          onboardingRepo: onboardingRepo,
-          userEmail: userEmail,
         );
       }
 
       if (!mounted) return;
       Navigator.pop(context, true);
     } catch (e) {
-      debugPrint('Account submit error: $e');
+      debugPrint('Account submit runtime error: $e');
     }
   }
 
@@ -185,9 +179,8 @@ class _AccountFormViewState extends State<AccountFormView> {
       ),
       child: SafeArea(
         child: Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
+          padding:
+              EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
           child: Form(
             key: _formKey,
             child: SingleChildScrollView(
@@ -236,9 +229,8 @@ class _AccountFormViewState extends State<AccountFormView> {
                   const SizedBox(height: AppSizes.md),
                   TextFormField(
                     controller: _balanceController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
                     style: TextStyle(color: primaryTextColor),
                     decoration: InputDecoration(
                       labelText: 'Balance',
@@ -277,9 +269,8 @@ class _AccountFormViewState extends State<AccountFormView> {
                       String nameDisplay = 'Other';
                       if (type == AccountType.cash) nameDisplay = 'Cash';
                       if (type == AccountType.bank) nameDisplay = 'Bank';
-                      if (type == AccountType.creditCard) {
+                      if (type == AccountType.creditCard)
                         nameDisplay = 'Credit Card';
-                      }
                       if (type == AccountType.eWallet) nameDisplay = 'E-Wallet';
 
                       return DropdownMenuItem(
@@ -306,10 +297,8 @@ class _AccountFormViewState extends State<AccountFormView> {
                       if (error == null) return const SizedBox.shrink();
                       return Padding(
                         padding: const EdgeInsets.only(bottom: AppSizes.md),
-                        child: Text(
-                          error,
-                          style: const TextStyle(color: AppColors.error),
-                        ),
+                        child: Text(error,
+                            style: const TextStyle(color: AppColors.error)),
                       );
                     },
                   ),
@@ -328,7 +317,6 @@ class _AccountFormViewState extends State<AccountFormView> {
                             final isLoading = widget.account == null
                                 ? vm.isCreatingAccount
                                 : vm.isUpdatingAccount;
-
                             return ElevatedButton(
                               onPressed: isLoading ? null : _submit,
                               child: isLoading
