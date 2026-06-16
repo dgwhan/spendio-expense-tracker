@@ -13,6 +13,8 @@ import 'package:spend_io_app/features/home/presentation/widgets/recent_activity/
 import 'package:spend_io_app/features/home/presentation/widgets/savings_goal/savings_goal_card.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/spending_breakdown/spending_breakdown_section.dart';
 import 'package:spend_io_app/features/home/data/models/dashboard_summary_model.dart';
+import 'package:spend_io_app/features/transaction/presentation/screen/add_transaction_screen.dart';
+import 'package:spend_io_app/features/transaction/presentation/viewmodels/transaction_viewmodel.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/saving_goal_entity.dart';
 import 'package:spend_io_app/features/home/data/models/savings_goal_model.dart';
 
@@ -67,8 +69,8 @@ class HomeScreen extends StatelessWidget {
               // 1. Header Section
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
+                // 🔥 FIXED: Đổi 'child:' thành 'sliver:' cho đúng contract của SliverPadding
                 sliver: SliverToBoxAdapter(
-                  // 🔥 FIXED: Changed 'child:' to 'sliver:'
                   child: AppHeader(
                     displayName: displayName,
                     avatarUrl: '',
@@ -82,8 +84,8 @@ class HomeScreen extends StatelessWidget {
               SliverPadding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                // 🔥 FIXED: Đổi 'child:' thành 'sliver:'
                 sliver: SliverToBoxAdapter(
-                  // 🔥 FIXED: Changed 'child:' to 'sliver:'
                   child: BalanceSummaryCard(
                     summary: summaryModel,
                   ),
@@ -95,30 +97,42 @@ class HomeScreen extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 sliver: SliverToBoxAdapter(
-                  // 🔥 FIXED: Changed 'child:' to 'sliver:'
                   child: QuickActionsGrid(
                     onTransactionTap: () {
-                      debugPrint('Quick Action: Add transaction clicked');
+                      final int currentUserId =
+                          authProvider.currentUser?.toEntity().id ?? 1;
+                      final accountVM = context.read<AccountViewModel>();
+                      final txViewModel = context.read<TransactionViewModel>();
+
+                      final String activeAccountId =
+                          accountVM.accounts.isNotEmpty
+                              ? accountVM.accounts.first.id
+                              : '';
+
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => AddTransactionScreen(
+                            accountId: activeAccountId,
+                            userId: currentUserId,
+                            transactionVM: txViewModel,
+                          ),
+                        ),
+                      );
                     },
-                    onBudgetTap: () {
-                      debugPrint('Quick Action: Budget clicked');
-                    },
-                    onAnalyticsTap: () {
-                      debugPrint('Quick Action: Analytics clicked');
-                    },
-                    onSavingGoalTap: () {
-                      debugPrint('Quick Action: Saving goal clicked');
-                    },
+                    onBudgetTap: () =>
+                        debugPrint('Quick Action: Budget clicked'),
+                    onAnalyticsTap: () =>
+                        debugPrint('Quick Action: Analytics clicked'),
+                    onSavingGoalTap: () =>
+                        debugPrint('Quick Action: Saving goal clicked'),
                   ),
                 ),
               ),
-
               // 4. Spending Breakdown Section
               SliverPadding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 sliver: SliverToBoxAdapter(
-                  // 🔥 FIXED: Changed 'child:' to 'sliver:'
                   child: SpendingBreakdownSection(
                     weekData: dashboardVM.spendingBreakdownWeek,
                     monthData: dashboardVM.spendingBreakdownMonth,
@@ -133,8 +147,8 @@ class HomeScreen extends StatelessWidget {
               SliverPadding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                // 🔥 FIXED: Đổi 'child:' thành 'sliver:'
                 sliver: SliverToBoxAdapter(
-                  // 🔥 FIXED: Changed 'child:' to 'sliver:'
                   child: FinancialPulseSection(
                     pulse: dashboardVM.financialPulse,
                   ),
@@ -146,7 +160,6 @@ class HomeScreen extends StatelessWidget {
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                   sliver: SliverToBoxAdapter(
-                    // 🔥 FIXED: Changed 'child:' to 'sliver:'
                     child: SavingsGoalCard(
                       goals: dashboardVM.savingsGoals.map((g) {
                         return g.toSavingsGoalModel();
@@ -161,7 +174,6 @@ class HomeScreen extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 sliver: SliverToBoxAdapter(
-                  // 🔥 FIXED: Changed 'child:' to 'sliver:'
                   child: MonthlyBudgetProgress(
                     budget: dashboardVM.monthlyBudget,
                   ),
@@ -172,8 +184,8 @@ class HomeScreen extends StatelessWidget {
               if (dashboardVM.recentTransactions.isNotEmpty)
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 40.0),
+                  // 🔥 FIXED: Đổi 'child:' thành 'sliver:'
                   sliver: SliverToBoxAdapter(
-                    // 🔥 FIXED: Changed 'child:' to 'sliver:'
                     child: RecentActivitySection(
                       transactions: dashboardVM.recentTransactions,
                       onViewAllTap: () {},

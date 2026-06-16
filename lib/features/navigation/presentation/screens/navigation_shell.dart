@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
+import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:spend_io_app/features/home/presentation/screens/home_screen.dart';
 import 'package:spend_io_app/features/navigation/presentation/providers/navigation_provider.dart';
 import 'package:spend_io_app/features/navigation/presentation/widgets/bottom_navigation_bar.dart';
 import 'package:spend_io_app/features/navigation/presentation/widgets/center_action_button.dart';
 import 'package:spend_io_app/features/profile/presentation/screens/profile_screen.dart';
 import 'package:spend_io_app/features/wallet/presentation/screen/wallet_screen.dart';
+import 'package:spend_io_app/features/transaction/presentation/screen/add_transaction_screen.dart';
+import 'package:spend_io_app/features/transaction/presentation/viewmodels/transaction_viewmodel.dart';
 
-//Nguồn tham khảo ý tưởng cấu trúc:
-/// YouTube Channel: Programming With FlexZ
-/// (video: Flutter Persistent Bottom Navigation Bar, Nested Navigation and Routing in Flutter)
 class NavigationShell extends StatefulWidget {
   const NavigationShell({super.key});
 
@@ -18,13 +19,36 @@ class NavigationShell extends StatefulWidget {
 }
 
 class _NavigationShellState extends State<NavigationShell> {
-  //Khởi tạo 4 tab chính
   final List<GlobalKey<NavigatorState>> _navigatorKeys = [
-    GlobalKey<NavigatorState>(), // Tab 0: Home
-    GlobalKey<NavigatorState>(), // Tab 1: Wallet
-    GlobalKey<NavigatorState>(), // Tab 2: Insights
-    GlobalKey<NavigatorState>(), // Tab 3: Profile
+    GlobalKey<NavigatorState>(),
+    GlobalKey<NavigatorState>(),
+    GlobalKey<NavigatorState>(),
+    GlobalKey<NavigatorState>(),
   ];
+
+  void _openAddTransactionFlow(BuildContext context) {
+    final int currentUserId =
+        context.read<AuthProvider>().currentUser?.toEntity().id ?? 1;
+    final accountVM = context.read<AccountViewModel>();
+    final txViewModel = context.read<TransactionViewModel>();
+
+    final String activeAccountId =
+        accountVM.accounts.isNotEmpty ? accountVM.accounts.first.id : '';
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (pageContext) =>
+            ChangeNotifierProvider<TransactionViewModel>.value(
+          value: txViewModel,
+          child: AddTransactionScreen(
+            accountId: activeAccountId,
+            userId: currentUserId,
+            transactionVM: txViewModel,
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,8 +56,7 @@ class _NavigationShellState extends State<NavigationShell> {
     final provider = context.read<NavigationProvider>();
 
     return PopScope(
-      canPop:
-          false, //chặn thoát app khi ng dùng vuốt/hoặc nhấn nút quay lại vật lý trên điện thoại
+      canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
 
@@ -41,19 +64,15 @@ class _NavigationShellState extends State<NavigationShell> {
             _navigatorKeys[currentIndex].currentState;
 
         if (currentNavigator != null && currentNavigator.canPop()) {
-          // Lùi trang nội bộ trong tab hiện tại
           currentNavigator.pop();
         } else {
           if (currentIndex != 0) {
-            // Chuyển về tab Home nếu không phải tab đầu
             provider.changeTab(0);
           } else if (Navigator.canPop(context)) {
-            // Đảm bảo có lịch sử navigation trước khi pop
             Navigator.of(context).pop();
           }
         }
       },
-
       child: Scaffold(
         extendBody: true,
         body: IndexedStack(
@@ -80,7 +99,6 @@ class _NavigationShellState extends State<NavigationShell> {
               currentIndex: currentIndex,
               onTabSelected: (index) {
                 if (currentIndex == index) {
-                  //ấn 2 lần vào tab hiện tại thì sẽ quay lại main srceen của tab đó
                   _navigatorKeys[index]
                       .currentState
                       ?.popUntil((route) => route.isFirst);
@@ -92,7 +110,7 @@ class _NavigationShellState extends State<NavigationShell> {
             Positioned(
               top: -24,
               child: CenterActionButton(onPressed: () {
-                //TODO: gọi form nhập liệu khi ng dùng add transaction
+                _openAddTransactionFlow(context);
               }),
             )
           ],

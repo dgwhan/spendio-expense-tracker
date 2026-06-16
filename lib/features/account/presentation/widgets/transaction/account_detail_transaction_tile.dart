@@ -4,64 +4,64 @@ import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_radius.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
-import 'package:spend_io_app/features/transaction/data/models/transaction_model.dart';
-import 'package:spend_io_app/features/transaction/presentation/screen/utils/transaction_ui_mapper.dart';
+import 'package:spend_io_app/features/transaction/domain/entities/transaction_entity.dart'; // Import Entity thay vì Model
+import 'package:spend_io_app/features/transaction/domain/entities/transaction_type.dart'; // Import Enum phân loại dòng tiền
 
-/// [App Location] Account Details Screen: Under each date group section.
-/// [Core Function] Displays an individual transaction row with dynamic category icon/color, title, timestamp, and adaptive color-coded amount.
 class AccountDetailTransactionTile extends StatelessWidget {
-  final TransactionModel tx;
+  final TransactionEntity tx;
 
   const AccountDetailTransactionTile({super.key, required this.tx});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final primaryTextColor =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final mutedTextColor =
         isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
 
     final formattedAmount = CurrencyFormatter.format(tx.amount);
-    final timeStr = DateFormat('HH:mm').format(tx.date);
+    final timeStr = DateFormat('HH:mm').format(tx.transactionDate);
 
-    // DYNAMIC LOOKUP: Read icon and colors directly from the transaction object
-    // to support upcoming user-defined custom categories.
-    final IconData categoryIcon = tx.categoryIcon;
-    final Color categoryColor = tx.categoryColor ??
-        (isDark ? AppColors.categoryOtherDark : AppColors.categoryOtherLight);
-    final Color categoryBgColor = tx.categoryBgColor ??
-        (isDark
-            ? AppColors.categoryOtherBgDark
-            : AppColors.categoryOtherBgLight);
+    // Phân loại trạng thái dựa trên Enum lõi hệ thống
+    final bool isExpense = tx.type == TransactionType.expense;
+
+    // Thiết lập hệ màu sắc trực quan theo luồng Thu/Chi (Fintech Signaling Colors)
+    final Color flowColor = isExpense ? AppColors.error : Colors.green;
 
     return Padding(
       padding:
           const EdgeInsets.symmetric(vertical: 8.0, horizontal: AppSizes.md),
       child: Row(
         children: [
-          // Dynamic Category Icon Container
+          // Khối Icon dòng tiền tinh gọn (Thay thế hệ thống category cũ)
           Container(
             padding: const EdgeInsets.all(AppSizes.sm),
             decoration: BoxDecoration(
-              color: categoryBgColor,
+              color: flowColor.withOpacity(0.12),
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Icon(
-              categoryIcon,
-              color: categoryColor,
-              size: 20,
+              isExpense
+                  ? Icons.arrow_downward_rounded
+                  : Icons.arrow_upward_rounded,
+              color: flowColor,
+              size: 18,
             ),
           ),
           const SizedBox(width: AppSizes.md),
 
-          // Transaction Information Block
+          // Khối thông tin chi tiết giao dịch phẳng
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  tx.title,
+                  tx.note ??
+                      (isExpense
+                          ? 'Expense'
+                          : 'Income'), // Hiển thị Note, nếu trống dùng nhãn dòng tiền mặc định
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
@@ -72,7 +72,7 @@ class AccountDetailTransactionTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${tx.category} • $timeStr',
+                  timeStr, // Đã loại bỏ hoàn toàn hiển thị chữ danh mục (tx.category)
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -83,17 +83,16 @@ class AccountDetailTransactionTile extends StatelessWidget {
             ),
           ),
 
-          // Flow Amount Text (Adaptive Inflow/Outflow color)
+          // Khối hiển thị số tiền tùy biến màu sắc sống động (+ / -)
           Text(
-            '${tx.isExpense ? "-" : "+"}$formattedAmount',
+            '${isExpense ? "-" : "+"}$formattedAmount',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.bold,
-              color: tx.isExpense
-                  ? (isDark
-                      ? AppColors.textPrimaryDark
-                      : AppColors.textPrimaryLight)
-                  : AppColors.success,
+              color: isExpense
+                  ? primaryTextColor
+                  : Colors
+                      .green, // Giữ màu chữ thường cho chi tiêu, nhấn xanh cho thu nhập
             ),
           ),
         ],

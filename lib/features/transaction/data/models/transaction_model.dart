@@ -1,51 +1,89 @@
-/// [App Location] Data layer model -> Transaction feature module.
-/// [Core Function] Pure data representation for CRUD pipelines. Free from UI library dependencies.
+
+import 'package:spend_io_app/features/transaction/domain/entities/transaction_entity.dart';
+import 'package:spend_io_app/features/transaction/domain/entities/transaction_type.dart';
+
 class TransactionModel {
   final String id;
-  final String title;
+  final int userId;
+  final String accountId;
+  final String categoryId;
   final double amount;
-  final DateTime date;
-  final String category;
-  final bool isExpense;
+  final String type;
+  final String? note;
+  final String transactionDate;
+  final String createdAt;
+  final String updatedAt;
 
-  // ✓ CLEAN DATA: Save hex strings or code points instead of raw UI objects
-  final String? categoryIconCode;
-  final String? categoryColorHex;
-
-  const TransactionModel({
+  TransactionModel({
     required this.id,
-    required this.title,
+    required this.userId,
+    required this.accountId,
+    required this.categoryId,
     required this.amount,
-    required this.date,
-    required this.category,
-    required this.isExpense,
-    this.categoryIconCode,
-    this.categoryColorHex,
+    required this.type,
+    this.note,
+    required this.transactionDate,
+    required this.createdAt,
+    required this.updatedAt,
   });
 
-  factory TransactionModel.fromJson(Map<String, dynamic> json) {
+  factory TransactionModel.fromMap(Map<String, dynamic> map) {
     return TransactionModel(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      amount: (json['amount'] as num).toDouble(),
-      date: DateTime.parse(json['date'] as String),
-      category: json['category'] as String,
-      isExpense: json['isExpense'] as bool,
-      categoryIconCode: json['categoryIconCode'] as String?,
-      categoryColorHex: json['categoryColorHex'] as String?,
+      id: map['id'] as String,
+      userId: map['user_id'] as int,
+      accountId: map['account_id'] as String,
+      categoryId: map['category_id'] as String,
+      amount: (map['amount'] as num).toDouble(),
+      type: map['type'] as String,
+      note: map['note'] as String?,
+      transactionDate: map['transaction_date'] as String,
+      createdAt: map['created_at'] as String,
+      updatedAt: map['updated_at'] as String,
     );
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'title': title,
+      'user_id': userId,
+      'account_id': accountId,
+      'category_id': categoryId,
       'amount': amount,
-      'date': date.toIso8601String(),
-      'category': category,
-      'isExpense': isExpense,
-      'categoryIconCode': categoryIconCode,
-      'categoryColorHex': categoryColorHex,
+      'type': type,
+      'note': note,
+      'transaction_date': transactionDate,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
     };
+  }
+
+  TransactionEntity toEntity() {
+    return TransactionEntity(
+      id: id,
+      userId: userId,
+      accountId: accountId,
+      categoryId: categoryId,
+      amount: amount,
+      type: type == 'income' ? TransactionType.income : TransactionType.expense,
+      note: note,
+      transactionDate: DateTime.parse(transactionDate),
+      createdAt: DateTime.parse(createdAt),
+      updatedAt: DateTime.parse(updatedAt),
+    );
+  }
+
+  factory TransactionModel.fromEntity(TransactionEntity entity) {
+    return TransactionModel(
+      id: entity.id,
+      userId: entity.userId,
+      accountId: entity.accountId,
+      categoryId: entity.categoryId,
+      amount: entity.amount,
+      type: entity.type.name,
+      note: entity.note,
+      transactionDate: entity.transactionDate.toIso8601String(),
+      createdAt: entity.createdAt.toIso8601String(),
+      updatedAt: entity.updatedAt.toIso8601String(),
+    );
   }
 }

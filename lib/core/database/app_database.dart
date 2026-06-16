@@ -7,6 +7,8 @@ import 'migrations/migration_v4.dart';
 import 'migrations/migration_v5.dart';
 import 'migrations/migration_v6.dart';
 import 'migrations/migration_v7.dart';
+import 'migrations/migration_v8.dart';
+import 'migrations/migration_v9.dart';
 
 /// Application SQLite database
 class AppDatabase {
@@ -32,13 +34,12 @@ class AppDatabase {
       'spendio.db',
     );
 
+    // app_database.dart
     return openDatabase(
       path,
-      version: 7,
+      version: 9, // tăng từ 7 lên 9
       onConfigure: (db) async {
-        await db.execute(
-          'PRAGMA foreign_keys = ON',
-        );
+        await db.execute('PRAGMA foreign_keys = ON');
       },
       onCreate: (db, version) async {
         await MigrationV1.run(db);
@@ -46,23 +47,21 @@ class AppDatabase {
         await MigrationV5.run(db);
         await MigrationV6.run(db);
         await MigrationV7.run(db);
+        await MigrationV8.run(db);
+        await MigrationV9.run(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion < 4) {
-          await MigrationV4.run(db);
-        }
-        if (oldVersion < 5) {
-          await MigrationV5.run(db);
-        }
-        if (oldVersion < 6) {
-          await MigrationV6.run(db);
-        }
-        if (oldVersion < 7) {
-          await MigrationV7.run(db);
-        }
+        if (oldVersion < 4) await MigrationV4.run(db);
+        if (oldVersion < 5) await MigrationV5.run(db);
+        if (oldVersion < 6) await MigrationV6.run(db);
+        if (oldVersion < 7) await MigrationV7.run(db);
+        if (oldVersion < 8) await MigrationV8.run(db);
+        if (oldVersion < 9) await MigrationV9.run(db);
       },
       onOpen: (db) async {
-        debugPrint('DB opened at: $path');
+        final schema = await db.rawQuery(
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='transactions'");
+        debugPrint('[DB] transactions schema: $schema');
       },
     );
   }

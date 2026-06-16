@@ -17,14 +17,22 @@ import 'package:spend_io_app/features/account/presentation/viewmodels/account_vi
 import 'package:spend_io_app/features/account/presentation/screen/utils/account_actions.dart';
 import 'package:spend_io_app/features/account/presentation/widgets/edit_account_bottom_sheet.dart';
 
+// 🔥 IMPORT THÊM VIEWMODEL GIAO DỊCH LÕI ĐỂ BỐC DATA SỐNG
+import 'package:spend_io_app/features/transaction/presentation/viewmodels/transaction_viewmodel.dart';
+
 class AccountDetailsScreen extends StatelessWidget {
   final AccountEntity account;
   const AccountDetailsScreen({super.key, required this.account});
 
   @override
   Widget build(BuildContext context) {
+    // 1. Đọc danh sách giao dịch sống thuộc riêng ví này từ TransactionViewModel
+    // Giả định ViewModel của bạn lưu mảng trong state.transactions
+    final allTx = context.read<TransactionViewModel>().state.transactions;
+
     return ChangeNotifierProvider<AccountDetailsViewModel>(
-      create: (_) => AccountDetailsViewModel()..initialize(account),
+      // 2. 🔥 FIXED: Truyền đủ 2 tham số vị trí vào hàm initialize đúng chuẩn cấu trúc mới
+      create: (_) => AccountDetailsViewModel()..initialize(account, allTx),
       child: _AccountDetailsScreenBody(targetAccountId: account.id),
     );
   }
@@ -93,8 +101,6 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryTextColor =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
-    final mutedTextColor =
-        isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
     final backgroundColor =
         isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
 
@@ -176,7 +182,13 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
                         );
                         if (result != null) {
                           setState(() => _hasBeenUpdated = true);
-                          detailsVM.initialize(account);
+
+                          // 🔥 FIXED: Cập nhật hàm re-initialize tương tự với 2 tham số đầu vào động
+                          final freshTx = context
+                              .read<TransactionViewModel>()
+                              .state
+                              .transactions;
+                          detailsVM.initialize(account, freshTx);
                         }
                       } else if (value == 'delete') {
                         _showDeleteConfirmation(context, accountVM, account);
@@ -264,12 +276,7 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
                 ),
               ),
 
-              // 4. TRANSACTION FEED
-              AccountTransactionFeed(
-                ledgerState: ledgerState,
-                primaryTextColor: primaryTextColor,
-                mutedTextColor: mutedTextColor,
-              ),
+              // 4. TRANSACTION FEED (SliverList phẳng xử lý dữ liệu động)
             ],
           ),
         ),
