@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:spend_io_app/core/widgets/shake_widget.dart';
@@ -45,7 +44,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
       IdentityPhaseScreen(userEmail: widget.userEmail),
       const ProfessionPhaseScreen(),
       const GoalsPhaseScreen(),
-      const CurrencyPhaseScreen(),
+      const CurrencyPhaseScreen(), // 🇺🇸/🇻🇳 Sẽ tự động detect miền và in log tại đây
       const BalancePhaseScreen()
     ];
 
@@ -61,14 +60,18 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
       onNext: () async {
         if (viewModel.canContinue()) {
           viewModel.setError(false);
-          await viewModel.saveOnboarding(email: widget.userEmail);
+
           if (currentStep < totalSteps - 1) {
             viewModel.nextStep();
           } else {
+            // ─── CHẶNG CUỐI: HOÀN THÀNH PROFILE BOOTSTRAP ───
             await viewModel.completeOnboarding(email: widget.userEmail);
+
             if (!context.mounted) return;
             await context.read<AuthProvider>().reloadUser();
+
             if (!context.mounted) return;
+            // Tiến hành đẩy sang màn hình chính sau khi DB Local đã ghi nhận xong
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
                 builder: (context) => const NavigationEntry(),

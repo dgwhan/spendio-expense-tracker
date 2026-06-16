@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:spend_io_app/features/home/presentation/viewmodels/dashboard_viewmodel.dart';
+import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
+import 'package:spend_io_app/features/onboarding/domain/repositories/onboarding_repository.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/app_header/app_header.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/balance_summary/balance_summary_card.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/financial_pulse/financial_pulse_section.dart';
@@ -28,9 +30,14 @@ class HomeScreen extends StatelessWidget {
     final dashboardVM = context.watch<DashboardViewModel>();
 
     final displayName = authProvider.currentUser?.displayName ?? 'Guest';
+    final userEmail = authProvider.currentUser?.email ??
+        ''; // 🔥 Bốc email người dùng phục vụ đồng bộ rác lệch pha
+
     final summaryModel = DashboardSummaryModel(
       balance: dashboardVM.totalAssets,
-      income: dashboardVM.totalAssets * 0.25 > 0 ? dashboardVM.totalAssets * 0.25 : 18000000,
+      income: dashboardVM.totalAssets * 0.25 > 0
+          ? dashboardVM.totalAssets * 0.25
+          : 18000000,
       expense: dashboardVM.totalSpent,
       savings: dashboardVM.totalSaved,
     );
@@ -41,7 +48,22 @@ class HomeScreen extends StatelessWidget {
         child: RefreshIndicator(
           color: AppColors.primary,
           onRefresh: () async {
-            await dashboardVM.walletViewModel.fetchWalletData();
+            final userEntity = authProvider.currentUser?.toEntity();
+            if (userEntity != null) {
+              final localId = userEntity.id ?? 1;
+              final remoteUid = userEntity.id?.toString() ?? '';
+
+              await dashboardVM.walletViewModel.initialize();
+
+              if (context.mounted) {
+                await context.read<AccountViewModel>().loadAccounts(
+                      localId,
+                      remoteUid,
+                      onboardingRepo: context.read<OnboardingRepository>(),
+                      userEmail: userEmail,
+                    );
+              }
+            }
           },
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -61,7 +83,8 @@ class HomeScreen extends StatelessWidget {
 
               // Total balance card
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 sliver: SliverToBoxAdapter(
                   child: BalanceSummaryCard(
                     summary: summaryModel,
@@ -71,7 +94,8 @@ class HomeScreen extends StatelessWidget {
 
               // Quick action
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 sliver: SliverToBoxAdapter(
                   child: QuickActionsGrid(
                     onTransactionTap: () {
@@ -92,7 +116,8 @@ class HomeScreen extends StatelessWidget {
 
               // Spending breakdown
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 sliver: SliverToBoxAdapter(
                   child: SpendingBreakdownSection(
                     weekData: dashboardVM.spendingBreakdownWeek,
@@ -106,7 +131,8 @@ class HomeScreen extends StatelessWidget {
 
               // Financial Pulse (AI & Density heat map)
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 sliver: SliverToBoxAdapter(
                   child: FinancialPulseSection(
                     pulse: dashboardVM.financialPulse,
@@ -130,7 +156,8 @@ class HomeScreen extends StatelessWidget {
 
               // Monthly Budget
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 sliver: SliverToBoxAdapter(
                   child: MonthlyBudgetProgress(
                     budget: dashboardVM.monthlyBudget,

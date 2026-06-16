@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
-import 'package:spend_io_app/core/constants/app_radius.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
+import 'package:spend_io_app/core/constants/app_radius.dart';
 import 'package:spend_io_app/core/utils/account_type_ext.dart';
 import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
 
@@ -25,9 +25,8 @@ class AccountTypeGridSelector extends StatelessWidget {
         return Icons.account_balance_wallet;
       case AccountType.creditCard:
         return Icons.credit_card;
-      default:
-        return Icons
-            .help_outline; // Xử lý nhánh an toàn cho loại Other thay thế savingsAccount cũ
+      case AccountType.other:
+        return Icons.help_outline;
     }
   }
 

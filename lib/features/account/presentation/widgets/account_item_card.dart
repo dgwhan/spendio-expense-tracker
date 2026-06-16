@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
@@ -7,7 +8,8 @@ import 'package:spend_io_app/core/utils/account_type_ext.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
 import 'package:spend_io_app/core/widgets/dialogs/app_confirmation_dialog.dart';
 import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
-import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
+import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
+import 'package:spend_io_app/features/onboarding/domain/repositories/onboarding_repository.dart';
 import 'package:spend_io_app/features/account/presentation/widgets/edit_account_bottom_sheet.dart';
 
 class AccountItemCard extends StatelessWidget {
@@ -40,7 +42,7 @@ class AccountItemCard extends StatelessWidget {
   }
 
   void _showDeleteConfirmation(
-      BuildContext context, WalletViewModel walletVM, AccountEntity account) {
+      BuildContext context, AccountViewModel accountVM, AccountEntity account) {
     showDialog(
       context: context,
       useRootNavigator: false,
@@ -53,8 +55,23 @@ class AccountItemCard extends StatelessWidget {
           cancelLabel: 'Cancel',
           isDestructive: true,
           onConfirm: () {
-            onDelete?.call();
-            walletVM.deleteAccount(account.id);
+            final localId = account.userId;
+
+            final currentUser = FirebaseAuth.instance.currentUser;
+            final String remoteUid = currentUser?.uid ?? '';
+            final String userEmail = currentUser?.email ?? '';
+
+            accountVM
+                .deleteAccount(
+              localId,
+              remoteUid,
+              account.id,
+              onboardingRepo: context.read<OnboardingRepository>(),
+              userEmail: userEmail,
+            )
+                .then((_) {
+              onDelete?.call();
+            });
           },
         );
       },
@@ -72,11 +89,12 @@ class AccountItemCard extends StatelessWidget {
     final outlineColor =
         isDark ? AppColors.outlineDark : const Color(0xFFF1F1F1);
 
-    // ĐỒNG BỘ MÀU: Lấy trực tiếp từ Extension, dẹp bỏ các hàm switch-case thừa
     final accentColor = account.type.mainColor;
     final iconBgColor = account.type.bgColor;
 
-    final walletVM = context.read<WalletViewModel>();
+    final accountVM = Navigator.of(context).mounted
+        ? (tryWatch(context) ?? context.read<AccountViewModel>())
+        : context.read<AccountViewModel>();
 
     final institutionText = (switch (account.type) {
       AccountType.bank => 'Atm',
@@ -196,22 +214,20 @@ class AccountItemCard extends StatelessWidget {
                                   color: mutedTextColor.withValues(alpha: 0.5)),
                               onSelected: (value) async {
                                 if (value == 'edit') {
-                                  // Sử dụng màn hình an toàn, đóng mở nhịp nhàng
                                   final result = await showModalBottomSheet(
                                     context: context,
-                                    useRootNavigator:
-                                        false, // Đồng bộ chặn đứng bug đóng nhầm tầng UI
+                                    useRootNavigator: false,
                                     isScrollControlled: true,
                                     backgroundColor: Colors.transparent,
                                     builder: (_) => EditAccountBottomSheet(
-                                        viewModel: walletVM, account: account),
+                                        viewModel: accountVM, account: account),
                                   );
                                   if (!context.mounted) return;
                                   if (result != null) onEdit?.call();
                                 }
                                 if (value == 'delete') {
                                   _showDeleteConfirmation(
-                                      context, walletVM, account);
+                                      context, accountVM, account);
                                 }
                               },
                               itemBuilder: (_) => [
@@ -254,5 +270,13 @@ class AccountItemCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  AccountViewModel? tryWatch(BuildContext context) {
+    try {
+      return context.watch<AccountViewModel>();
+    } catch (_) {
+      return null;
+    }
   }
 }

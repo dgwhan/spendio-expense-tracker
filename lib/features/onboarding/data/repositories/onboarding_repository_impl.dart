@@ -1,4 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
+import 'package:spend_io_app/core/database/app_database.dart';
 import '../../domain/entities/onboarding_entity.dart';
 import '../../domain/repositories/onboarding_repository.dart';
 import '../datasources/onboarding_local_datasource.dart';
@@ -19,6 +21,13 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
     required String email,
     required OnboardingEntity entity,
   }) async {
+    // 1. Kiểm tra dữ liệu cũ từ SQLite Local để lấy walletId hiện tại nhằm tái sử dụng
+    final existingData = await localDataSource.getOnboarding(email: email);
+
+    // Chiến thuật Re-use ID: Ưu tiên Local ID -> Ưu tiên Entity ID -> Khởi tạo mới theo timestamp
+    final String walletId = existingData?.walletId ??
+        (entity.walletId ?? 'acc_${DateTime.now().millisecondsSinceEpoch}');
+
     final model = OnboardingModel(
       displayName: entity.displayName,
       occupation: entity.occupation,
@@ -26,31 +35,43 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
       currencyCode: entity.currencyCode,
       initialBalance: entity.initialBalance,
       onboardingCompleted: entity.onboardingCompleted,
+      walletId: walletId, // Kế thừa định danh ví duy nhất
     );
 
-    // Sinh duy nhất một ID ví chung dạng acc_ để đồng bộ từ Local lên Remote
-    final String generatedWalletId =
-        'acc_${DateTime.now().millisecondsSinceEpoch}';
-
-    // Lưu cục bộ ở SQLite để offline (Truyền thêm walletId)
+    // 2. Ghi dữ liệu xuống SQLite Local cache
     await localDataSource.saveOnboarding(
       email: email,
       model: model,
-      walletId: generatedWalletId,
+      walletId: walletId,
     );
 
-    // Đồng bộ hóa lên Cloud Firestore nếu người dùng đã đăng nhập Firebase
+    // 3. Đồng bộ dữ liệu lên Cloud Firestore nếu User đã được xác thực
     final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid != null) {
-      remoteDataSource
-          .saveOnboarding(
-        uid: uid,
-        model: model,
-        walletId: generatedWalletId, // Truyền thêm walletId giống hệt local
-      )
-          .catchError((e) {
-        // Bỏ qua lỗi đồng bộ khi offline hoặc lỗi Firestore
-      });
+    if (uid != null && uid.trim().isNotEmpty) {
+      try {
+        final db = await AppDatabase.database;
+        final userResult = await db.query(
+          'users',
+          columns: ['id'],
+          where: 'email = ?',
+          whereArgs: [email],
+          limit: 1,
+        );
+
+        if (userResult.isNotEmpty) {
+          final int localUserId = userResult.first['id'] as int;
+
+          await remoteDataSource.saveOnboarding(
+            uid: uid,
+            model: model,
+            walletId: walletId,
+            localUserId: localUserId,
+          );
+          debugPrint('[Onboarding Repo]: Synced unified walletId: $walletId');
+        }
+      } catch (e) {
+        debugPrint('[Onboarding Repo] Remote sync paused (Offline mode): $e');
+      }
     }
   }
 
@@ -64,24 +85,19 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
   }
 
   @override
-  Future<OnboardingEntity?> getOnboarding({
-    required String email,
-  }) async {
+  Future<OnboardingEntity?> getOnboarding({required String email}) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
 
-    if (uid != null) {
+    if (uid != null && uid.trim().isNotEmpty) {
       try {
         final remoteModel = await remoteDataSource.getOnboarding(uid: uid);
         if (remoteModel != null) {
-          // Khi lấy dữ liệu từ Firebase về, sinh một ID mới cho local nếu chưa có ví
-          final String syncWalletId =
-              'acc_${DateTime.now().millisecondsSinceEpoch}';
+          final existingLocalData =
+              await localDataSource.getOnboarding(email: email);
 
-          await localDataSource.saveOnboarding(
-            email: email,
-            model: remoteModel,
-            walletId: syncWalletId,
-          );
+          final String targetWalletId = remoteModel.walletId ??
+              (existingLocalData?.walletId ??
+                  'acc_${DateTime.now().millisecondsSinceEpoch}');
 
           return OnboardingEntity(
             displayName: remoteModel.displayName,
@@ -90,20 +106,17 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
             currencyCode: remoteModel.currencyCode,
             initialBalance: remoteModel.initialBalance,
             onboardingCompleted: remoteModel.onboardingCompleted,
+            walletId: targetWalletId,
           );
         }
-      } catch (_) {
-        // Bỏ qua lỗi khi không có mạng
+      } catch (e) {
+        debugPrint('[Onboarding Repo] Fetching remote onboarding failed: $e');
       }
     }
 
-    final model = await localDataSource.getOnboarding(
-      email: email,
-    );
-
-    if (model == null) {
-      return null;
-    }
+    // Fallback về local cache nếu thiết bị mất mạng
+    final model = await localDataSource.getOnboarding(email: email);
+    if (model == null) return null;
 
     return OnboardingEntity(
       displayName: model.displayName,
@@ -112,6 +125,7 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
       currencyCode: model.currencyCode,
       initialBalance: model.initialBalance,
       onboardingCompleted: model.onboardingCompleted,
+      walletId: model.walletId,
     );
   }
 
@@ -123,9 +137,7 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
       email: email,
     );
 
-    if (onboarding == null) {
-      return;
-    }
+    if (onboarding == null) return;
 
     final updatedEntity = OnboardingEntity(
       displayName: onboarding.displayName,
@@ -133,7 +145,9 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
       goals: onboarding.goals,
       currencyCode: onboarding.currencyCode,
       initialBalance: onboarding.initialBalance,
-      onboardingCompleted: true,
+      onboardingCompleted: true, // Đánh dấu hoàn thành chặng cuối
+      walletId: onboarding
+          .walletId, // Đảm bảo giữ nguyên cấu trúc ví sạch, không sinh ID mới
     );
 
     await saveOnboarding(

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-
 import '../../domain/entities/onboarding_entity.dart';
-
 import '../../domain/usecases/check_onboarding_usecase.dart';
 import '../../domain/usecases/complete_onboarding_usecase.dart';
 import '../../domain/usecases/get_onboarding_usecase.dart';
@@ -9,11 +7,8 @@ import '../../domain/usecases/save_onboarding_usecase.dart';
 
 class OnboardingViewModel extends ChangeNotifier {
   final SaveOnboardingUseCase saveOnboardingUseCase;
-
   final GetOnboardingUseCase getOnboardingUseCase;
-
   final CheckOnboardingUseCase checkOnboardingUseCase;
-
   final CompleteOnboardingUseCase completeOnboardingUseCase;
 
   OnboardingViewModel({
@@ -23,46 +18,35 @@ class OnboardingViewModel extends ChangeNotifier {
     required this.completeOnboardingUseCase,
   });
 
-  // onboarding steps
-
+  // Onboarding steps
   int _currentStep = 0;
-
   int get currentStep => _currentStep;
 
-  // loading state
-
+  // Loading state
   bool _isLoading = false;
-
   bool get isLoading => _isLoading;
 
-  //error if null field
+  // Error if null field
   bool _hasError = false;
   bool get hasError => _hasError;
 
-  // onboarding data
-
+  // Onboarding data
   String? _displayName;
-
   String? get displayName => _displayName;
 
   String? _occupation;
-
   String? get occupation => _occupation;
 
   final List<String> _goals = [];
-
   List<String> get goals => _goals;
 
   String? _currencyCode;
-
   String? get currencyCode => _currencyCode;
 
   double? _initialBalance;
-
   double? get initialBalance => _initialBalance;
 
-  // navigation
-
+  // Navigation
   void nextStep() {
     _currentStep++;
     _hasError = false;
@@ -70,9 +54,7 @@ class OnboardingViewModel extends ChangeNotifier {
   }
 
   void previousStep() {
-    if (_currentStep == 0) {
-      return;
-    }
+    if (_currentStep == 0) return;
 
     _currentStep--;
     _hasError = false;
@@ -84,30 +66,25 @@ class OnboardingViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // update methods
-
+  // Update methods (Pure RAM state management - No silent DB side-effects)
   void updateDisplayName(String value) {
     if (_displayName == value) return;
-
     _displayName = value;
 
     if (_hasError) {
       _hasError = false;
-      notifyListeners();
-    } else {
-      notifyListeners();
     }
+    notifyListeners();
   }
 
   void updateOccupation(String value) {
+    if (_occupation == value) return;
     _occupation = value;
     _hasError = false;
     notifyListeners();
   }
 
-  void toggleGoal(
-    String goal,
-  ) {
+  void toggleGoal(String goal) {
     if (_goals.contains(goal)) {
       _goals.remove(goal);
     } else {
@@ -118,43 +95,38 @@ class OnboardingViewModel extends ChangeNotifier {
   }
 
   void updateCurrency(String value) {
+    if (_currencyCode == value) return;
     _currencyCode = value;
     _hasError = false;
     notifyListeners();
   }
 
   void updateInitialBalance(double value) {
+    if (_initialBalance == value) return;
     _initialBalance = value;
     _hasError = false;
     notifyListeners();
   }
 
-  // validation
-
+  // Validation boundary guard
   bool canContinue() {
     switch (_currentStep) {
       case 0:
         return true;
-
       case 1:
         return _occupation != null;
-
       case 2:
         return _goals.isNotEmpty;
-
       case 3:
         return _currencyCode != null;
-
       case 4:
         return _initialBalance != null;
-
       default:
         return false;
     }
   }
 
-  // save onboarding state
-
+  // Save intermediate onboarding state (Optional call for draft saves)
   Future<void> saveOnboarding({
     required String email,
   }) async {
@@ -179,33 +151,37 @@ class OnboardingViewModel extends ChangeNotifier {
     }
   }
 
-  // complete onboarding
-
+  // 🔥 ĐÃ FIX: Triệt tiêu luồng tạo trùng lắp chặng cuối bằng cách loại bỏ lệnh save dư thừa
   Future<void> completeOnboarding({
     required String email,
   }) async {
     _setLoading(true);
 
     try {
-      final entity = OnboardingEntity(
+      // 1. Đồng bộ thông tin trạng thái lên RAM của ViewModel trước để đồng nhất dữ liệu
+      final temporaryEntity = OnboardingEntity(
         displayName: _displayName,
         occupation: _occupation,
         goals: _goals,
         currencyCode: _currencyCode,
         initialBalance: _initialBalance,
-        onboardingCompleted: true,
+        onboardingCompleted: true, // Ép trạng thái hoàn thành trọn vẹn
       );
 
-      await saveOnboardingUseCase(email: email, entity: entity);
+      // 2. Lưu nháp bản cuối cùng vào SQLite Local để bọc lót thông tin người dùng hiện tại
+      await saveOnboardingUseCase(email: email, entity: temporaryEntity);
 
+      // 3. Thực thi duy nhất UseCase chặng cuối để đóng dấu ví chính chủ và đẩy đồng bộ lên Firestore đám mây
       await completeOnboardingUseCase(email: email);
+
+      debugPrint(
+          '🏁 [Onboarding ViewModel]: Onboarding pipeline completed successfully for $email.');
     } finally {
       _setLoading(false);
     }
   }
 
-  // restore onboarding state
-
+  // Restore onboarding state from database cache
   Future<void> loadOnboarding({
     required String email,
   }) async {
@@ -216,20 +192,14 @@ class OnboardingViewModel extends ChangeNotifier {
         email: email,
       );
 
-      if (onboarding == null) {
-        return;
-      }
+      if (onboarding == null) return;
 
       _displayName = onboarding.displayName;
-
       _occupation = onboarding.occupation;
-
       _goals
         ..clear()
         ..addAll(onboarding.goals);
-
       _currencyCode = onboarding.currencyCode;
-
       _initialBalance = onboarding.initialBalance;
       _hasError = false;
       notifyListeners();
@@ -238,8 +208,7 @@ class OnboardingViewModel extends ChangeNotifier {
     }
   }
 
-  // onboarding lifecycle check
-
+  // Onboarding lifecycle check
   Future<bool> isCompleted({
     required String email,
   }) async {

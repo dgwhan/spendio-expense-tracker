@@ -1,5 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
+import 'package:spend_io_app/features/onboarding/domain/repositories/onboarding_repository.dart';
 import 'package:spend_io_app/features/wallet/data/datasources/wallet_remote_data_source.dart';
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
 import '../../../features/home/presentation/viewmodels/dashboard_viewmodel.dart';
@@ -48,11 +50,13 @@ import '../features/wallet/domain/usecases/goals/get_goals_usecase.dart';
 import '../features/account/domain/usecase/create_account_usecase.dart';
 import '../features/account/domain/usecase/update_account_usecase.dart';
 import '../features/account/domain/usecase/delete_account_usecase.dart';
-import '../features/account/domain/usecase/restore_account_usecase.dart';
 import '../features/wallet/domain/usecases/goals/add_goal_usecase.dart';
 import '../../../features/wallet/domain/usecases/get_categories_usecase.dart';
 import '../../../features/wallet/domain/usecases/initialize_budget_categories_usecase.dart';
 import '../../../features/wallet/domain/usecases/check_wallet_initialization_usecase.dart';
+
+// ACCOUNT VM LAYER
+import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
 
 class AppProviders {
   AppProviders._();
@@ -77,7 +81,6 @@ class AppProviders {
           create: (_) => OnboardingRemoteDataSource(),
         ),
 
-        // Wallet sub-datasources (local)
         Provider<AccountLocalDataSource>(
           create: (_) => AccountLocalDataSourceImpl(),
         ),
@@ -90,7 +93,6 @@ class AppProviders {
           create: (_) => BudgetLocalDataSourceImpl(),
         ),
 
-        // Wallet sub-datasources (remote)
         Provider<AccountRemoteDataSource>(
           create: (_) => AccountRemoteDataSourceImpl(),
         ),
@@ -99,7 +101,6 @@ class AppProviders {
           create: (_) => GoalRemoteDataSourceImpl(),
         ),
 
-        // Profile sub-datasources
         Provider<ProfileLocalDataSource>(
           create: (_) => ProfileLocalDataSource(),
         ),
@@ -108,7 +109,6 @@ class AppProviders {
           create: (_) => ProfileRemoteDataSource(),
         ),
 
-        // Wallet facade datasources
         ProxyProvider3<AccountLocalDataSource, GoalLocalDataSource,
             BudgetLocalDataSource, WalletLocalDataSource>(
           update: (_, accountLocal, goalLocal, budgetLocal, __) =>
@@ -207,9 +207,6 @@ class AppProviders {
         ProxyProvider<AccountRepositoryImpl, DeleteAccountUseCase>(
           update: (_, repo, __) => DeleteAccountUseCase(repo),
         ),
-        ProxyProvider<AccountRepositoryImpl, RestoreAccountUseCase>(
-          update: (_, repo, __) => RestoreAccountUseCase(repo),
-        ),
         ProxyProvider<SavingGoalRepositoryImpl, AddGoalUseCase>(
           update: (_, repo, __) => AddGoalUseCase(repo),
         ),
@@ -229,7 +226,6 @@ class AppProviders {
         // 3. PRESENTATION LAYER (VIEWMODELS & PROVIDERS)
         // ==============================================================
 
-        // Register VM
         ChangeNotifierProxyProvider<CheckEmailUseCase, RegisterFormViewModel>(
           create: (context) => RegisterFormViewModel(
             checkEmailUseCase: context.read<CheckEmailUseCase>(),
@@ -238,12 +234,10 @@ class AppProviders {
               vm ?? RegisterFormViewModel(checkEmailUseCase: useCase),
         ),
 
-        // Login VM
         ChangeNotifierProvider(
           create: (_) => LoginFormViewModel(),
         ),
 
-        // Onboarding VM
         ChangeNotifierProxyProvider4<
             SaveOnboardingUseCase,
             GetOnboardingUseCase,
@@ -267,7 +261,6 @@ class AppProviders {
               ),
         ),
 
-        // Auth Action Provider
         ChangeNotifierProxyProvider<AuthRepositoryImpl, AuthProvider>(
           create: (context) => AuthProvider(
             repository: context.read<AuthRepositoryImpl>(),
@@ -287,16 +280,52 @@ class AppProviders {
           ),
         ),
 
-        // Wallet VM
-        ChangeNotifierProxyProvider<AuthProvider, WalletViewModel>(
-          create: (context) => WalletViewModel(
-            getWalletSummaryUseCase: context.read<GetWalletSummaryUseCase>(),
+        // 🔥 ĐÃ FIX HOÀN TOÀN: Khóa luồng gọi load ngầm lặp trận của AccountViewModel
+        ChangeNotifierProxyProvider<AuthProvider, AccountViewModel>(
+          create: (context) => AccountViewModel(
             getAccountsUseCase: context.read<GetAccountsUseCase>(),
-            getGoalsUseCase: context.read<GetGoalsUseCase>(),
             createAccountUseCase: context.read<CreateAccountUseCase>(),
             updateAccountUseCase: context.read<UpdateAccountUseCase>(),
             deleteAccountUseCase: context.read<DeleteAccountUseCase>(),
-            restoreAccountUseCase: context.read<RestoreAccountUseCase>(),
+          ),
+          update: (context, authProvider, vm) {
+            final activeVm = vm ??
+                AccountViewModel(
+                  getAccountsUseCase: context.read<GetAccountsUseCase>(),
+                  createAccountUseCase: context.read<CreateAccountUseCase>(),
+                  updateAccountUseCase: context.read<UpdateAccountUseCase>(),
+                  deleteAccountUseCase: context.read<DeleteAccountUseCase>(),
+                );
+
+            final userEntity = authProvider.currentUser?.toEntity();
+
+            if (userEntity != null) {
+              final localId = userEntity.id ?? 0;
+              final String remoteUid =
+                  fb_auth.FirebaseAuth.instance.currentUser?.uid ?? '';
+
+              final String userEmail = authProvider.currentUser?.email ?? '';
+
+              if (remoteUid.isNotEmpty &&
+                  userEntity.onboardingCompleted == true) {
+                activeVm.loadAccounts(
+                  localId,
+                  remoteUid,
+                  onboardingRepo: context.read<OnboardingRepository>(),
+                  userEmail: userEmail,
+                );
+              }
+            } else {
+              activeVm.clearAccounts();
+            }
+            return activeVm;
+          },
+        ),
+
+        ChangeNotifierProxyProvider<AuthProvider, WalletViewModel>(
+          create: (context) => WalletViewModel(
+            getWalletSummaryUseCase: context.read<GetWalletSummaryUseCase>(),
+            getGoalsUseCase: context.read<GetGoalsUseCase>(),
             addGoalUseCase: context.read<AddGoalUseCase>(),
             getCategoriesUseCase: context.read<GetCategoriesUseCase>(),
             initializeBudgetCategoriesUseCase:
@@ -307,12 +336,7 @@ class AppProviders {
                 WalletViewModel(
                   getWalletSummaryUseCase:
                       context.read<GetWalletSummaryUseCase>(),
-                  getAccountsUseCase: context.read<GetAccountsUseCase>(),
                   getGoalsUseCase: context.read<GetGoalsUseCase>(),
-                  createAccountUseCase: context.read<CreateAccountUseCase>(),
-                  updateAccountUseCase: context.read<UpdateAccountUseCase>(),
-                  deleteAccountUseCase: context.read<DeleteAccountUseCase>(),
-                  restoreAccountUseCase: context.read<RestoreAccountUseCase>(),
                   addGoalUseCase: context.read<AddGoalUseCase>(),
                   getCategoriesUseCase: context.read<GetCategoriesUseCase>(),
                   initializeBudgetCategoriesUseCase:
@@ -331,7 +355,6 @@ class AppProviders {
               vm ?? DashboardViewModel(walletViewModel: walletVM),
         ),
 
-        // Profile VM
         ChangeNotifierProxyProvider<ProfileRepositoryImpl, ProfileViewModel>(
           create: (context) => ProfileViewModel(
             profileRepository: context.read<ProfileRepositoryImpl>(),

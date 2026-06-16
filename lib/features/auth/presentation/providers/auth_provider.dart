@@ -15,7 +15,7 @@ class AuthProvider extends ChangeNotifier {
   });
 
   /// Register new account
-  /// Trả về null nếu thành công, trả về String chứa thông báo lỗi chi tiết nếu thất bại
+  /// Returns null if successful, otherwise returns an explicit error message string
   Future<String?> register({
     required String email,
     required String password,
@@ -24,7 +24,7 @@ class AuthProvider extends ChangeNotifier {
       isLoading = true;
       notifyListeners();
 
-      debugPrint("===> AuthProvider nhận email đăng ký: $email");
+      debugPrint("===> AuthProvider registration request email: $email");
 
       final userEntity = UserEntity(
         email: email,
@@ -35,28 +35,27 @@ class AuthProvider extends ChangeNotifier {
       final success = await repository.register(userEntity);
 
       if (success) {
-        // Tự động đăng nhập để thiết lập session
+        // Automatically execute login workflow to initialize session state smoothly
         final loginSuccess = await login(email: email, password: password);
 
         isLoading = false;
         notifyListeners();
 
         if (loginSuccess) {
-          return null; // Đăng ký và Đăng nhập thành công trọn vẹn
+          return null; // Both registration and auto-login completed successfully
         } else {
-          return "Tài khoản đã tạo thành công, nhưng không thể thiết lập phiên đăng nhập tự động.";
+          return "Account created successfully, but auto-login session initialization failed.";
         }
       } else {
         isLoading = false;
         notifyListeners();
-        return "Đăng ký thất bại. Email có thể đã tồn tại hoặc dữ liệu SQLite local bị từ chối.";
+        return "Registration failed. Email might already exist or local SQLite storage was rejected.";
       }
     } catch (e) {
-      debugPrint("Lỗi tại AuthProvider.register: $e");
+      debugPrint("Error inside AuthProvider.register: $e");
       isLoading = false;
       notifyListeners();
-      return e
-          .toString(); // Trả về thông báo lỗi thực tế (ví dụ: email-already-in-use từ Firebase)
+      return e.toString();
     }
   }
 
@@ -81,7 +80,9 @@ class AuthProvider extends ChangeNotifier {
           financialGoal: result.financialGoal,
           currency: result.currency,
           onboardingCompleted: result.onboardingCompleted,
-          createdAt: DateTime.now(),
+          createdAt:
+              DateTime.now(), // Fallback placeholder if entity layer is raw
+          updatedAt: DateTime.now(),
         );
       } else {
         currentUser = null;
@@ -92,7 +93,7 @@ class AuthProvider extends ChangeNotifier {
 
       return result != null;
     } catch (e) {
-      debugPrint("===> Lỗi tại AuthProvider.login: $e");
+      debugPrint("===> Error inside AuthProvider.login: $e");
       currentUser = null;
       isLoading = false;
       notifyListeners();
@@ -119,12 +120,13 @@ class AuthProvider extends ChangeNotifier {
           currency: result.currency,
           onboardingCompleted: result.onboardingCompleted,
           createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
         );
       } else {
         currentUser = null;
       }
     } catch (e) {
-      debugPrint("Lỗi tại AuthProvider.loadSession: $e");
+      debugPrint("Error inside AuthProvider.loadSession: $e");
       currentUser = null;
     } finally {
       isLoading = false;
@@ -145,6 +147,7 @@ class AuthProvider extends ChangeNotifier {
         currency: user.currency,
         onboardingCompleted: user.onboardingCompleted,
         createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
       );
     } else {
       currentUser = null;
@@ -152,7 +155,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Tải lại thông tin User hiện tại từ database
+  /// Reload user session state from database
   Future<void> reloadUser() async {
     if (currentUser == null) return;
     try {
@@ -169,11 +172,12 @@ class AuthProvider extends ChangeNotifier {
           currency: result.currency,
           onboardingCompleted: result.onboardingCompleted,
           createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
         );
         notifyListeners();
       }
     } catch (e) {
-      debugPrint("===> Lỗi tại AuthProvider.reloadUser: $e");
+      debugPrint("Error inside AuthProvider.reloadUser: $e");
     }
   }
 

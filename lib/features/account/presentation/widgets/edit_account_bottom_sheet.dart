@@ -1,10 +1,13 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
+import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
 import 'package:spend_io_app/features/account/presentation/widgets/account_form_bottom_sheet.dart';
-import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
+import 'package:spend_io_app/features/onboarding/domain/repositories/onboarding_repository.dart';
 
 class EditAccountBottomSheet extends StatelessWidget {
-  final WalletViewModel viewModel;
+  final AccountViewModel viewModel;
   final AccountEntity account;
 
   const EditAccountBottomSheet({
@@ -43,6 +46,7 @@ class EditAccountBottomSheet extends StatelessWidget {
           name: name,
           type: type,
           balance: balance,
+          currencyCode: account.currencyCode,
           icon: icon,
           createdAt: account.createdAt,
           updatedAt: DateTime.now(),
@@ -52,21 +56,47 @@ class EditAccountBottomSheet extends StatelessWidget {
         final messenger = ScaffoldMessenger.of(context);
 
         try {
-          await viewModel.updateAccount(updatedAccount);
+          final localId = account.userId;
 
-          messenger.showSnackBar(
-            const SnackBar(
-              content: Text('Account updated successfully!'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
+          final currentUser = FirebaseAuth.instance.currentUser;
+          final String remoteUid = currentUser?.uid ?? '';
+          final String userEmail = currentUser?.email ?? '';
+
+          final success = await viewModel.updateAccount(
+            localId,
+            remoteUid,
+            updatedAccount,
+            onboardingRepo: context.read<OnboardingRepository>(),
+            userEmail: userEmail,
           );
 
-          if (context.mounted) {
-            Navigator.of(context).pop(true);
+          if (success) {
+            messenger.removeCurrentSnackBar();
+            messenger.showSnackBar(
+              const SnackBar(
+                content: Text('Account updated successfully!',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 2),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+
+            if (context.mounted) {
+              Navigator.of(context).pop(true);
+            }
+          } else {
+            if (viewModel.updateAccountError != null) {
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(viewModel.updateAccountError!),
+                  backgroundColor: Colors.redAccent,
+                ),
+              );
+            }
           }
         } catch (e) {
-          debugPrint('Lỗi cập nhật tài khoản: $e');
+          debugPrint('Error when update account in: $e');
         }
       },
     );

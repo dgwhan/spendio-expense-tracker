@@ -19,15 +19,7 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       final displayName = user.email.split('@').first;
 
-      final credential = await remoteDatasource
-          .registerUser(
-            email: user.email,
-            password: user.password,
-            displayName: displayName,
-          )
-          .timeout(const Duration(seconds: 5));
-      firebaseUser = credential.user;
-
+      // 1. Ghi nhận thông tin vào SQLite Local TRƯỚC để làm điểm tựa dữ liệu offline
       final model = UserModel(
         id: user.id,
         email: user.email,
@@ -38,22 +30,58 @@ class AuthRepositoryImpl implements AuthRepository {
         onboardingCompleted: user.onboardingCompleted,
         displayName: displayName,
         createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
       );
 
-      final localSuccess = await localDatasource.registerUser(model);
-      if (!localSuccess) {
-        throw Exception("Failed to save user in local SQLite database");
-      }
+      await localDatasource.registerUser(model);
+
+      // 2. Kích hoạt đăng ký trên Firebase với thời gian chờ nới rộng lên 8 giây cho an toàn mạng
+      final credential = await remoteDatasource
+          .registerUser(
+            email: user.email,
+            password: user.password,
+            displayName: displayName,
+          )
+          .timeout(const Duration(seconds: 8));
+
+      firebaseUser = credential.user;
       return true;
-    } catch (e) {
-      debugPrint("===> Lỗi đăng ký tại AuthRepositoryImpl: $e");
+    } on fb.FirebaseAuthException catch (firebaseError) {
+      debugPrint(
+          "===> [AuthRepositoryImpl] Firebase Specific Error: ${firebaseError.code}");
+
+      if (firebaseError.code == 'email-already-in-use') {
+        debugPrint(
+            "[AuthRepositoryImpl] Email exists on Cloud. Retaining local storage row to heal sync split.");
+        return true;
+      }
+
+      // Các lỗi cứng khác của Firebase thì tiến hành gỡ rác cục bộ
       if (firebaseUser != null) {
         await remoteDatasource.rollbackUser(user: firebaseUser);
       }
-      try {
-        await localDatasource.deleteUserByEmail(user.email);
-      } catch (_) {}
+      await _cleanLocalTrash(user.email);
       return false;
+    } catch (e) {
+      debugPrint("===> [AuthRepositoryImpl] General / Timeout Error: $e");
+
+      // Nếu dính TimeoutException, TUYỆT ĐỐI không xóa SQLite local, vì Firebase có thể sẽ tạo xong user sau vài giây ngầm
+      if (e.toString().contains('TimeoutException')) {
+        debugPrint(
+            " [AuthRepositoryImpl] Timeout detected. Keeping local cache alive for potential ghost creation on Cloud.");
+        return true;
+      }
+
+      await _cleanLocalTrash(user.email);
+      return false;
+    }
+  }
+
+  Future<void> _cleanLocalTrash(String email) async {
+    try {
+      await localDatasource.deleteUserByEmail(email);
+    } catch (err) {
+      debugPrint("[AuthRepositoryImpl] Failed to clean local warehouse: $err");
     }
   }
 
@@ -69,6 +97,7 @@ class AuthRepositoryImpl implements AuthRepository {
           )
           .timeout(const Duration(seconds: 5));
     } catch (e) {
+      // Offline fallback: Query local database directly if network invocation fails
       final localResult = await localDatasource.loginUser(
         email: email,
         password: password,
@@ -102,23 +131,24 @@ class AuthRepositoryImpl implements AuthRepository {
       if (profileSnap.exists) {
         userData = profileSnap.data()!;
 
-        // Truy vấn subcollection wallets để lấy ID thực tế của ví trên Firestore
         final walletQuery = await FirebaseFirestore.instance
             .collection('users')
             .doc(uid)
             .collection('wallets')
+            .where('deleted_at', isNull: true)
             .limit(1)
             .get()
             .timeout(const Duration(seconds: 2));
 
         if (walletQuery.docs.isNotEmpty) {
           final walletDoc = walletQuery.docs.first;
-          firestoreWalletId = walletDoc.id; // Lấy ID gốc (ví dụ: acc_178155...)
+          firestoreWalletId = walletDoc.id;
           walletBalance = (walletDoc.data()['balance'] as num?)?.toDouble();
         }
       }
     } catch (e) {
-      debugPrint("Lỗi tải thông tin Firestore khi đăng nhập: $e");
+      debugPrint(
+          "[AuthRepositoryImpl] Error downloading user profile snapshot from Firestore: $e");
     }
 
     final localModel = UserModel(
@@ -132,9 +162,10 @@ class AuthRepositoryImpl implements AuthRepository {
       createdAt: userData['created_at'] != null
           ? DateTime.parse(userData['created_at'] as String)
           : DateTime.now(),
+      updatedAt: DateTime.now(),
     );
 
-    // Đồng bộ xuống SQLite kèm theo ID thực tế từ Firestore để không sinh ID 'main' lệch lạc
+    // Secure database cache write: Prevents ghost rows from generating during login sync
     await localDatasource.syncUserFromFirebase(
       localModel,
       walletBalance: walletBalance,
@@ -163,7 +194,8 @@ class AuthRepositoryImpl implements AuthRepository {
           .timeout(const Duration(seconds: 2));
       return firebaseResult;
     } catch (e) {
-      debugPrint("Firebase email check failed: $e, falling back to local");
+      debugPrint(
+          "Firebase email check failed: $e, falling back to local storage query.");
       final users = await localDatasource.getAllUsers();
       return users.any((u) => u.email == email);
     }
@@ -203,6 +235,7 @@ class AuthRepositoryImpl implements AuthRepository {
             .collection('users')
             .doc(firebaseUser.uid)
             .collection('wallets')
+            .where('deleted_at', isNull: true)
             .limit(1)
             .get()
             .timeout(const Duration(seconds: 2));
@@ -214,7 +247,8 @@ class AuthRepositoryImpl implements AuthRepository {
         }
       }
     } catch (e) {
-      debugPrint("Failed to load user profile in getCurrentUser: $e");
+      debugPrint(
+          "[AuthRepositoryImpl] Failed to load user profile context in getCurrentUser: $e");
     }
 
     if (!exists) {
@@ -232,6 +266,7 @@ class AuthRepositoryImpl implements AuthRepository {
       createdAt: userData['created_at'] != null
           ? DateTime.parse(userData['created_at'] as String)
           : DateTime.now(),
+      updatedAt: DateTime.now(),
     );
 
     await localDatasource.syncUserFromFirebase(
@@ -270,7 +305,9 @@ class AuthRepositoryImpl implements AuthRepository {
       onboardingCompleted: user.onboardingCompleted,
       displayName: user.email.split('@').first,
       createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
+
     await localDatasource.updateOnboarding(model);
   }
 
@@ -281,7 +318,8 @@ class AuthRepositoryImpl implements AuthRepository {
           .checkWalletExists(email: email)
           .timeout(const Duration(seconds: 3));
     } catch (e) {
-      debugPrint("Error checking wallet exists: $e");
+      debugPrint(
+          "[AuthRepositoryImpl] Error executing remote checkWalletExists check validation: $e");
       return false;
     }
   }

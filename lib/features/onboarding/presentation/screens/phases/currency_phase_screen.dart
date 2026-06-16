@@ -1,3 +1,4 @@
+import 'dart:io'; // 🔥 BẮT BUỘC IMPORT: Để kiểm tra cài đặt vùng khu vực của thiết bị máy chủ
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:spend_io_app/features/onboarding/data/models/currency_item.dart';
@@ -28,7 +29,36 @@ class _CurrencyPhaseScreenState extends State<CurrencyPhaseScreen> {
         orElse: () => supportedCurrencies.first,
       );
     } else {
-      _selectedCurrency = supportedCurrencies.first;
+      // 🌍 AUTOMATIC LOCALE DETECTION FOR CORE LIST
+      final String deviceLocale = Platform.localeName.toUpperCase();
+      CurrencyItem defaultCoreCurrency;
+
+      // Kiểm tra xem mã ngôn ngữ hệ thống thuộc quốc gia Core nào
+      if (deviceLocale.contains('VN')) {
+        defaultCoreCurrency =
+            supportedCurrencies.firstWhere((c) => c.code == 'VND');
+      } else if (deviceLocale.contains('JP')) {
+        defaultCoreCurrency =
+            supportedCurrencies.firstWhere((c) => c.code == 'JPY');
+      } else if (deviceLocale.contains('EU') ||
+          deviceLocale.contains('DE') ||
+          deviceLocale.contains('FR')) {
+        defaultCoreCurrency =
+            supportedCurrencies.firstWhere((c) => c.code == 'EUR');
+      } else {
+        // 🔥 NẰM NGOÀI DANH SÁCH CORE: Ép hiển thị cờ mặc định ban đầu là US (Mỹ)
+        defaultCoreCurrency =
+            supportedCurrencies.firstWhere((c) => c.code == 'USD');
+      }
+
+      _selectedCurrency = defaultCoreCurrency;
+
+      // 📝 IN LOG QUẢN TRỊ TRỰC QUAN
+      debugPrint(
+          '[Server Locale Active]: Server is currently set to English region ($deviceLocale)"');
+      debugPrint(
+          '[Default Currency Render]: Default flag: ${_selectedCurrency.flag} [${_selectedCurrency.code}]');
+
       WidgetsBinding.instance.addPostFrameCallback((_) {
         viewModel.updateCurrency(_selectedCurrency.code);
       });
@@ -51,6 +81,9 @@ class _CurrencyPhaseScreenState extends State<CurrencyPhaseScreen> {
             _selectedCurrency = newCurrency;
           });
           viewModel.updateCurrency(newCurrency.code);
+          // Log khi người dùng chủ động thay đổi cờ
+          debugPrint(
+              '[User Selected Currency]: User Change flag: ${newCurrency.flag} [${newCurrency.code}]');
         },
       ),
     );

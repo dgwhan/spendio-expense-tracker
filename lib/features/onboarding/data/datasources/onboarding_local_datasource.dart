@@ -30,6 +30,7 @@ class OnboardingLocalDataSourceImpl implements OnboardingLocalDataSource {
     required String walletId,
   }) async {
     final db = await _db;
+    final nowStr = DateTime.now().toIso8601String();
 
     await db.update(
       UsersTable.tableName,
@@ -39,7 +40,7 @@ class OnboardingLocalDataSourceImpl implements OnboardingLocalDataSource {
         'financial_goal': model.goals.join(','),
         'currency_code': model.currencyCode,
         'onboarding_completed': model.onboardingCompleted ? 1 : 0,
-        'updated_at': DateTime.now().toIso8601String(),
+        'updated_at': nowStr,
       },
       where: 'email = ?',
       whereArgs: [email],
@@ -58,10 +59,19 @@ class OnboardingLocalDataSourceImpl implements OnboardingLocalDataSource {
 
       final walletResult = await db.query(
         'wallets',
-        where: 'user_id = ?',
+        where: 'user_id = ? AND deleted_at IS NULL',
         whereArgs: [userId],
         limit: 1,
       );
+
+      final String? rawCurrencyCode = model.currencyCode;
+      if (rawCurrencyCode == null || rawCurrencyCode.trim().isEmpty) {
+        debugPrint(
+            '[Onboarding Local Critical]: "currencyCode" form screen Onboarding is empty!');
+        return;
+      }
+
+      final String verifiedCurrencyCode = rawCurrencyCode;
 
       if (walletResult.isEmpty) {
         await db.insert('wallets', {
@@ -70,22 +80,17 @@ class OnboardingLocalDataSourceImpl implements OnboardingLocalDataSource {
           'wallet_name': 'Main Wallet',
           'wallet_type': 'cash',
           'balance': model.initialBalance ?? 0.0,
-          'currency_code': model.currencyCode ?? 'VND',
+          'currency_code': verifiedCurrencyCode,
           'icon_code_point': Icons.wallet.codePoint,
           'icon_font_family': 'MaterialIcons',
-          'created_at': DateTime.now().toIso8601String(),
-          'updated_at': DateTime.now().toIso8601String(),
+          'created_at': nowStr,
+          'updated_at': nowStr,
         });
+        debugPrint(
+            '[Onboarding Local]: Fresh user. Initialized default wallet $walletId.');
       } else {
-        await db.update(
-          'wallets',
-          {
-            'balance': model.initialBalance ?? 0.0,
-            'currency_code': model.currencyCode ?? 'VND',
-          },
-          where: 'user_id = ?',
-          whereArgs: [userId],
-        );
+        debugPrint(
+            '[Onboarding Local]: Existing user detected. Wallet bypass completed. Handing over to AccountRepository.');
       }
     }
   }
@@ -111,9 +116,7 @@ class OnboardingLocalDataSourceImpl implements OnboardingLocalDataSource {
   }
 
   @override
-  Future<OnboardingModel?> getOnboarding({
-    required String email,
-  }) async {
+  Future<OnboardingModel?> getOnboarding({required String email}) async {
     final db = await _db;
 
     final userResult = await db.query(
@@ -123,24 +126,28 @@ class OnboardingLocalDataSourceImpl implements OnboardingLocalDataSource {
       limit: 1,
     );
 
-    if (userResult.isEmpty) {
-      return null;
-    }
+    if (userResult.isEmpty) return null;
 
     final userMap = userResult.first;
     final userId = userMap['id'] as int;
 
     final walletResult = await db.query(
       'wallets',
-      columns: ['balance'],
-      where: 'user_id = ?',
+      columns: ['id', 'balance', 'currency_code'],
+      where: 'user_id = ? AND deleted_at IS NULL',
       whereArgs: [userId],
       limit: 1,
     );
 
     double? initialBalance;
+    String? walletId;
+    String? walletCurrencyCode;
+
     if (walletResult.isNotEmpty) {
-      initialBalance = (walletResult.first['balance'] as num?)?.toDouble();
+      final walletMap = walletResult.first;
+      initialBalance = (walletMap['balance'] as num?)?.toDouble();
+      walletId = walletMap['id']?.toString();
+      walletCurrencyCode = walletMap['currency_code']?.toString();
     }
 
     return OnboardingModel(
@@ -152,8 +159,9 @@ class OnboardingLocalDataSourceImpl implements OnboardingLocalDataSource {
               .where((s) => s.isNotEmpty)
               .toList()
           : [],
-      currencyCode: userMap['currency_code'] as String?,
+      currencyCode: walletCurrencyCode ?? (userMap['currency_code'] as String?),
       initialBalance: initialBalance,
+      walletId: walletId,
       onboardingCompleted: userMap['onboarding_completed'] == 1,
     );
   }

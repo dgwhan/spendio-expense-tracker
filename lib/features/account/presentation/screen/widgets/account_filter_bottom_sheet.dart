@@ -19,6 +19,9 @@ class AccountFilterBottomSheet extends StatelessWidget {
     final backgroundColor =
         isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
 
+    // Lấy khoảng trống an toàn của hệ thống ở phía dưới đáy
+    final bottomNavigationPadding = MediaQuery.of(context).padding.bottom;
+
     return Container(
       decoration: BoxDecoration(
         color: backgroundColor,
@@ -27,36 +30,63 @@ class AccountFilterBottomSheet extends StatelessWidget {
           topRight: Radius.circular(AppRadius.cardRadiusLg),
         ),
       ),
-      padding: const EdgeInsets.all(AppSizes.lg),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Select Active Range',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: primaryTextColor,
+      padding: EdgeInsets.fromLTRB(
+        AppSizes.lg,
+        AppSizes.lg,
+        AppSizes.lg,
+        AppSizes.lg + bottomNavigationPadding,
+      ),
+      // BƯỚC 1: Sử dụng SingleChildScrollView làm gốc để cho phép cuộn khi màn hình xoay ngang (Landscape)
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Thêm một thanh kéo nhỏ (Handle bar) ở trên cùng nhìn cho chuẩn UI BottomSheet
+            Align(
+              alignment: Alignment.center,
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: (isDark ? AppColors.borderDark : AppColors.borderLight)
+                      .withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: AppSizes.md),
-          GridView.count(
-            shrinkWrap: true,
-            crossAxisCount: 2,
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            childAspectRatio: 2.5,
-            children: [
-              _buildOption(context, 'Last 30 Days'),
-              _buildOption(context, 'Today'),
-              _buildOption(context, 'This Month'),
-              _buildOption(context, 'Last Month'),
-              _buildOption(context, 'This Year'),
-              _buildOption(context, 'Custom Range...', isCustom: true),
-            ],
-          ),
-        ],
+            const SizedBox(height: AppSizes.md),
+            Text(
+              'Select Active Range',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: primaryTextColor,
+              ),
+            ),
+            const SizedBox(height: AppSizes.md),
+            // BƯỚC 2: Khi màn hình xoay ngang, GridView 2 cột sẽ bị dài.
+            // Ta dùng LayoutBuilder để check nếu chiều cao quá ngắn (như khi Landscape), ta có thể linh hoạt đổi trải nghiệm
+            GridView.count(
+              shrinkWrap: true,
+              physics:
+                  const NeverScrollableScrollPhysics(), // Chặn cuộn nội bộ vì đã có SingleChildScrollView bọc ngoài
+              crossAxisCount: 2,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              childAspectRatio: 2.5,
+              children: [
+                _buildOption(context, 'Last 30 Days'),
+                _buildOption(context, 'Today'),
+                _buildOption(context, 'This Month'),
+                _buildOption(context, 'Last Month'),
+                _buildOption(context, 'This Year'),
+                _buildOption(context, 'Custom Range...', isCustom: true),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

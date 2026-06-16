@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart'; // Bắt buộc để dùng cờ kDebugMode
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
 
@@ -8,6 +9,7 @@ class AccountModel extends AccountEntity {
     required super.name,
     required super.type,
     required super.balance,
+    required super.currencyCode, 
     required super.icon,
     required super.createdAt,
     required super.updatedAt,
@@ -21,6 +23,7 @@ class AccountModel extends AccountEntity {
       name: entity.name,
       type: entity.type,
       balance: entity.balance,
+      currencyCode: entity.currencyCode,
       icon: entity.icon,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
@@ -28,6 +31,7 @@ class AccountModel extends AccountEntity {
     );
   }
 
+  @override
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -35,6 +39,8 @@ class AccountModel extends AccountEntity {
       'wallet_name': name,
       'wallet_type': type.name,
       'balance': balance,
+      'currency_code':
+          currencyCode, // 🔥 Giữ nguyên đẩy dữ liệu đồng bộ lên Firestore
       'icon_code_point': icon.codePoint,
       'icon_font_family': icon.fontFamily,
       'created_at': createdAt.toIso8601String(),
@@ -43,16 +49,41 @@ class AccountModel extends AccountEntity {
     };
   }
 
-  factory AccountModel.fromMap(Map<String, dynamic> map) {
+  factory AccountModel.fromMap(Map<String, dynamic> map, {String? documentId}) {
+    final String fallbackId = map['id']?.toString() ?? documentId ?? '';
+
+    // 🔥 CHỐT CHẶN BẢO VỆ GỐC: Tháo ngòi nổ ?? 1 sang ?? 0 kèm log và exception
+    final int? rawUserId = (map['user_id'] as num?)?.toInt();
+    final int parsedUserId = rawUserId ?? 0;
+
+    if (rawUserId == null) {
+      debugPrint(
+          '🚨 [AccountModel Data Corruption Error]: "user_id" field is MISSING or NULL inside the database payload! '
+          'Wallet ID: $fallbackId, Wallet Name: "${map['wallet_name'] ?? map['name']}". Fallback applied: userId = 0.');
+
+      if (kDebugMode) {
+        throw FormatException(
+          '🚨 [Critical Model Exception]: Attempted to parse an orphaned Wallet (ID: $fallbackId) with no valid ownership (user_id is null).',
+        );
+      }
+    }
+
+    // 🔥 FIX MẤT TRƯỜNG: Trích xuất currency_code từ payload data, bọc lót nếu trống thì báo 'UNK'
+    final String parsedCurrencyCode = map['currency_code']?.toString() ?? 'UNK';
+
     return AccountModel(
-      id: map['id']?.toString() ?? '',
-      userId: (map['user_id'] as num?)?.toInt() ?? 1,
-      name: map['wallet_name']?.toString() ?? '',
+      id: fallbackId,
+      userId: parsedUserId,
+      name: map['wallet_name']?.toString() ??
+          map['name']?.toString() ??
+          'Main Wallet',
       type: AccountType.values.firstWhere(
-        (e) => e.name == map['wallet_type'],
+        (e) => e.name == map['wallet_type'] || e.name == map['type'],
         orElse: () => AccountType.cash,
       ),
       balance: (map['balance'] as num?)?.toDouble() ?? 0.0,
+      currencyCode:
+          parsedCurrencyCode, // 🔥 Đã nạp chuẩn xác trường dữ liệu vào model
       icon: IconData(
         map['icon_code_point'] as int? ?? Icons.wallet.codePoint,
         fontFamily: map['icon_font_family'] as String? ?? 'MaterialIcons',
@@ -76,6 +107,7 @@ class AccountModel extends AccountEntity {
     String? name,
     AccountType? type,
     double? balance,
+    String? currencyCode, // 🔥 Cho phép sao chép đổi mã tiền tệ
     IconData? icon,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -88,10 +120,28 @@ class AccountModel extends AccountEntity {
       name: name ?? this.name,
       type: type ?? this.type,
       balance: balance ?? this.balance,
+      currencyCode: currencyCode ?? this.currencyCode, // 🔥 Đã bổ sung
       icon: icon ?? this.icon,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: removeDeletedAt ? null : (deletedAt ?? this.deletedAt),
+    );
+  }
+
+  @override
+  AccountEntity toEntity() {
+    return AccountEntity(
+      id: id,
+      userId: userId,
+      name: name,
+      type: type,
+      balance: balance,
+      currencyCode:
+          currencyCode, // 🔥 Map ngược lên Entity của Domain Layer để UI hiển thị số dư kèm kí hiệu
+      icon: icon,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      deletedAt: deletedAt,
     );
   }
 }

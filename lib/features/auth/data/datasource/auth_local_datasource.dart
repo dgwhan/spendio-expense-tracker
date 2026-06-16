@@ -6,7 +6,6 @@ import '../models/user_model.dart';
 class AuthLocalDatasource {
   Future<bool> registerUser(UserModel user) async {
     final db = await AppDatabase.database;
-
     await db.insert(
       'users',
       user.toMap(),
@@ -20,23 +19,18 @@ class AuthLocalDatasource {
     required String password,
   }) async {
     final db = await AppDatabase.database;
-
     final result = await db.query(
       'users',
       where: 'email = ? AND password = ?',
       whereArgs: [email, password],
     );
-
     if (result.isEmpty) return null;
-
     return UserModel.fromMap(result.first);
   }
 
   Future<List<UserModel>> getAllUsers() async {
     final db = await AppDatabase.database;
-
     final result = await db.query('users');
-
     return result.map((e) => UserModel.fromMap(e)).toList();
   }
 
@@ -44,7 +38,16 @@ class AuthLocalDatasource {
     return null;
   }
 
-  Future<void> logout() async {}
+  Future<void> logout() async {
+    final db = await AppDatabase.database;
+    try {
+      await db.delete('wallets');
+      debugPrint(
+          '[Auth Local]: Wiped all cached wallet data on logout to prevent cross-user leakage.');
+    } catch (e) {
+      debugPrint('[Auth Local] Error while wiping cached session: $e');
+    }
+  }
 
   Future<void> updateOnboarding(UserModel user) async {
     final db = await AppDatabase.database;
@@ -80,15 +83,27 @@ class AuthLocalDatasource {
     if (userResult.isEmpty) {
       userId = await db.insert('users', userModel.toMap());
     } else {
-      userId = userResult.first['id'] as int;
+      final localUserMap = userResult.first;
+      userId = localUserMap['id'] as int;
+
+      final String? finalCurrency =
+          (userModel.currency != null && userModel.currency!.trim().isNotEmpty)
+              ? userModel.currency
+              : localUserMap['currency_code'] as String?;
+
+      final int finalOnboardingStatus = (userModel.onboardingCompleted)
+          ? 1
+          : (localUserMap['onboarding_completed'] as int? ?? 0);
+
       await db.update(
         'users',
         {
           'display_name': userModel.displayName,
-          'occupation': userModel.occupation,
-          'financial_goal': userModel.financialGoal,
-          'currency_code': userModel.currency,
-          'onboarding_completed': userModel.onboardingCompleted ? 1 : 0,
+          'occupation': userModel.occupation ?? localUserMap['occupation'],
+          'financial_goal':
+              userModel.financialGoal ?? localUserMap['financial_goal'],
+          'currency_code': finalCurrency,
+          'onboarding_completed': finalOnboardingStatus,
           'updated_at': DateTime.now().toIso8601String(),
         },
         where: 'id = ?',
@@ -104,27 +119,50 @@ class AuthLocalDatasource {
         limit: 1,
       );
 
+      final nowStr = DateTime.now().toIso8601String();
+
+      // Read once more from the highly protected user table data above
+      final userCheck = await db.query('users',
+          columns: ['currency_code'], where: 'id = ?', whereArgs: [userId]);
+      final String? verifiedCurrencyCode = userCheck.isNotEmpty
+          ? userCheck.first['currency_code'] as String?
+          : null;
+
+      // CRITICAL GUARD CLAUSE: If both datasets are empty, kill execution to defend DB integrity
+      if (verifiedCurrencyCode == null || verifiedCurrencyCode.trim().isEmpty) {
+        debugPrint(
+            '[Auth Local Safe Guard]: Aborted default wallet initialization! Reason: Valid currency settings not found for User ID: $userId.');
+        return;
+      }
+
       if (walletResult.isEmpty) {
         final walletId =
-            firestoreWalletId ?? 'acc_${DateTime.now().millisecondsSinceEpoch}';
+            (firestoreWalletId != null && firestoreWalletId.trim().isNotEmpty)
+                ? firestoreWalletId
+                : 'acc_${DateTime.now().millisecondsSinceEpoch}';
+
         await db.insert('wallets', {
           'id': walletId,
           'user_id': userId,
           'wallet_name': 'Main Wallet',
           'wallet_type': 'cash',
           'balance': walletBalance,
-          'currency_code': userModel.currency ?? 'VND',
+          'currency_code': verifiedCurrencyCode,
           'icon_code_point': Icons.wallet.codePoint,
           'icon_font_family': 'MaterialIcons',
-          'created_at': DateTime.now().toIso8601String(),
-          'updated_at': DateTime.now().toIso8601String(),
+          'created_at': nowStr,
+          'updated_at': nowStr,
+          'deleted_at': null,
         });
+        debugPrint(
+            '[Auth Local]: Wallet synchronization completed successfully with currency code: $verifiedCurrencyCode');
       } else {
         await db.update(
           'wallets',
           {
             'balance': walletBalance,
-            'currency_code': userModel.currency ?? 'VND',
+            'currency_code': verifiedCurrencyCode,
+            'updated_at': nowStr,
           },
           where: 'user_id = ?',
           whereArgs: [userId],

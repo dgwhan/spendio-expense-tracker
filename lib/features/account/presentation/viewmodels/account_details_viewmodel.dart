@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/utils/transaction_grouping.dart';
+import 'package:spend_io_app/core/utils/account_filter_extension.dart'; // Import extension mới tách
 import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
-import 'package:spend_io_app/features/transaction/data/mock/account_transactions_mock.dart';
 import 'package:spend_io_app/features/transaction/data/models/transaction_model.dart';
 
 class AccountHeaderState {
@@ -37,9 +37,9 @@ class TransactionLedgerState {
   });
 }
 
-/// [App Location] Account feature Business Logic Layer (ViewModel).
-/// [Core Function] Manages UI state pipelines for account ledger history, handling keyword search filtering, custom date range evaluation, and day grouping computation.
 class AccountDetailsViewModel extends ChangeNotifier {
+  AccountEntity? _originalAccount;
+
   AccountHeaderState? _headerState;
   AccountFilterState _filterState = const AccountFilterState(
     activeRangeLabel: 'Last 30 Days',
@@ -52,12 +52,12 @@ class AccountDetailsViewModel extends ChangeNotifier {
   TransactionLedgerState? get ledgerState => _ledgerState;
 
   void initialize(AccountEntity account) {
+    // Lưu lại dữ liệu ban đầu làm điểm khôi phục an toàn
+    _originalAccount = account;
     _headerState = AccountHeaderState(account: account);
 
-    // Load mock transactions for this account
-    final mockTxs = generateMockTransactions(account.id);
     _ledgerState = TransactionLedgerState(
-      allTransactions: mockTxs,
+      allTransactions: [],
       filteredTransactions: const [],
       dayGroups: const [],
       totalReceived: 0,
@@ -65,6 +65,28 @@ class AccountDetailsViewModel extends ChangeNotifier {
     );
 
     _updateLedger();
+  }
+
+  /// [Rollback Feature] Hoàn tác số dư/trạng thái ví về điểm khởi tạo ban đầu khi gặp sự cố xử lý dữ liệu
+  void rollbackAccountState() {
+    if (_originalAccount == null) return;
+    _headerState = AccountHeaderState(account: _originalAccount!);
+    _updateLedger();
+  }
+
+  /// [Init Wallet/Update Balance] Cập nhật số dư động dựa trên tác vụ nạp/rút từ các luồng giao dịch liên quan
+  void updateAccountBalance(double amount, {bool isExpense = true}) {
+    if (_headerState == null) return;
+
+    final currentAccount = _headerState!.account;
+    final newBalance = isExpense
+        ? currentAccount.balance - amount
+        : currentAccount.balance + amount;
+
+    _headerState = AccountHeaderState(
+      account: currentAccount.copyWith(balance: newBalance),
+    );
+    notifyListeners();
   }
 
   void setFilter(String label, {DateTimeRange? customRange}) {
@@ -86,9 +108,7 @@ class AccountDetailsViewModel extends ChangeNotifier {
   }
 
   void addTransaction(TransactionModel tx) {
-    if (_ledgerState == null) {
-      return;
-    }
+    if (_ledgerState == null) return;
 
     final updatedList =
         List<TransactionModel>.from(_ledgerState!.allTransactions)..add(tx);
@@ -101,70 +121,37 @@ class AccountDetailsViewModel extends ChangeNotifier {
       totalSpent: _ledgerState!.totalSpent,
     );
 
+    // Đồng bộ trực tiếp biến động số dư vào thông tin ví hiển thị
+    updateAccountBalance(tx.amount, isExpense: tx.isExpense);
     _updateLedger();
   }
 
   void _updateLedger() {
-    if (_ledgerState == null || _headerState == null) {
-      return;
-    }
+    if (_ledgerState == null || _headerState == null) return;
 
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    // Lấy khoảng thời gian chuẩn hóa thông qua Extension vừa tách
+    final targetRange = _filterState.activeRangeLabel
+        .toDateTimeRange(_filterState.customDateRange);
 
     final List<TransactionModel> filtered =
         _ledgerState!.allTransactions.where((tx) {
-      // 1. Apply Date Filter
-      final txDateZero = DateTime(tx.date.year, tx.date.month, tx.date.day);
-      bool matchesDate = false;
-
-      if (_filterState.activeRangeLabel == 'Today') {
-        matchesDate = txDateZero.isAtSameMomentAs(today);
-      } else if (_filterState.activeRangeLabel == 'This Month') {
-        matchesDate = tx.date.year == now.year && tx.date.month == now.month;
-      } else if (_filterState.activeRangeLabel == 'Last Month') {
-        final lastMonthYear = now.month == 1 ? now.year - 1 : now.year;
-        final lastMonthVal = now.month == 1 ? 12 : now.month - 1;
-        matchesDate =
-            tx.date.year == lastMonthYear && tx.date.month == lastMonthVal;
-      } else if (_filterState.activeRangeLabel == 'This Year') {
-        matchesDate = tx.date.year == now.year;
-      } else if (_filterState.activeRangeLabel == 'Custom Range...') {
-        final range = _filterState.customDateRange;
-        if (range != null) {
-          final start =
-              DateTime(range.start.year, range.start.month, range.start.day);
-          final end = DateTime(
-              range.end.year, range.end.month, range.end.day, 23, 59, 59);
-          matchesDate =
-              tx.date.isAfter(start.subtract(const Duration(seconds: 1))) &&
-                  tx.date.isBefore(end.add(const Duration(seconds: 1)));
-        } else {
-          matchesDate = true;
+      // 1. Kiểm tra điều kiện ngày (Lọc theo dải Range tuần tự)
+      if (targetRange != null) {
+        if (tx.date.isBefore(targetRange.start) ||
+            tx.date.isAfter(targetRange.end)) {
+          return false;
         }
-      } else {
-        // Mặc định: Last 30 Days
-        final thirtyDaysAgo = today.subtract(const Duration(days: 30));
-        matchesDate = txDateZero
-            .isAfter(thirtyDaysAgo.subtract(const Duration(seconds: 1)));
       }
 
-      if (!matchesDate) {
-        return false;
-      }
-
-      // 2. Apply Search Filter
+      // 2. Kiểm tra điều kiện từ khóa tìm kiếm (Search Query)
       final query = _filterState.searchQuery.trim().toLowerCase();
-      if (query.isEmpty) {
-        return true;
-      }
+      if (query.isEmpty) return true;
 
-      final titleMatch = tx.title.toLowerCase().contains(query);
-      final catMatch = tx.category.toLowerCase().contains(query);
-      return titleMatch || catMatch;
+      return tx.title.toLowerCase().contains(query) ||
+          tx.category.toLowerCase().contains(query);
     }).toList();
 
-    // 3. Compute Sums
+    // 3. Tính toán lại tổng thu / tổng chi trong phạm vi lọc
     double totalReceived = 0;
     double totalSpent = 0;
 
@@ -176,7 +163,7 @@ class AccountDetailsViewModel extends ChangeNotifier {
       }
     }
 
-    // 4. Group by Day using external utility
+    // 4. Gom nhóm hiển thị theo ngày
     final dayGroups = groupByDate(filtered);
 
     _ledgerState = TransactionLedgerState(

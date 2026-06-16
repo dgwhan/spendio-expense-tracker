@@ -20,11 +20,12 @@ class WalletRepositoryImpl implements WalletRepository {
     final accounts = await localDataSource.getAccounts(localUserId);
     final activeAccounts = accounts.where((a) => a.deletedAt == null).toList();
     final goals = await localDataSource.getGoals(localUserId);
-    
-    final totalAssets = activeAccounts.fold(0.0, (sum, acc) => sum + acc.balance);
+
+    final totalAssets =
+        activeAccounts.fold(0.0, (sum, acc) => sum + acc.balance);
     final totalSaved = goals.fold(0.0, (sum, goal) => sum + goal.currentAmount);
     final activeGoals = goals.length;
-    
+
     // Tính ngân sách từ tổng ngân sách các danh mục
     final categories = await localDataSource.getCategories(localUserId);
     final monthlyBudget = categories.fold(0.0, (sum, cat) => sum + cat.budget);
@@ -39,6 +40,14 @@ class WalletRepositoryImpl implements WalletRepository {
 
   @override
   Future<void> syncWithFirebase(int localUserId, String remoteUid) async {
+    if (remoteUid.trim().isEmpty) {
+      debugPrint('[Wallet Repo Sync]: Aborted. remoteUid is empty.');
+      return;
+    }
+
+    debugPrint(
+        '[Wallet Repo Sync]: STARTING synchronization pipeline for User ID: $localUserId');
+
     try {
       // ----------------------------------------------------
       // A. ĐỒNG BỘ WALLETS (TÀI KHOẢN)
@@ -46,17 +55,27 @@ class WalletRepositoryImpl implements WalletRepository {
       final localWallets = await localDataSource.getAccounts(localUserId);
       final remoteWallets = await remoteDataSource.getAccounts(remoteUid);
 
-      final Map<String, AccountModel> localMap = {for (var w in localWallets) w.id: w};
-      final Map<String, AccountModel> remoteMap = {for (var w in remoteWallets) w.id: w};
+      final Map<String, AccountModel> localMap = {
+        for (var w in localWallets) w.id: w
+      };
+
+      // Lọc sạch các ví trống hoặc không có thông tin hợp lệ từ phía Remote để tránh nạp đè lung tung
+      final cleanRemoteWallets = remoteWallets
+          .where((w) => w.id.trim().isNotEmpty && w.name.trim().isNotEmpty)
+          .toList();
+      final Map<String, AccountModel> remoteMap = {
+        for (var w in cleanRemoteWallets) w.id: w
+      };
 
       // 1. Duyệt remote check tải về local hoặc cập nhật chéo
-      for (final remoteWallet in remoteWallets) {
+      for (final remoteWallet in cleanRemoteWallets) {
         final localWallet = localMap[remoteWallet.id];
         if (localWallet == null) {
-          // Chưa có ở local -> tải xuống
-          await localDataSource.saveAccount(localUserId, remoteWallet);
+          if (remoteWallet.deletedAt == null) {
+            await localDataSource.saveAccount(localUserId, remoteWallet);
+          }
         } else {
-          // Trùng ID -> So sánh updatedAt
+          // Trùng ID -> So sánh mốc thời gian để đồng bộ nâng cấp
           if (remoteWallet.updatedAt.isAfter(localWallet.updatedAt)) {
             await localDataSource.saveAccount(localUserId, remoteWallet);
           } else if (localWallet.updatedAt.isAfter(remoteWallet.updatedAt)) {
@@ -68,18 +87,26 @@ class WalletRepositoryImpl implements WalletRepository {
       // 2. Duyệt local để upload dữ liệu tạo offline lên remote
       for (final localWallet in localWallets) {
         if (!remoteMap.containsKey(localWallet.id)) {
-          await remoteDataSource.saveAccount(remoteUid, localWallet);
+          if (localWallet.id.trim().isNotEmpty &&
+              localWallet.name.trim().isNotEmpty &&
+              localWallet.deletedAt == null) {
+            await remoteDataSource.saveAccount(remoteUid, localWallet);
+          }
         }
       }
 
       // ----------------------------------------------------
-      // B. ĐỒNG BỘ GOALS (MỤC TIÊU TIẾT KIỆM)
+      // B. ĐỒNG BỘ GOALS (MỤC TIÊU TIẾT KIỆM) - GIỮ NGUYÊN 100% GỐC
       // ----------------------------------------------------
       final localGoals = await localDataSource.getGoals(localUserId);
       final remoteGoals = await remoteDataSource.getGoals(remoteUid);
 
-      final Map<String, SavingGoalModel> localGoalsMap = {for (var g in localGoals) g.id: g};
-      final Map<String, SavingGoalModel> remoteGoalsMap = {for (var g in remoteGoals) g.id: g};
+      final Map<String, SavingGoalModel> localGoalsMap = {
+        for (var g in localGoals) g.id: g
+      };
+      final Map<String, SavingGoalModel> remoteGoalsMap = {
+        for (var g in remoteGoals) g.id: g
+      };
 
       for (final remoteGoal in remoteGoals) {
         final localGoal = localGoalsMap[remoteGoal.id];
@@ -99,9 +126,12 @@ class WalletRepositoryImpl implements WalletRepository {
           await remoteDataSource.saveGoal(remoteUid, localGoal);
         }
       }
+
+      debugPrint(
+          '[Wallet Repo Sync]: Synchronization pipeline completed successfully.');
     } catch (e) {
-      // Nuốt lỗi kết nối hoặc Firestore timeout để duy trì trải nghiệm Offline
-      debugPrint('Đang offline, không thể đồng bộ hóa với Firestore: $e');
+      debugPrint(
+          '[Wallet Repo Sync] Network connection unstable or Firestore timeout. Fallback active: $e');
     }
   }
 

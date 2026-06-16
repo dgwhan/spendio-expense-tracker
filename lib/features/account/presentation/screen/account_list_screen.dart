@@ -4,7 +4,7 @@ import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
 import 'package:spend_io_app/features/account/presentation/screen/utils/account_actions.dart';
-import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
+import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart'; // 🔥 ĐÃ ĐỔI: Sử dụng AccountViewModel chuyên biệt
 import 'package:spend_io_app/features/account/presentation/screen/account_details_screen.dart';
 import 'package:spend_io_app/features/account/presentation/widgets/account_item_card.dart';
 import 'package:spend_io_app/features/account/presentation/widgets/add_account_bottom_sheet.dart';
@@ -16,30 +16,43 @@ import 'package:spend_io_app/core/widgets/common/app_empty_state.dart';
 class AccountListScreen extends StatelessWidget {
   const AccountListScreen({super.key});
 
-  void _openAddAccount(BuildContext context, WalletViewModel viewModel) {
-    showModalBottomSheet(
+  /// Đã tối ưu luồng thêm ví mới: Nhận AccountViewModel để mở form chính xác kiểu dữ liệu
+  void _openAddAccount(BuildContext context, AccountViewModel viewModel) async {
+    final result = await showModalBottomSheet<bool>(
       context: context,
       useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => AddAccountBottomSheet(viewModel: viewModel),
     );
+
+    if (!context.mounted || result != true) return;
+
+    // Hiển thị thông báo khi thêm ví mới thành công
+    _showStatusSnackBar(
+      context,
+      'New account created successfully!',
+      Colors.green,
+    );
   }
 
   /// Hiển thị SnackBar thông báo trạng thái an toàn
   void _showStatusSnackBar(
       BuildContext context, String message, Color backgroundColor) {
+    ScaffoldMessenger.of(context).removeCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content:
+            Text(message, style: const TextStyle(fontWeight: FontWeight.w600)),
         backgroundColor: backgroundColor,
         duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating, // Hiển thị dạng nổi hiện đại hơn
       ),
     );
   }
 
   /// Xử lý điều hướng khi nhấn vào xem chi tiết tài khoản
-  void _handleAccountTap(BuildContext context, WalletViewModel viewModel,
+  void _handleAccountTap(BuildContext context, AccountViewModel viewModel,
       AccountEntity account) async {
     final result = await Navigator.push<AccountDetailsAction>(
       context,
@@ -90,7 +103,8 @@ class AccountListScreen extends StatelessWidget {
         centerTitle: false,
         titleSpacing: 0,
         actions: [
-          Consumer<WalletViewModel>(
+          // 🔥 ĐÃ FIX: Chuyển sang Consumer lắng nghe AccountViewModel
+          Consumer<AccountViewModel>(
             builder: (context, viewModel, _) {
               return Padding(
                 padding: const EdgeInsets.only(right: AppSizes.md),
@@ -107,7 +121,8 @@ class AccountListScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: Consumer<WalletViewModel>(
+      // 🔥 ĐÃ FIX: Chuyển trục thân nội dung sang Consumer của AccountViewModel
+      body: Consumer<AccountViewModel>(
         builder: (context, viewModel, _) {
           final activeAccounts = viewModel.accounts;
 
@@ -145,7 +160,6 @@ class AccountListScreen extends StatelessWidget {
                             account: account,
                             onTap: () =>
                                 _handleAccountTap(context, viewModel, account),
-                           
                             onEdit: () {
                               _showStatusSnackBar(
                                   context,

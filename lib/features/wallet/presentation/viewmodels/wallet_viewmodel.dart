@@ -2,32 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:spend_io_app/features/auth/domain/entities/user_entity.dart';
-import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/budget_category_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/financial_health_status.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/saving_goal_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/wallet_summary_entity.dart';
-import 'package:spend_io_app/features/account/domain/usecase/create_account_usecase.dart';
-import 'package:spend_io_app/features/account/domain/usecase/delete_account_usecase.dart';
-import 'package:spend_io_app/features/account/domain/usecase/get_accounts_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/goals/get_goals_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/goals/add_goal_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/get_wallet_summary_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/get_categories_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/initialize_budget_categories_usecase.dart';
-import 'package:spend_io_app/features/account/domain/usecase/restore_account_usecase.dart';
-import 'package:spend_io_app/features/account/domain/usecase/update_account_usecase.dart';
 
-/// [App Location] Wallet/Home Feature Business Logic Layer (Global ViewModel).
-/// [Core Function] Main state machine orchestrating high-level financial metrics, cross-feature wallet sync pipelines, account CRUD workflows, and real-time financial health algorithm evaluations.
 class WalletViewModel extends ChangeNotifier {
   final GetWalletSummaryUseCase getWalletSummaryUseCase;
-  final GetAccountsUseCase getAccountsUseCase;
   final GetGoalsUseCase getGoalsUseCase;
-  final CreateAccountUseCase createAccountUseCase;
-  final UpdateAccountUseCase updateAccountUseCase;
-  final DeleteAccountUseCase deleteAccountUseCase;
-  final RestoreAccountUseCase restoreAccountUseCase;
   final AddGoalUseCase addGoalUseCase;
   final GetCategoriesUseCase getCategoriesUseCase;
   final InitializeBudgetCategoriesUseCase initializeBudgetCategoriesUseCase;
@@ -35,18 +22,6 @@ class WalletViewModel extends ChangeNotifier {
   UserEntity? _currentUser;
   bool _isLoading = false;
   String? _errorMessage;
-  int? _lastUserId;
-
-  // Dedicated CRUD states
-  bool _isCreatingAccount = false;
-  bool _isUpdatingAccount = false;
-  bool _isDeletingAccount = false;
-  bool _isRestoringAccount = false;
-
-  String? _createAccountError;
-  String? _updateAccountError;
-  String? _deleteAccountError;
-  String? _restoreAccountError;
 
   WalletSummaryEntity _summary = const WalletSummaryEntity(
     totalAssets: 0.0,
@@ -54,63 +29,40 @@ class WalletViewModel extends ChangeNotifier {
     totalSaved: 0.0,
     activeGoals: 0,
   );
-  List<AccountEntity> _accounts = [];
   List<SavingGoalEntity> _goals = [];
   List<BudgetCategoryEntity> _categories = [];
   DateTime selectedMonth = DateTime.now();
 
   WalletViewModel({
     required this.getWalletSummaryUseCase,
-    required this.getAccountsUseCase,
     required this.getGoalsUseCase,
-    required this.createAccountUseCase,
-    required this.updateAccountUseCase,
-    required this.deleteAccountUseCase,
-    required this.restoreAccountUseCase,
     required this.addGoalUseCase,
     required this.getCategoriesUseCase,
     required this.initializeBudgetCategoriesUseCase,
-  }) {
-    _accounts = [];
-    _goals = [];
-    _categories = [];
-  }
+  });
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
-
-  bool get isCreatingAccount => _isCreatingAccount;
-  bool get isUpdatingAccount => _isUpdatingAccount;
-  bool get isDeletingAccount => _isDeletingAccount;
-  bool get isRestoringAccount => _isRestoringAccount;
-
-  String? get createAccountError => _createAccountError;
-  String? get updateAccountError => _updateAccountError;
-  String? get deleteAccountError => _deleteAccountError;
-  String? get restoreAccountError => _restoreAccountError;
-
   WalletSummaryEntity get summary => _summary;
-  List<AccountEntity> get accounts => _accounts;
   List<SavingGoalEntity> get goals => _goals;
   List<BudgetCategoryEntity> get categories => _categories;
+  UserEntity? get currentUser => _currentUser;
+  String get remoteUid => _remoteUid;
 
-  /// Updates active user reference and hooks automated microtask data initialization
   void updateUser(UserEntity? user) {
     if (_isLoading) return;
 
-    final hasChanged = _currentUser?.id != user?.id ||
-        _currentUser?.email != user?.email ||
-        _currentUser?.onboardingCompleted != user?.onboardingCompleted ||
-        _currentUser?.currency != user?.currency;
+    final hasChanged =
+        _currentUser?.id != user?.id || _currentUser?.email != user?.email;
 
-    final newUserId = user?.id;
-    if (!hasChanged) return;
-    if (newUserId != null && _lastUserId == newUserId) return;
+    // Nếu thông tin user không đổi và RAM đã có sẵn dữ liệu thì đứng im, không tự ý nạp lại gây rollback
+    if (!hasChanged && (_goals.isNotEmpty || _summary.totalAssets > 0)) return;
 
     _currentUser = user;
-    _lastUserId = newUserId;
 
-    Future.microtask(() => initialize());
+    if (_currentUser != null) {
+      Future.microtask(() => initialize());
+    }
   }
 
   String get currentMonthLabel {
@@ -121,56 +73,64 @@ class WalletViewModel extends ChangeNotifier {
     return '$currentMonthLabel Budget';
   }
 
-  /// Handles localized multi-stream data loading and fires off async Firebase remote data sync
+  // 🔥 ĐÃ FIX HOÀN TOÀN: Luồng Khởi tạo hỗ trợ Silent Refresh bảo vệ trạng thái RAM
   Future<void> initialize() async {
-    final sw = Stopwatch()..start();
-    debugPrint('WalletViewModel.initialize: start userId=${_currentUser?.id}');
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+    // Chỉ bật loading xoay tròn nếu là lần đầu tiên nạp (chưa có dữ liệu), tránh làm UI bị giật về 0
+    final isFirstLoad = _goals.isEmpty && _summary.totalAssets == 0;
+
+    if (isFirstLoad) {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+    }
 
     try {
       if (_currentUser != null) {
         final localId = _currentUser!.id ?? 1;
+
+        // 1. Tải toàn bộ dữ liệu offline từ Local DB lên trước để hiển thị tức thì
         await initializeCategories(localId);
         await loadSummary(localId);
         await loadGoals(localId);
         await loadCategories(localId);
 
+        // Sau khi data local đã sẵn sàng trên RAM, tắt loading ngay để UI hiển thị mượt mà
         _isLoading = false;
         notifyListeners();
 
-        final remoteUid = _remoteUid;
-        if (remoteUid.isNotEmpty) {
+        // 2. Tiến hành đồng bộ ngầm (Silent Sync) với Firebase mà không block UI
+        final rUid = _remoteUid;
+        if (rUid.isNotEmpty) {
           await getWalletSummaryUseCase.repository
-              .syncWithFirebase(localId, remoteUid);
+              .syncWithFirebase(localId, rUid);
+
+          // Sau khi sync xong, nạp đè dữ liệu mới nhất từ DB vật lý lên RAM
           await loadSummary(localId);
           await loadGoals(localId);
+          await loadCategories(localId);
           notifyListeners();
         }
       } else {
-        _summary = const WalletSummaryEntity(
-          totalAssets: 0.0,
-          monthlyBudget: 0.0,
-          totalSaved: 0.0,
-          activeGoals: 0,
-        );
-        _accounts = [];
-        _goals = [];
-        _categories = [];
-        _isLoading = false;
-        notifyListeners();
+        _resetStates();
       }
     } catch (e) {
       _errorMessage = e.toString();
       _isLoading = false;
-      debugPrint('WalletViewModel.initialize: error: $e');
       notifyListeners();
-    } finally {
-      sw.stop();
-      debugPrint(
-          'WalletViewModel.initialize: finished in ${sw.elapsedMilliseconds}ms');
     }
+  }
+
+  void _resetStates() {
+    _summary = const WalletSummaryEntity(
+      totalAssets: 0.0,
+      monthlyBudget: 0.0,
+      totalSaved: 0.0,
+      activeGoals: 0,
+    );
+    _goals = [];
+    _categories = [];
+    _isLoading = false;
+    notifyListeners();
   }
 
   String get _remoteUid {
@@ -189,10 +149,6 @@ class WalletViewModel extends ChangeNotifier {
     _summary = await getWalletSummaryUseCase(localId);
   }
 
-  Future<void> loadAccounts(int localId) async {
-    _accounts = await getAccountsUseCase(localId, _remoteUid);
-  }
-
   Future<void> loadGoals(int localId) async {
     _goals = await getGoalsUseCase(localId, _remoteUid);
   }
@@ -201,116 +157,22 @@ class WalletViewModel extends ChangeNotifier {
     _categories = await getCategoriesUseCase(localId);
   }
 
-  Future<void> fetchWalletData() async {
-    await initialize();
-  }
-
   Future<void> fetchWalletSummary() async {
-    await initialize();
-  }
-
-  Future<void> addNewAccount(AccountEntity account) async {
-    await createAccount(account);
-  }
-
-  Future<void> createAccount(AccountEntity account) async {
     if (_currentUser == null) return;
-    final localId = _currentUser!.id ?? 1;
-    final remoteUid = _remoteUid;
-
-    _isCreatingAccount = true;
-    _createAccountError = null;
+    await loadSummary(_currentUser!.id ?? 1);
     notifyListeners();
-
-    try {
-      await createAccountUseCase(localId, remoteUid, account);
-      await loadAccounts(localId);
-      await loadSummary(localId);
-    } catch (e) {
-      _createAccountError = e.toString();
-      debugPrint('Error creating account: $e');
-    } finally {
-      _isCreatingAccount = false;
-      notifyListeners();
-    }
-  }
-
-  Future<void> updateAccount(AccountEntity account) async {
-    if (_currentUser == null) return;
-    final localId = _currentUser!.id ?? 1;
-    final remoteUid = _remoteUid;
-
-    _isUpdatingAccount = true;
-    _updateAccountError = null;
-    notifyListeners();
-
-    try {
-      await updateAccountUseCase(localId, remoteUid, account);
-      await loadAccounts(localId);
-      await loadSummary(localId);
-    } catch (e) {
-      _updateAccountError = e.toString();
-      debugPrint('Error updating account: $e');
-    } finally {
-      _isUpdatingAccount = false;
-      notifyListeners();
-    }
-  }
-
-  Future<void> deleteAccount(String accountId) async {
-    if (_currentUser == null) return;
-    final localId = _currentUser!.id ?? 1;
-    final remoteUid = _remoteUid;
-
-    _isDeletingAccount = true;
-    _deleteAccountError = null;
-    notifyListeners();
-
-    try {
-      await deleteAccountUseCase(localId, remoteUid, accountId);
-      await loadAccounts(localId);
-      await loadSummary(localId);
-    } catch (e) {
-      _deleteAccountError = e.toString();
-      debugPrint('Error deleting account: $e');
-    } finally {
-      _isDeletingAccount = false;
-      notifyListeners();
-    }
-  }
-
-  Future<void> restoreAccount(String accountId) async {
-    if (_currentUser == null) return;
-    final localId = _currentUser!.id ?? 1;
-    final remoteUid = _remoteUid;
-
-    _isRestoringAccount = true;
-    _restoreAccountError = null;
-    notifyListeners();
-
-    try {
-      await restoreAccountUseCase(localId, remoteUid, accountId);
-      await loadAccounts(localId);
-      await loadSummary(localId);
-    } catch (e) {
-      _restoreAccountError = e.toString();
-      debugPrint('Error restoring account: $e');
-    } finally {
-      _isRestoringAccount = false;
-      notifyListeners();
-    }
   }
 
   Future<void> addNewGoal(SavingGoalEntity goal) async {
     if (_currentUser == null) return;
     final localId = _currentUser!.id ?? 1;
-    final remoteUid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final rUid = _remoteUid;
 
     _isLoading = true;
     notifyListeners();
 
     try {
-      await addGoalUseCase(localId, remoteUid, goal);
+      await addGoalUseCase(localId, rUid, goal);
       await initialize();
     } catch (e) {
       _errorMessage = e.toString();
@@ -321,7 +183,7 @@ class WalletViewModel extends ChangeNotifier {
 
   void selectMonth(DateTime month) {
     selectedMonth = month;
-    fetchWalletSummary();
+    initialize();
   }
 
   double get totalSpent {
@@ -338,29 +200,19 @@ class WalletViewModel extends ChangeNotifier {
     return lastDayOfMonth.difference(now).inDays;
   }
 
-  /// Calculates real-time financial health thresholds based on goal-to-asset allocation ratios
   FinancialHealthStatus get healthStatus {
-    if (summary.totalAssets < 0) {
-      return FinancialHealthStatus.critical;
-    }
-
-    // Default for newly registered profiles
+    if (summary.totalAssets < 0) return FinancialHealthStatus.critical;
     if (summary.totalAssets > 0 &&
         summary.totalSaved == 0 &&
         summary.monthlyBudget == 0) {
       return FinancialHealthStatus.good;
     }
-
-    if (summary.totalAssets == 0) {
-      return FinancialHealthStatus.good;
-    }
+    if (summary.totalAssets == 0) return FinancialHealthStatus.good;
 
     final ratio = summary.totalSaved / summary.totalAssets;
-
     if (ratio >= 0.40) return FinancialHealthStatus.excellent;
     if (ratio >= 0.25) return FinancialHealthStatus.good;
     if (ratio >= 0.10) return FinancialHealthStatus.warning;
-
     return FinancialHealthStatus.critical;
   }
 }

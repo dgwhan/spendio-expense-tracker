@@ -5,6 +5,7 @@ import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
+import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
 import 'package:spend_io_app/features/account/presentation/screen/account_details_screen.dart';
 import 'package:spend_io_app/features/account/presentation/widgets/accounts_section.dart';
 import 'package:spend_io_app/features/account/presentation/screen/account_list_screen.dart';
@@ -13,6 +14,7 @@ import 'package:spend_io_app/features/wallet/presentation/widgets/goals/goals_se
 import 'package:spend_io_app/features/wallet/presentation/widgets/header/wallet_header.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/hero/total_assets_card.dart';
 import 'package:spend_io_app/core/widgets/dialogs/app_month_picker_dialog.dart';
+import 'package:spend_io_app/features/onboarding/domain/repositories/onboarding_repository.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -43,6 +45,26 @@ class _WalletScreenState extends State<WalletScreen> {
     );
   }
 
+  Future<void> _refreshAllWalletData(BuildContext context) async {
+    final auth = context.read<AuthProvider>();
+    final userEntity = auth.currentUser?.toEntity();
+    final String userEmail = auth.currentUser?.email ?? '';
+
+    await context.read<WalletViewModel>().initialize();
+
+    if (userEntity != null && context.mounted) {
+      final localId = userEntity.id ?? 0;
+      final remoteUid = userEntity.id?.toString() ?? '';
+
+      await context.read<AccountViewModel>().loadAccounts(
+            localId,
+            remoteUid,
+            onboardingRepo: context.read<OnboardingRepository>(),
+            userEmail: userEmail,
+          );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -50,12 +72,14 @@ class _WalletScreenState extends State<WalletScreen> {
         isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
     final errorTextColor = isDark ? AppColors.textPrimaryDark : Colors.black87;
 
+    final accountVM = context.watch<AccountViewModel>();
+
     return Scaffold(
       backgroundColor: backgroundColor,
       body: Consumer<WalletViewModel>(
         builder: (context, viewModel, child) {
-          // Lớp bảo vệ 01: Hiển thị trạng thái xoay tròn chờ nạp dữ liệu từ DB/Firebase, tránh lỗi trắng màn hình
-          if (viewModel.isLoading) {
+          // Lớp bảo vệ 01: Trạng thái xoay tròn chờ nạp dữ liệu gốc
+          if (viewModel.isLoading || accountVM.isLoading) {
             return const Center(
               child: CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
@@ -63,7 +87,7 @@ class _WalletScreenState extends State<WalletScreen> {
             );
           }
 
-          // Lớp bảo vệ 02: Hiển thị giao diện báo lỗi trực quan nếu tầng Data gặp sự cố
+          // Lớp bảo vệ 02: Báo lỗi trực quan
           if (viewModel.errorMessage != null) {
             return Center(
               child: Padding(
@@ -81,7 +105,7 @@ class _WalletScreenState extends State<WalletScreen> {
                     ),
                     const SizedBox(height: AppSizes.md),
                     ElevatedButton(
-                      onPressed: () => viewModel.fetchWalletData(),
+                      onPressed: () => _refreshAllWalletData(context),
                       child: const Text('Try again'),
                     ),
                   ],
@@ -90,7 +114,7 @@ class _WalletScreenState extends State<WalletScreen> {
             );
           }
 
-          // Lớp hiển thị chính: Chỉ vẽ cây Widget khi mọi dữ liệu dạng mảng đã sẵn sàng
+          // Lớp hiển thị chính
           return SafeArea(
             top: false,
             child: CustomScrollView(
@@ -130,7 +154,6 @@ class _WalletScreenState extends State<WalletScreen> {
                           healthStatus: viewModel.healthStatus,
                         ),
                         const SizedBox(height: AppSizes.xl),
-                        const SizedBox(height: AppSizes.xl),
                         BudgetSection(
                           totalSpent: viewModel.totalSpent,
                           totalBudget: viewModel.totalBudget,
@@ -142,11 +165,11 @@ class _WalletScreenState extends State<WalletScreen> {
                   ),
                 ),
 
-                // Phase 02: My Accounts (Hiển thị danh sách ví tài khoản)
+                // Phase 02: My Accounts (Hiển thị danh sách ví tài khoản chuẩn xác)
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
                   sliver: AccountsSection(
-                    accounts: viewModel.accounts,
+                    accounts: accountVM.accounts,
                     onViewAll: () {
                       Navigator.push(
                         context,
@@ -164,14 +187,12 @@ class _WalletScreenState extends State<WalletScreen> {
                         ),
                       );
 
-                      if (!context.mounted) {
-                        return;
-                      }
+                      if (!context.mounted || result == null) return;
 
-                      if (result == AccountDetailsAction.deleted || result == AccountDetailsAction.updated) {
-                          // Refresh wallet UI to reflect account changes
-                          viewModel.fetchWalletData();
-                        }
+                      if (result == AccountDetailsAction.deleted ||
+                          result == AccountDetailsAction.updated) {
+                        _refreshAllWalletData(context);
+                      }
                     },
                   ),
                 ),
@@ -179,10 +200,10 @@ class _WalletScreenState extends State<WalletScreen> {
                 // Phase 03: Savings Goals (Đặt mục tiêu tiết kiệm)
                 const SliverPadding(
                   padding: EdgeInsets.fromLTRB(
-                    AppSizes.md, // Left
-                    AppSizes.lg, // Top
-                    AppSizes.md, // Right
-                    0, // Bottom
+                    AppSizes.md,
+                    AppSizes.lg,
+                    AppSizes.md,
+                    0,
                   ),
                   sliver: GoalsSection(),
                 ),

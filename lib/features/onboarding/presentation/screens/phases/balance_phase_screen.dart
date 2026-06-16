@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:spend_io_app/features/onboarding/data/models/currency_item.dart';
 import '../../viewmodels/onboarding_viewmodel.dart';
 
 class BalancePhaseScreen extends StatefulWidget {
@@ -13,6 +14,8 @@ class BalancePhaseScreen extends StatefulWidget {
 
 class _BalancePhaseScreenState extends State<BalancePhaseScreen> {
   late final TextEditingController _balanceController;
+  late final String
+      _activeCurrencyCode; // 🔥 Lưu lại mã tiền tệ động cho toàn bộ State screen
 
   @override
   void initState() {
@@ -20,16 +23,20 @@ class _BalancePhaseScreenState extends State<BalancePhaseScreen> {
     final viewModel = context.read<OnboardingViewModel>();
     final existingBalance = viewModel.initialBalance;
 
+    // 🔥 Dynamic Currency Extraction: Tìm item trùng khớp với mã được lưu trên RAM ViewModel
+    final selectedCurrencyItem = supportedCurrencies.firstWhere(
+      (element) => element.code == viewModel.currencyCode,
+      orElse: () => supportedCurrencies.first,
+    );
+
+    _activeCurrencyCode = selectedCurrencyItem.code;
+
     if (existingBalance != null && existingBalance != 0) {
-      final selectedCurrency = viewModel.currencyCode ?? 'VND';
-      final formatter = _getFormatter(selectedCurrency);
+      final formatter = _getFormatter(_activeCurrencyCode);
       final formattedText = formatter.format(existingBalance.toInt());
       _balanceController = TextEditingController(text: formattedText);
     } else {
       _balanceController = TextEditingController(text: '');
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        viewModel.updateInitialBalance(0);
-      });
     }
   }
 
@@ -46,20 +53,19 @@ class _BalancePhaseScreenState extends State<BalancePhaseScreen> {
     return NumberFormat('#,###', 'vi_VN');
   }
 
-  void _onBalanceChanged(
-      String value, OnboardingViewModel viewModel, String currencyCode) {
+  void _onBalanceChanged(String value, OnboardingViewModel viewModel) {
     if (value.isEmpty) {
       viewModel.updateInitialBalance(0);
       return;
     }
 
-    String cleanValue = value.replaceAll(RegExp(r'\D'), '');
+    final String cleanValue = value.replaceAll(RegExp(r'\D'), '');
     final parsedInt = int.tryParse(cleanValue) ?? 0;
     final parsedDouble = parsedInt.toDouble();
 
     viewModel.updateInitialBalance(parsedDouble);
 
-    final formatter = _getFormatter(currencyCode);
+    final formatter = _getFormatter(_activeCurrencyCode);
     final formattedText = formatter.format(parsedInt);
 
     _balanceController.value = TextEditingValue(
@@ -71,8 +77,10 @@ class _BalancePhaseScreenState extends State<BalancePhaseScreen> {
   @override
   Widget build(BuildContext context) {
     final viewModel = context.read<OnboardingViewModel>();
+
     final selectedCurrency =
-        context.select((OnboardingViewModel vm) => vm.currencyCode) ?? 'VND';
+        context.select((OnboardingViewModel vm) => vm.currencyCode) ??
+            _activeCurrencyCode;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,8 +114,7 @@ class _BalancePhaseScreenState extends State<BalancePhaseScreen> {
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF1A1A1A),
                   ),
-                  onChanged: (value) =>
-                      _onBalanceChanged(value, viewModel, selectedCurrency),
+                  onChanged: (value) => _onBalanceChanged(value, viewModel),
                   decoration: const InputDecoration(
                     border: InputBorder.none,
                     hintText: '0',
