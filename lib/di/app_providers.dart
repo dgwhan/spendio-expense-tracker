@@ -1,10 +1,11 @@
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 import 'package:spend_io_app/core/database/app_database.dart';
 import 'package:spend_io_app/core/startup/startup_coordinator.dart';
-import 'package:spend_io_app/di/account_provider.dart';
+import 'package:spend_io_app/di/account_provider.dart'; // Khôi phục import
 import 'package:spend_io_app/di/auth_provider.dart';
-import 'package:spend_io_app/di/category_provider.dart';
+import 'package:spend_io_app/di/category_provider.dart'; // Khôi phục import
 import 'package:spend_io_app/di/onboarding_provider.dart';
 import 'package:spend_io_app/di/profile_provider.dart';
 import 'package:spend_io_app/di/transaction_provider.dart';
@@ -26,10 +27,10 @@ class AppProviders {
         ...AuthModuleProvider.providers,
         ...OnboardingModuleProvider.providers,
         ...AccountProvider.providers,
-        ...WalletModuleProvider.providers,
-        ...ProfileModuleProvider.providers,
         ...CategoryProvider.providers,
         ...TransactionProvider.providers,
+        ...WalletModuleProvider.providers,
+        ...ProfileModuleProvider.providers,
 
         // CORE ORCHESTRATION ENGINE
         ProxyProvider2<AuthProvider, CheckWalletInitializationUseCase,

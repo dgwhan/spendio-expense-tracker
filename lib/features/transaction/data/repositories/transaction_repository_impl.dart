@@ -22,6 +22,19 @@ class TransactionRepositoryImpl implements TransactionRepository {
     required this.remoteUid,
   });
 
+  // 🌟 @override HÀM MỚI: Lấy tất cả giao dịch không phân biệt tài khoản
+  @override
+  Future<List<TransactionEntity>> getAllTransactions() async {
+    // Gọi hàm bốc sạch dữ liệu từ SQLite/Local của bà lên
+    final models = await localDataSource.getAll();
+
+    return models
+        .map(
+          (model) => model.toEntity(),
+        )
+        .toList();
+  }
+
   @override
   Future<List<TransactionEntity>> getTransactionsByAccount(
     String accountId,

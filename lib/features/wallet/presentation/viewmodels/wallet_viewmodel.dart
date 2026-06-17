@@ -60,9 +60,9 @@ class WalletViewModel extends ChangeNotifier {
 
     _currentUser = user;
 
-    if (_currentUser != null) {
-      Future.microtask(() => initialize());
-    }
+    // if (_currentUser != null) {
+    //   Future.microtask(() => initialize());
+    // }
   }
 
   String get currentMonthLabel {

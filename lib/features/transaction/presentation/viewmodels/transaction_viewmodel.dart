@@ -30,10 +30,21 @@ class TransactionViewModel extends ChangeNotifier {
     }
   }
 
+  Future<void> loadAllTransactions() async {
+    _currentAccountId = null;
+    _setState(_state.copyWith(isLoading: true, error: null));
+
+    try {
+      final data = await repository.getAllTransactions();
+      _setState(_state.copyWith(isLoading: false, transactions: data));
+    } catch (e) {
+      _setState(_state.copyWith(isLoading: false, error: e.toString()));
+    }
+  }
+
   Future<void> addTransaction(TransactionEntity entity) async {
     debugPrint('[TransactionVM] addTransaction called: ${entity.id}');
 
-    // 🌟 TỰ ĐỘNG SINH NOTE NẾU TRỐNG (Cho hàm Thêm)
     TransactionEntity finalEntity = entity;
     if (entity.note == null || entity.note!.trim().isEmpty) {
       finalEntity = entity.copyWith(
@@ -42,8 +53,7 @@ class TransactionViewModel extends ChangeNotifier {
     }
 
     try {
-      await createTransactionUseCase(
-          finalEntity); // Đẩy entity đã bọc note an toàn xuống DB
+      await createTransactionUseCase(finalEntity);
       debugPrint('[TransactionVM] createTransactionUseCase completed');
     } catch (e, stackTrace) {
       debugPrint('[TransactionVM] addTransaction error: $e');
@@ -60,7 +70,6 @@ class TransactionViewModel extends ChangeNotifier {
     required TransactionEntity newEntity,
     required TransactionEntity oldEntity,
   }) async {
-    // 🌟 TỰ ĐỘNG SINH NOTE NẾU TRỐNG (Cho hàm Sửa)
     TransactionEntity finalNewEntity = newEntity;
     if (newEntity.note == null || newEntity.note!.trim().isEmpty) {
       finalNewEntity = newEntity.copyWith(
@@ -70,7 +79,7 @@ class TransactionViewModel extends ChangeNotifier {
 
     try {
       await repository.updateTransaction(
-        newTransaction: finalNewEntity, // Đẩy data mới đã xử lý note
+        newTransaction: finalNewEntity,
         oldTransaction: oldEntity,
       );
     } catch (e, stackTrace) {

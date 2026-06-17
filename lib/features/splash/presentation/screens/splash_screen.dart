@@ -29,17 +29,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
     // Giải quyết luồng định danh trạng thái User (Login / Register / Home)
     final startupCoordinator = context.read<StartupCoordinator>();
-    final result = await startupCoordinator.resolve();
-
-    // KÍCH HOẠT NẠP DANH MỤC MẶC ĐỊNH NGẦM
-    try {
-      final initCategoriesUseCase =
-          context.read<InitializeTransactionCategoriesUseCase>();
-      await initCategoriesUseCase.call();
-    } catch (e) {
-      debugPrint(
-          '[Splash] Lỗi khởi tạo danh mục ngầm, cấu trúc DB đã có sẵn hoặc dính lỗi: $e');
-    }
+    final result = await context.read<StartupCoordinator>().resolve(context);
 
     // 3. Đảm bảo thời gian hiển thị Splash tối thiểu để trải nghiệm mượt mà
     final elapsed = DateTime.now().difference(startTime);

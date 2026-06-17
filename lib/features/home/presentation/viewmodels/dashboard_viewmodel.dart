@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/saving_goal_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/budget_category_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/financial_health_status.dart';
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
+import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
+import 'package:spend_io_app/features/transaction/presentation/viewmodels/transaction_viewmodel.dart';
+import 'package:spend_io_app/features/transaction/domain/entities/transaction_type.dart';
 import 'package:spend_io_app/features/home/data/models/recent_transaction_model.dart';
 import 'package:spend_io_app/features/home/data/models/spending_breakdown_model.dart';
 import 'package:spend_io_app/features/home/data/models/financial_pulse_model.dart';
@@ -33,9 +37,42 @@ class DashboardViewModel extends ChangeNotifier {
   List<SavingGoalEntity> get savingsGoals => walletViewModel.goals;
   List<BudgetCategoryEntity> get budgetCategories => walletViewModel.categories;
 
-  /// Exposes recent transactions generated dynamically from active accounts
-  List<RecentTransactionModel> get recentTransactions {
-    return [];
+  // 🌟 NẠP ĐỘNG KHÔNG TREO: Sử dụng BuildContext lấy danh sách giao dịch tổng mà không dính bẫy đệ quy
+  List<RecentTransactionModel> getRecentTransactions(BuildContext context) {
+    final List<RecentTransactionModel> allTxs = [];
+
+    // Đọc data từ 2 ViewModel kia một cách tường minh tại thời điểm UI gọi render ngoài Home
+    final activeAccounts = context.read<AccountViewModel>().accounts;
+    final sourceTransactions =
+        context.read<TransactionViewModel>().state.transactions;
+
+    if (activeAccounts.isEmpty || sourceTransactions.isEmpty) {
+      return [];
+    }
+
+    for (final tx in sourceTransactions) {
+      String categoryName = 'General';
+      try {
+        categoryName = walletViewModel.categories
+                .firstWhere((c) => c.id == tx.categoryId)
+                .name ??
+            'General';
+      } catch (_) {}
+
+      allTxs.add(
+        RecentTransactionModel(
+          id: tx.id,
+          title: tx.note ?? categoryName,
+          category: categoryName,
+          amount: tx.amount,
+          date: tx.transactionDate,
+          isExpense: tx.type == TransactionType.expense,
+        ),
+      );
+    }
+
+    allTxs.sort((a, b) => b.date.compareTo(a.date));
+    return allTxs.take(10).toList();
   }
 
   MonthlyBudgetModel get monthlyBudget {
@@ -46,8 +83,10 @@ class DashboardViewModel extends ChangeNotifier {
     );
   }
 
-  SpendingBreakdownModel get spendingBreakdownWeek => _getBreakdown('THIS WEEK');
-  SpendingBreakdownModel get spendingBreakdownMonth => _getBreakdown(walletViewModel.currentMonthLabel.split(' ').first.toUpperCase());
+  SpendingBreakdownModel get spendingBreakdownWeek =>
+      _getBreakdown('THIS WEEK');
+  SpendingBreakdownModel get spendingBreakdownMonth => _getBreakdown(
+      walletViewModel.currentMonthLabel.split(' ').first.toUpperCase());
   SpendingBreakdownModel get spendingBreakdownYear => _getBreakdown('2026');
 
   SpendingBreakdownModel _getBreakdown(String period) {
@@ -81,14 +120,18 @@ class DashboardViewModel extends ChangeNotifier {
     final highestCategoryName = walletViewModel.categories.isNotEmpty
         ? walletViewModel.categories.first.name
         : 'None';
-    final highestCategoryPct = totalSpent > 0 && walletViewModel.categories.isNotEmpty
+    final highestCategoryPct = totalSpent > 0 &&
+            walletViewModel.categories.isNotEmpty
         ? ((walletViewModel.categories.first.spent / totalSpent) * 100).toInt()
         : 0;
 
-    String advice = 'Your financial health is stable. Keep tracking your daily spendings.';
+    String advice =
+        'Your financial health is stable. Keep tracking your daily spendings.';
     if (walletViewModel.healthStatus == FinancialHealthStatus.critical) {
-      advice = 'Warning: Your savings allocation is low. We recommend setting a higher monthly budget goal.';
-    } else if (walletViewModel.healthStatus == FinancialHealthStatus.excellent) {
+      advice =
+          'Warning: Your savings allocation is low. We recommend setting a higher monthly budget goal.';
+    } else if (walletViewModel.healthStatus ==
+        FinancialHealthStatus.excellent) {
       advice = 'Excellent: Your financial allocation is highly optimal!';
     }
 

@@ -117,11 +117,13 @@ class WalletModuleProvider {
             return activeVm;
           },
         ),
-        ChangeNotifierProxyProvider<WalletViewModel, DashboardViewModel>(
+
+        // 🌟 GIẢI PHÁP VÀNG: Trả DashboardViewModel về dạng ChangeNotifierProvider nguyên bản,
+        // sạch bóng ProxyProvider để triệt hạ tận gốc lỗi treo đứng màn hình chào!
+        ChangeNotifierProvider<DashboardViewModel>(
           create: (context) => DashboardViewModel(
-              walletViewModel: context.read<WalletViewModel>()),
-          update: (_, walletVM, vm) =>
-              vm ?? DashboardViewModel(walletViewModel: walletVM),
+            walletViewModel: context.read<WalletViewModel>(),
+          ),
         ),
       ];
 }

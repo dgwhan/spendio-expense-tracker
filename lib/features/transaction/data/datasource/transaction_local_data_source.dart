@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:spend_io_app/core/database/app_database.dart'; // Đảm bảo import file này
+import 'package:spend_io_app/core/database/app_database.dart';
 import 'package:spend_io_app/core/database/tables/transactions_table.dart';
 import '../models/transaction_model.dart';
 
 abstract class TransactionLocalDataSource {
+  Future<List<TransactionModel>> getAll();
+
   Future<List<TransactionModel>> getByAccountId(String accountId);
   Future<void> insert(TransactionModel model);
   Future<void> update(TransactionModel model);
@@ -12,15 +14,23 @@ abstract class TransactionLocalDataSource {
 }
 
 class TransactionLocalDataSourceImpl implements TransactionLocalDataSource {
-  // 1. Constructor rỗng - KHÔNG yêu cầu truyền 'db' từ ngoài vào nữa
   TransactionLocalDataSourceImpl();
 
-  // 2. Tự động await lấy instance Database thực tế khi có hàm gọi đến
   Future<Database> get _db async => await AppDatabase.database;
 
   @override
+  Future<List<TransactionModel>> getAll() async {
+    final db = await _db;
+    final result = await db.query(
+      TransactionsTable.tableName,
+      orderBy: 'transaction_date DESC, created_at DESC',
+    );
+    return result.map(TransactionModel.fromMap).toList();
+  }
+
+  @override
   Future<List<TransactionModel>> getByAccountId(String accountId) async {
-    final db = await _db; // Await lấy db tại đây
+    final db = await _db;
     final result = await db.query(
       TransactionsTable.tableName,
       where: 'account_id = ?',

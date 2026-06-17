@@ -69,7 +69,6 @@ class HomeScreen extends StatelessWidget {
               // 1. Header Section
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
-                // 🔥 FIXED: Đổi 'child:' thành 'sliver:' cho đúng contract của SliverPadding
                 sliver: SliverToBoxAdapter(
                   child: AppHeader(
                     displayName: displayName,
@@ -84,7 +83,6 @@ class HomeScreen extends StatelessWidget {
               SliverPadding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                // 🔥 FIXED: Đổi 'child:' thành 'sliver:'
                 sliver: SliverToBoxAdapter(
                   child: BalanceSummaryCard(
                     summary: summaryModel,
@@ -102,23 +100,18 @@ class HomeScreen extends StatelessWidget {
                       final int currentUserId =
                           authProvider.currentUser?.toEntity().id ?? 1;
                       final accountVM = context.read<AccountViewModel>();
-                      final txViewModel = context.read<TransactionViewModel>();
 
                       final String activeAccountId =
                           accountVM.accounts.isNotEmpty
                               ? accountVM.accounts.first.id
                               : '';
 
-                      // 🌟 ĐOẠN CODE ĐIỀU HƯỚNG CHUẨN CHỈ Ở MÀN HOME NÈ MÁ:
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (context) => AddTransactionScreen(
-                            accountId:
-                                activeAccountId, // Truyền ID ví đang chọn (hoặc truyền chuỗi rỗng '' nếu không đứng ở ví nào)
-                            userId:
-                                currentUserId, // ID của user đang đăng nhập (ví dụ lấy từ Auth/User Provider)
-                            transactionVM: context.read<
-                                TransactionViewModel>(), // Inject ViewModel trực tiếp bằng Provider
+                            accountId: activeAccountId,
+                            userId: currentUserId,
+                            transactionVM: context.read<TransactionViewModel>(),
                           ),
                         ),
                       );
@@ -132,6 +125,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
               ),
+
               // 4. Spending Breakdown Section
               SliverPadding(
                 padding:
@@ -151,7 +145,6 @@ class HomeScreen extends StatelessWidget {
               SliverPadding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                // 🔥 FIXED: Đổi 'child:' thành 'sliver:'
                 sliver: SliverToBoxAdapter(
                   child: FinancialPulseSection(
                     pulse: dashboardVM.financialPulse,
@@ -185,17 +178,18 @@ class HomeScreen extends StatelessWidget {
               ),
 
               // 8. Recent Activity Section
-              if (dashboardVM.recentTransactions.isNotEmpty)
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 40.0),
-                  // 🔥 FIXED: Đổi 'child:' thành 'sliver:'
-                  sliver: SliverToBoxAdapter(
-                    child: RecentActivitySection(
-                      transactions: dashboardVM.recentTransactions,
-                      onViewAllTap: () {},
-                    ),
+              // 🌟 FIX DỨT ĐIỂM: Gỡ hoàn toàn 'if (dashboardVM.recentTransactions.isNotEmpty)'
+              // để widget RecentActivitySection luôn hiển thị và tự xử lý trạng thái rỗng bên trong nó
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 40.0),
+                sliver: SliverToBoxAdapter(
+                  child: // Tại vị trí số 8 trong HomeScreen.dart sửa lại dòng này:
+                      RecentActivitySection(
+                    transactions: dashboardVM.getRecentTransactions(context),
+                    onViewAllTap: () {},
                   ),
                 ),
+              ),
             ],
           ),
         ),
