@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:spend_io_app/features/transaction/domain/entities/transaction_entity.dart';
 import 'package:spend_io_app/features/transaction/domain/repositories/transaction_repository.dart';
 import 'package:spend_io_app/features/transaction/domain/usecases/create_transaction.dart';
-
 import 'transaction_state.dart';
 
 class TransactionViewModel extends ChangeNotifier {
@@ -15,76 +15,43 @@ class TransactionViewModel extends ChangeNotifier {
   });
 
   TransactionState _state = const TransactionState();
-
   TransactionState get state => _state;
-
   String? _currentAccountId;
 
   Future<void> loadByAccount(String accountId) async {
     _currentAccountId = accountId;
-
-    _setState(
-      _state.copyWith(
-        isLoading: true,
-        error: null,
-      ),
-    );
+    _setState(_state.copyWith(isLoading: true, error: null));
 
     try {
-      final data = await repository.getTransactionsByAccount(
-        accountId,
-      );
-
-      _setState(
-        _state.copyWith(
-          isLoading: false,
-          transactions: data,
-        ),
-      );
+      final data = await repository.getTransactionsByAccount(accountId);
+      _setState(_state.copyWith(isLoading: false, transactions: data));
     } catch (e) {
-      _setState(
-        _state.copyWith(
-          isLoading: false,
-          error: e.toString(),
-        ),
-      );
+      _setState(_state.copyWith(isLoading: false, error: e.toString()));
     }
   }
 
-  Future<void> addTransaction(
-    TransactionEntity entity,
-  ) async {
-    debugPrint(
-      '[TransactionVM] addTransaction called: ${entity.id}',
-    );
+  Future<void> addTransaction(TransactionEntity entity) async {
+    debugPrint('[TransactionVM] addTransaction called: ${entity.id}');
+
+    // 🌟 TỰ ĐỘNG SINH NOTE NẾU TRỐNG (Cho hàm Thêm)
+    TransactionEntity finalEntity = entity;
+    if (entity.note == null || entity.note!.trim().isEmpty) {
+      finalEntity = entity.copyWith(
+        note: _generateDefaultNote(entity.transactionDate),
+      );
+    }
 
     try {
       await createTransactionUseCase(
-        entity,
-      );
-
-      debugPrint(
-        '[TransactionVM] createTransactionUseCase completed',
-      );
+          finalEntity); // Đẩy entity đã bọc note an toàn xuống DB
+      debugPrint('[TransactionVM] createTransactionUseCase completed');
     } catch (e, stackTrace) {
-      debugPrint(
-        '[TransactionVM] addTransaction error: $e',
-      );
-
-      debugPrintStack(
-        stackTrace: stackTrace,
-      );
-
-      _setState(
-        _state.copyWith(
-          error: e.toString(),
-        ),
-      );
+      debugPrint('[TransactionVM] addTransaction error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      _setState(_state.copyWith(error: e.toString()));
     } finally {
       if (_currentAccountId != null) {
-        await loadByAccount(
-          _currentAccountId!,
-        );
+        await loadByAccount(_currentAccountId!);
       }
     }
   }
@@ -93,74 +60,56 @@ class TransactionViewModel extends ChangeNotifier {
     required TransactionEntity newEntity,
     required TransactionEntity oldEntity,
   }) async {
+    // 🌟 TỰ ĐỘNG SINH NOTE NẾU TRỐNG (Cho hàm Sửa)
+    TransactionEntity finalNewEntity = newEntity;
+    if (newEntity.note == null || newEntity.note!.trim().isEmpty) {
+      finalNewEntity = newEntity.copyWith(
+        note: _generateDefaultNote(newEntity.transactionDate),
+      );
+    }
+
     try {
       await repository.updateTransaction(
-        newTransaction: newEntity,
+        newTransaction: finalNewEntity, // Đẩy data mới đã xử lý note
         oldTransaction: oldEntity,
       );
     } catch (e, stackTrace) {
-      debugPrint(
-        '[TransactionVM] updateTransaction error: $e',
-      );
-
-      debugPrintStack(
-        stackTrace: stackTrace,
-      );
-
-      _setState(
-        _state.copyWith(
-          error: e.toString(),
-        ),
-      );
+      debugPrint('[TransactionVM] updateTransaction error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      _setState(_state.copyWith(error: e.toString()));
     } finally {
       if (_currentAccountId != null) {
-        await loadByAccount(
-          _currentAccountId!,
-        );
+        await loadByAccount(_currentAccountId!);
       }
     }
   }
 
-  Future<void> deleteTransaction(
-    TransactionEntity entity,
-  ) async {
+  Future<void> deleteTransaction(TransactionEntity entity) async {
     try {
-      await repository.deleteTransaction(
-        entity,
-      );
+      await repository.deleteTransaction(entity);
     } catch (e, stackTrace) {
-      debugPrint(
-        '[TransactionVM] deleteTransaction error: $e',
-      );
-
-      debugPrintStack(
-        stackTrace: stackTrace,
-      );
-
-      _setState(
-        _state.copyWith(
-          error: e.toString(),
-        ),
-      );
+      debugPrint('[TransactionVM] deleteTransaction error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      _setState(_state.copyWith(error: e.toString()));
     } finally {
       if (_currentAccountId != null) {
-        await loadByAccount(
-          _currentAccountId!,
-        );
+        await loadByAccount(_currentAccountId!);
       }
     }
   }
 
   void clearTransactions() {
-    _setState(
-      const TransactionState(),
-    );
+    _setState(const TransactionState());
   }
 
-  void _setState(
-    TransactionState newState,
-  ) {
+  void _setState(TransactionState newState) {
     _state = newState;
     notifyListeners();
+  }
+
+//nếu ng dùng k note thì lưu default
+  String _generateDefaultNote(DateTime date) {
+    final dateFormat = DateFormat('dd/MM/yyyy').format(date);
+    return 'Transaction $dateFormat';
   }
 }

@@ -7,7 +7,7 @@ import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/core/widgets/dialogs/app_confirmation_dialog.dart';
 import 'package:spend_io_app/core/widgets/input/app_search_bar.dart';
 import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
-import 'package:spend_io_app/features/account/presentation/widgets/filter/account_custom_date_picker_sheet.dart';
+import 'package:spend_io_app/shared/widgets/date_picker/app_custome_date_picker_sheet.dart';
 import 'package:spend_io_app/features/account/presentation/widgets/filter/account_detail_filter_capsule.dart';
 import 'package:spend_io_app/features/account/presentation/widgets/hero/account_detail_hero_card.dart';
 import 'package:spend_io_app/features/account/presentation/widgets/transaction/account_detail_summary_pills.dart';
@@ -319,8 +319,7 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
                               context: context,
                               isScrollControlled: true,
                               backgroundColor: Colors.transparent,
-                              builder: (sheetCtx) =>
-                                  AccountCustomDatePickerSheet(
+                              builder: (sheetCtx) => AppCustomeDatePickerSheet(
                                 initialRange: context
                                     .read<AccountDetailsViewModel>()
                                     .filterState

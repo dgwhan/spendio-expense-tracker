@@ -4,19 +4,19 @@ import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_radius.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 
-class AccountCustomDatePickerSheet extends StatefulWidget {
+class AppCustomeDatePickerSheet extends StatefulWidget {
   final DateTimeRange? initialRange;
 
-  const AccountCustomDatePickerSheet({super.key, this.initialRange});
+  const AppCustomeDatePickerSheet({super.key, this.initialRange});
 
   @override
-  State<AccountCustomDatePickerSheet> createState() =>
+  State<AppCustomeDatePickerSheet> createState() =>
       _AccountCustomDatePickerSheetState();
 }
 
 class _AccountCustomDatePickerSheetState
-    extends State<AccountCustomDatePickerSheet> {
-  CalendarFormat _calendarFormat = CalendarFormat.month;
+    extends State<AppCustomeDatePickerSheet> {
+  final CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
   DateTime? _rangeStart;
   DateTime? _rangeEnd;

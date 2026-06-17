@@ -109,12 +109,16 @@ class HomeScreen extends StatelessWidget {
                               ? accountVM.accounts.first.id
                               : '';
 
+                      // 🌟 ĐOẠN CODE ĐIỀU HƯỚNG CHUẨN CHỈ Ở MÀN HOME NÈ MÁ:
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (context) => AddTransactionScreen(
-                            accountId: activeAccountId,
-                            userId: currentUserId,
-                            transactionVM: txViewModel,
+                            accountId:
+                                activeAccountId, // Truyền ID ví đang chọn (hoặc truyền chuỗi rỗng '' nếu không đứng ở ví nào)
+                            userId:
+                                currentUserId, // ID của user đang đăng nhập (ví dụ lấy từ Auth/User Provider)
+                            transactionVM: context.read<
+                                TransactionViewModel>(), // Inject ViewModel trực tiếp bằng Provider
                           ),
                         ),
                       );

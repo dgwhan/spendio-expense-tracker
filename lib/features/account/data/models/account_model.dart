@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart'; // Bắt buộc để dùng cờ kDebugMode
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
 
@@ -31,7 +30,6 @@ class AccountModel extends AccountEntity {
     );
   }
 
-  @override
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -119,7 +117,7 @@ class AccountModel extends AccountEntity {
     );
   }
 
-  @override
+  // Khai báo helper độc lập
   AccountEntity toEntity() {
     return AccountEntity(
       id: id,

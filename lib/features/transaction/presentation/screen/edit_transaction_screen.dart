@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
@@ -19,48 +18,68 @@ import 'package:spend_io_app/features/transaction/presentation/widgets/component
 import 'package:spend_io_app/features/transaction/presentation/widgets/components/transaction_metadata_fields.dart';
 import 'package:spend_io_app/shared/widgets/date_picker/app_date_picker_sheet.dart';
 
-class AddTransactionScreen extends StatefulWidget {
-  final String accountId;
-  final int userId;
+class EditTransactionScreen extends StatefulWidget {
+  final TransactionEntity transaction;
+  final List<CategoryEntity> categories;
   final TransactionViewModel transactionVM;
 
-  const AddTransactionScreen({
+  const EditTransactionScreen({
     super.key,
-    required this.accountId,
-    required this.userId,
+    required this.transaction,
+    required this.categories,
     required this.transactionVM,
   });
 
   @override
-  State<AddTransactionScreen> createState() => _AddTransactionScreenState();
+  State<EditTransactionScreen> createState() => _EditTransactionScreenState();
 }
 
-class _AddTransactionScreenState extends State<AddTransactionScreen> {
+class _EditTransactionScreenState extends State<EditTransactionScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _amountController = TextEditingController();
-  final _noteController = TextEditingController();
+  late final TextEditingController _amountController;
+  late final TextEditingController _noteController;
 
-  TransactionType _selectedType = TransactionType.expense;
+  late TransactionType _selectedType;
   CategoryEntity? _selectedCategory;
-  DateTime _selectedDate = DateTime.now();
+  late DateTime _selectedDate;
   AccountEntity? _selectedAccount;
 
   @override
   void initState() {
     super.initState();
-    final accountVM = context.read<AccountViewModel>();
 
-    if (accountVM.accounts.isNotEmpty && widget.accountId.isNotEmpty) {
+    final double rawAmount = widget.transaction.amount.abs();
+    _amountController = TextEditingController(
+      text: rawAmount == rawAmount.toInt()
+          ? rawAmount.toInt().toString()
+          : rawAmount.toString(),
+    );
+    _noteController =
+        TextEditingController(text: widget.transaction.note ?? '');
+
+    _selectedType = widget.transaction.type;
+    _selectedDate = widget.transaction.transactionDate;
+
+    final accountVM = context.read<AccountViewModel>();
+    if (accountVM.accounts.isNotEmpty) {
       _selectedAccount = accountVM.accounts.firstWhere(
-        (acc) => acc.id == widget.accountId,
+        (acc) => acc.id == widget.transaction.accountId,
         orElse: () => accountVM.accounts.first,
       );
-    } else {
-      _selectedAccount = null;
+    }
+
+    try {
+      _selectedCategory = widget.categories.firstWhere(
+        (cat) => cat.id == widget.transaction.categoryId,
+      );
+    } catch (_) {
+      _selectedCategory = null;
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CategoryViewModel>().loadCategories(widget.userId);
+      context
+          .read<CategoryViewModel>()
+          .loadCategories(widget.transaction.userId);
     });
   }
 
@@ -109,14 +128,27 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) => AppDatePickerSheet(
         initialRange: DateTimeRange(start: _selectedDate, end: _selectedDate),
-        isSingleDateMode: true,
-        maxDate: DateTime.now(),
+        isSingleDateMode: true, // Kích hoạt chế độ chọn 1 ngày đơn lẻ
+        maxDate: DateTime.now(), // Chặn ngày tương lai
       ),
     );
 
     if (pickedRange != null && mounted) {
+      final selectedDay = pickedRange.start;
+
+      final originalTime = widget.transaction.transactionDate;
+
+      final DateTime dateWithOriginalTime = DateTime(
+        selectedDay.year,
+        selectedDay.month,
+        selectedDay.day,
+        originalTime.hour, // Ghim đúng giờ cũ
+        originalTime.minute, // Ghim đúng phút cũ
+        originalTime.second, // Giữ luôn giây cũ
+      );
+
       setState(() {
-        _selectedDate = pickedRange.start;
+        _selectedDate = dateWithOriginalTime;
       });
     }
   }
@@ -143,12 +175,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       return;
     }
 
-    final String nativeUniqueId =
-        '${DateTime.now().microsecondsSinceEpoch}_${Random().nextInt(999)}';
-
-    final newTx = TransactionEntity(
-      id: nativeUniqueId,
-      userId: widget.userId,
+    final updatedTx = TransactionEntity(
+      id: widget.transaction.id,
+      userId: widget.transaction.userId,
       accountId: _selectedAccount!.id,
       categoryId: _selectedCategory!.id,
       amount: amount,
@@ -156,34 +185,47 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       note: _noteController.text.trim().isEmpty
           ? null
           : _noteController.text.trim(),
-      transactionDate: _selectedDate,
-      createdAt: DateTime.now(),
+      transactionDate:
+          _selectedDate, // Mang mốc ngày mới kết hợp giờ cũ an toàn
+      createdAt: widget.transaction.createdAt,
       updatedAt: DateTime.now(),
     );
 
     final Map<String, dynamic> txMapLog = {
-      'id': newTx.id,
-      'user_id': newTx.userId,
-      'account_id': newTx.accountId,
-      'category_id': newTx.categoryId,
-      'amount': newTx.amount,
-      'type': newTx.type.toString().split('.').last,
-      'note': newTx.note,
-      'transaction_date': newTx.transactionDate.toIso8601String(),
-      'created_at': newTx.createdAt.toIso8601String(),
-      'updated_at': newTx.updatedAt.toIso8601String(),
+      'id': updatedTx.id,
+      'user_id': updatedTx.userId,
+      'account_id': updatedTx.accountId,
+      'category_id': updatedTx.categoryId,
+      'amount': updatedTx.amount,
+      'type': updatedTx.type.toString().split('.').last,
+      'note': updatedTx.note,
+      'transaction_date': updatedTx.transactionDate.toIso8601String(),
+      'created_at': updatedTx.createdAt.toIso8601String(),
+      'updated_at': updatedTx.updatedAt.toIso8601String(),
     };
 
     debugPrint(
         '====================================================================================================');
     debugPrint(
-        '[DATABASE HANDLER] Action Triggered: onTap (Recognizer: TapGestureRecognizer)');
-    debugPrint('[DATABASE HANDLER] PAYLOAD JSON STR: ${jsonEncode(txMapLog)}');
+        '[DATABASE HANDLER] Action Triggered: onTap (Update Transaction)');
+    debugPrint(
+        '[DATABASE HANDLER] UPDATE PAYLOAD JSON STR: ${jsonEncode(txMapLog)}');
     debugPrint(
         '====================================================================================================');
 
-    widget.transactionVM.addTransaction(newTx).then((_) {
-      if (mounted) Navigator.pop(context);
+    widget.transactionVM
+        .updateTransaction(
+      newEntity: updatedTx,
+      oldEntity: widget.transaction,
+    )
+        .then((_) {
+      if (mounted) {
+        // GIẬT NGƯỢC STACK 2 LẦN: Đóng màn Sửa và quay về thẳng màn hình Wallet Detail
+        int count = 0;
+        Navigator.popUntil(context, (route) {
+          return count++ == 2;
+        });
+      }
     });
   }
 
@@ -210,11 +252,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       color: isDark ? Colors.white : Colors.black),
                   onPressed: () => Navigator.pop(context),
                 ),
-                title: Text('New Transaction',
-                    style: TextStyle(
-                        color: isDark ? Colors.white : Colors.black,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18)),
+                title: Text(
+                  'Edit Transaction',
+                  style: TextStyle(
+                      color: isDark ? Colors.white : Colors.black,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18),
+                ),
                 centerTitle: true,
               ),
               SliverPadding(
@@ -262,7 +306,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               FintechAmountInput(
                 controller: _amountController,
                 selectedType: _selectedType,
-                autofocus: activeAccounts.isNotEmpty,
+                autofocus: false,
               ),
               TransactionMetadataFields(
                 activeAccounts: activeAccounts,
@@ -291,12 +335,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(AppSizes.md)),
                     ),
-                    child: Text(
-                        _selectedAccount == null
-                            ? 'Continue to Create Wallet'
-                            : 'Save Transaction',
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      'Save Changes',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
               ),
