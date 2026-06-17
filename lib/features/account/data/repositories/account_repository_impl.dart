@@ -17,8 +17,39 @@ class AccountRepositoryImpl implements AccountRepository {
   @override
   Future<List<AccountEntity>> getAccounts(int localUserId, String remoteUid,
       {bool forceSync = false}) async {
-    final localAccounts = await localDataSource.getAccounts(localUserId);
+    // 1. Đọc dữ liệu local hiện tại trước
+    var localAccounts = await localDataSource.getAccounts(localUserId);
 
+    // 🌟 2. CORE SYNC CRITERIA: Nếu local trống HOẶC ép buộc đồng bộ (forceSync)
+    if ((localAccounts.isEmpty || forceSync) && remoteUid.trim().isNotEmpty) {
+      try {
+        debugPrint(
+            '[Account Repo]: Local data missing or forceSync active. Fetching from Firestore...');
+
+        // Lấy danh sách ví từ Firestore Remote
+        final remoteModels = await remoteDataSource
+            .getAccounts(remoteUid)
+            .timeout(const Duration(seconds: 4));
+
+        if (remoteModels.isNotEmpty) {
+          // Lưu đè/cập nhật toàn bộ ví từ Remote xuống SQLite Local
+          for (final model in remoteModels) {
+            // Đảm bảo model mapping đúng localUserId
+            final updatedModel =
+                model.userId == 0 ? model.copyWith(userId: localUserId) : model;
+
+            await localDataSource.saveAccount(localUserId, updatedModel);
+          }
+
+          localAccounts = await localDataSource.getAccounts(localUserId);
+        }
+      } catch (e) {
+        debugPrint(
+            '[Account Repo]: Failed to sync from cloud ($e). Falling back to existing local state.');
+      }
+    }
+
+    // 3. Trả về kết quả sạch sau lọc trùng/xóa mềm
     return localAccounts
         .where((a) => a.deletedAt == null && a.name.trim().isNotEmpty)
         .map((m) => m.toEntity())

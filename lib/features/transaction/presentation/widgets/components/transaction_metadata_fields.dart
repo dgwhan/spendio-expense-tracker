@@ -3,11 +3,12 @@ import 'package:intl/intl.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
+import 'package:spend_io_app/features/category/domain/entities/category_entity.dart';
 
 class TransactionMetadataFields extends StatelessWidget {
   final List<AccountEntity> activeAccounts;
   final AccountEntity? selectedAccount;
-  final dynamic selectedCategory;
+  final CategoryEntity? selectedCategory;
   final DateTime selectedDate;
   final TextEditingController noteController;
   final VoidCallback onWalletTap;
@@ -35,7 +36,7 @@ class TransactionMetadataFields extends StatelessWidget {
       sliver: SliverToBoxAdapter(
         child: Column(
           children: [
-            // 1. O chon Vi duy nhat (Tu dong hien thi canh bao neu chua co du lieu)
+            // 1. Ô chọn Ví duy nhất
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: CircleAvatar(
@@ -66,26 +67,29 @@ class TransactionMetadataFields extends StatelessWidget {
               onTap: onWalletTap,
             ),
 
-            // 2. O chon Danh muc (Category) da duoc khoi phuc
+            // 2. Ô chọn Danh mục (Category) - Đã đồng bộ 100% với Entity & Database Seed
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: CircleAvatar(
                 backgroundColor: selectedCategory != null
-                    ? Color(selectedCategory.colorValue).withValues(alpha: 0.2)
+                    ? Color(selectedCategory!.colorValue).withValues(alpha: 0.2)
                     : Colors.grey.withValues(alpha: 0.1),
                 child: Icon(
                   selectedCategory != null
-                      ? IconData(selectedCategory.iconCodePoint,
-                          fontFamily: selectedCategory.iconFontFamily)
+                      ? IconData(
+                          selectedCategory!.iconCodePoint,
+                          fontFamily: selectedCategory!.iconFontFamily ??
+                              'MaterialIcons',
+                        )
                       : Icons.category_outlined,
                   color: selectedCategory != null
-                      ? Color(selectedCategory.colorValue)
+                      ? Color(selectedCategory!.colorValue)
                       : Colors.grey,
                 ),
               ),
               title: Text(
                 selectedCategory != null
-                    ? selectedCategory.name
+                    ? selectedCategory!.name
                     : 'Select Category',
                 style: TextStyle(
                   fontSize: 15,
@@ -101,7 +105,7 @@ class TransactionMetadataFields extends StatelessWidget {
               onTap: onCategoryTap,
             ),
 
-            // 3. O chon Ngay thang
+            // 3. Ô chọn Ngày tháng
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: CircleAvatar(
@@ -119,7 +123,7 @@ class TransactionMetadataFields extends StatelessWidget {
             ),
             const SizedBox(height: AppSizes.md),
 
-            // 4. o nhap Ghi chu
+            // 4. Ô nhập Ghi chu
             TextFormField(
               controller: noteController,
               decoration: InputDecoration(

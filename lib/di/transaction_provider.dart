@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
+import 'package:spend_io_app/features/account/domain/repositories/account_repository.dart';
 
 // DATA LAYER
 import 'package:spend_io_app/features/transaction/data/datasource/transaction_local_data_source.dart';
@@ -10,16 +11,9 @@ import 'package:spend_io_app/features/transaction/domain/repositories/transactio
 
 // DOMAIN LAYER
 import 'package:spend_io_app/features/transaction/domain/usecases/create_transaction.dart';
-import 'package:spend_io_app/features/transaction/domain/usecases/update_wallet_balance.dart';
 
 // PRESENTATION LAYER
 import 'package:spend_io_app/features/transaction/presentation/viewmodels/transaction_viewmodel.dart';
-
-// AUTH
-import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
-
-// WALLET LAYER
-import 'package:spend_io_app/features/wallet/domain/repositories/wallet_repository.dart';
 
 class TransactionProvider {
   TransactionProvider._();
@@ -33,36 +27,21 @@ class TransactionProvider {
           create: (_) => TransactionRemoteDataSourceImpl(),
         ),
 
-        ProxyProvider<AuthProvider, UpdateWalletBalance>(
-          update: (context, authProvider, previous) {
-            final walletRepo = context.read<WalletRepository>();
-
-            final localUserId = authProvider.currentUser?.id ?? 0;
-            final remoteUid = FirebaseAuth.instance.currentUser?.uid ?? '';
-
-            if (previous != null &&
-                previous.localUserId == localUserId &&
-                previous.remoteUid == remoteUid) {
-              return previous;
-            }
-
-            return UpdateWalletBalance(
-              walletRepo,
-              localUserId: localUserId,
-              remoteUid: remoteUid,
-            );
-          },
-        ),
-
         // TransactionRepository receives the use case via ProxyProvider3.
         ProxyProvider3<TransactionLocalDataSource, TransactionRemoteDataSource,
-            UpdateWalletBalance, TransactionRepository>(
-          update: (context, local, remote, walletUpdater, __) {
+            AccountRepository, TransactionRepository>(
+          update: (
+            context,
+            local,
+            remote,
+            accountRepository,
+            __,
+          ) {
             final remoteUid = FirebaseAuth.instance.currentUser?.uid ?? '';
             return TransactionRepositoryImpl(
               localDataSource: local,
               remoteDataSource: remote,
-              updateWalletBalance: walletUpdater,
+              accountRepository: accountRepository,
               remoteUid: remoteUid,
             );
           },

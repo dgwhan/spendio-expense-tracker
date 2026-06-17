@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/utils/account_filter_extension.dart';
 import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
-import 'package:spend_io_app/features/transaction/domain/entities/transaction_entity.dart'; // Đổi sang Entity chuẩn Phase 03
+import 'package:spend_io_app/features/transaction/domain/entities/transaction_entity.dart';
 import 'package:spend_io_app/features/transaction/domain/entities/transaction_type.dart';
 
 class AccountFilterState {
@@ -18,8 +18,7 @@ class AccountFilterState {
 
 class TransactionLedgerState {
   final List<TransactionEntity> allTransactions;
-  final List<TransactionEntity>
-      filteredTransactions; // Danh sách phẳng sau khi lọc để đưa vào ListView thô
+  final List<TransactionEntity> filteredTransactions;
   final double totalReceived;
   final double totalSpent;
 
@@ -34,7 +33,7 @@ class TransactionLedgerState {
 class AccountDetailsViewModel extends ChangeNotifier {
   AccountEntity? _account;
   AccountFilterState _filterState = const AccountFilterState(
-    activeRangeLabel: 'Last 30 Days',
+    activeRangeLabel: 'All Time',
     searchQuery: '',
   );
   TransactionLedgerState? _ledgerState;
@@ -43,8 +42,13 @@ class AccountDetailsViewModel extends ChangeNotifier {
   AccountFilterState get filterState => _filterState;
   TransactionLedgerState? get ledgerState => _ledgerState;
 
-  /// Khởi tạo trạng thái với Account thực tế và list giao dịch bốc từ TransactionViewModel
   void initialize(AccountEntity account, List<TransactionEntity> transactions) {
+    if (_account?.id == account.id &&
+        _ledgerState != null &&
+        _ledgerState!.allTransactions == transactions) {
+      return;
+    }
+
     _account = account;
 
     _ledgerState = TransactionLedgerState(
@@ -77,18 +81,20 @@ class AccountDetailsViewModel extends ChangeNotifier {
     _updateLedger();
   }
 
-  /// Bộ lọc dữ liệu phẳng (Pure Flat Ledger Engine) - Không chứa Grouping Logic
   void _updateLedger() {
     if (_ledgerState == null) return;
 
     final targetRange = _filterState.activeRangeLabel
         .toDateTimeRange(_filterState.customDateRange);
 
-    // 1. Thực hiện lọc mảng phẳng
+    // 1. Thực hiện lọc mảng phẳng chuẩn chỉ
     final List<TransactionEntity> filtered =
         _ledgerState!.allTransactions.where((tx) {
-      // Kiểm tra dải thời gian trùng khớp
-      if (targetRange != null) {
+      if (_account != null && tx.accountId != _account!.id) {
+        return false;
+      }
+
+      if (_filterState.activeRangeLabel != 'All Time' && targetRange != null) {
         if (tx.transactionDate.isBefore(targetRange.start) ||
             tx.transactionDate.isAfter(targetRange.end)) {
           return false;
@@ -102,7 +108,6 @@ class AccountDetailsViewModel extends ChangeNotifier {
       return (tx.note ?? '').toLowerCase().contains(query);
     }).toList();
 
-    // 2. Tính toán tổng lượng Thu/Chi động hiển thị nhanh trên báo cáo Hub
     double totalReceived = 0;
     double totalSpent = 0;
 
@@ -114,7 +119,6 @@ class AccountDetailsViewModel extends ChangeNotifier {
       }
     }
 
-    // 3. Đóng gói lại trạng thái mảng phẳng duy nhất để đẩy lên UI render
     _ledgerState = TransactionLedgerState(
       allTransactions: _ledgerState!.allTransactions,
       filteredTransactions: filtered,

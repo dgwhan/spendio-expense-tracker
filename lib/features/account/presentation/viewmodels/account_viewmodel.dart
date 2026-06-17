@@ -178,7 +178,7 @@ class AccountViewModel extends ChangeNotifier {
 
     final targetIndex = _rawAccounts.indexWhere((acc) => acc.id == accountId);
     AccountEntity? optimisticRollbackBackup;
-  
+
     if (targetIndex != -1) {
       optimisticRollbackBackup = _rawAccounts[targetIndex];
       _rawAccounts[targetIndex] = _rawAccounts[targetIndex].copyWith(

@@ -6,6 +6,7 @@ import 'package:provider/single_child_widget.dart';
 import 'package:spend_io_app/features/account/data/datasource/account_local_data_source.dart';
 import 'package:spend_io_app/features/account/data/datasource/account_remote_data_source.dart';
 import 'package:spend_io_app/features/account/data/repositories/account_repository_impl.dart';
+import 'package:spend_io_app/features/account/domain/repositories/account_repository.dart';
 
 // DOMAIN LAYER (USE CASES)
 import 'package:spend_io_app/features/account/domain/usecase/get_accounts_usecase.dart';
@@ -29,22 +30,24 @@ class AccountProvider {
           create: (_) => AccountRemoteDataSourceImpl(),
         ),
         ProxyProvider2<AccountLocalDataSource, AccountRemoteDataSource,
-            AccountRepositoryImpl>(
+            AccountRepository>(
           update: (_, local, remote, __) => AccountRepositoryImpl(
-              localDataSource: local, remoteDataSource: remote),
+            localDataSource: local,
+            remoteDataSource: remote,
+          ),
         ),
 
         // 2. DOMAIN LAYER (USE CASES)
-        ProxyProvider<AccountRepositoryImpl, GetAccountsUseCase>(
+        ProxyProvider<AccountRepository, GetAccountsUseCase>(
           update: (_, repo, previous) => previous ?? GetAccountsUseCase(repo),
         ),
-        ProxyProvider<AccountRepositoryImpl, CreateAccountUseCase>(
+        ProxyProvider<AccountRepository, CreateAccountUseCase>(
           update: (_, repo, previous) => previous ?? CreateAccountUseCase(repo),
         ),
-        ProxyProvider<AccountRepositoryImpl, UpdateAccountUseCase>(
+        ProxyProvider<AccountRepository, UpdateAccountUseCase>(
           update: (_, repo, previous) => previous ?? UpdateAccountUseCase(repo),
         ),
-        ProxyProvider<AccountRepositoryImpl, DeleteAccountUseCase>(
+        ProxyProvider<AccountRepository, DeleteAccountUseCase>(
           update: (_, repo, previous) => previous ?? DeleteAccountUseCase(repo),
         ),
 
@@ -72,7 +75,6 @@ class AccountProvider {
               final String remoteUid =
                   fb_auth.FirebaseAuth.instance.currentUser?.uid ?? '';
 
-              // Thực hiện nạp tài khoản tự động chuẩn chỉ Phase 02
               if (localId > 0 &&
                   remoteUid.isNotEmpty &&
                   userEntity.onboardingCompleted == true) {

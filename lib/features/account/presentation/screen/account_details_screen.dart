@@ -11,13 +11,14 @@ import 'package:spend_io_app/features/account/presentation/widgets/filter/accoun
 import 'package:spend_io_app/features/account/presentation/widgets/filter/account_detail_filter_capsule.dart';
 import 'package:spend_io_app/features/account/presentation/widgets/hero/account_detail_hero_card.dart';
 import 'package:spend_io_app/features/account/presentation/widgets/transaction/account_detail_summary_pills.dart';
+import 'package:spend_io_app/features/category/presentation/viewmodels/category_viewmodel.dart';
+import 'package:spend_io_app/features/transaction/domain/entities/transaction_entity.dart';
+import 'package:spend_io_app/features/transaction/domain/entities/transaction_type.dart';
 import 'package:spend_io_app/features/transaction/presentation/widgets/account_transaction_feed.dart';
 import 'package:spend_io_app/features/account/presentation/viewmodels/account_details_viewmodel.dart';
 import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
 import 'package:spend_io_app/features/account/presentation/screen/utils/account_actions.dart';
 import 'package:spend_io_app/features/account/presentation/widgets/edit_account_bottom_sheet.dart';
-
-// 🔥 IMPORT THÊM VIEWMODEL GIAO DỊCH LÕI ĐỂ BỐC DATA SỐNG
 import 'package:spend_io_app/features/transaction/presentation/viewmodels/transaction_viewmodel.dart';
 
 class AccountDetailsScreen extends StatelessWidget {
@@ -26,21 +27,22 @@ class AccountDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Đọc danh sách giao dịch sống thuộc riêng ví này từ TransactionViewModel
-    // Giả định ViewModel của bạn lưu mảng trong state.transactions
-    final allTx = context.read<TransactionViewModel>().state.transactions;
-
     return ChangeNotifierProvider<AccountDetailsViewModel>(
-      // 2. 🔥 FIXED: Truyền đủ 2 tham số vị trí vào hàm initialize đúng chuẩn cấu trúc mới
-      create: (_) => AccountDetailsViewModel()..initialize(account, allTx),
-      child: _AccountDetailsScreenBody(targetAccountId: account.id),
+      create: (_) => AccountDetailsViewModel(),
+      child: _AccountDetailsScreenBody(
+          targetAccountId: account.id, initialAccount: account),
     );
   }
 }
 
 class _AccountDetailsScreenBody extends StatefulWidget {
   final String targetAccountId;
-  const _AccountDetailsScreenBody({required this.targetAccountId});
+  final AccountEntity initialAccount;
+
+  const _AccountDetailsScreenBody({
+    required this.targetAccountId,
+    required this.initialAccount,
+  });
 
   @override
   State<_AccountDetailsScreenBody> createState() =>
@@ -55,6 +57,14 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
   void initState() {
     super.initState();
     _searchController = TextEditingController();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context
+            .read<TransactionViewModel>()
+            .loadByAccount(widget.targetAccountId);
+      }
+    });
   }
 
   @override
@@ -104,6 +114,7 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
     final backgroundColor =
         isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
 
+    // Lắng nghe danh sách ví sống liên tục từ Provider để update HeroCard tại trận
     final accountVM = context.watch<AccountViewModel>();
     final matches =
         accountVM.accounts.where((acc) => acc.id == widget.targetAccountId);
@@ -111,11 +122,48 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
     if (matches.isEmpty && _hasBeenUpdated) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-    final account = matches.isNotEmpty ? matches.first : AccountEntity.empty();
+    final account = matches.isNotEmpty ? matches.first : widget.initialAccount;
 
+    // 🌟 1. Đọc danh sách giao dịch sống từ Provider (Trigger re-build khi DB biến động)
+    final allTransactions =
+        context.watch<TransactionViewModel>().state.transactions;
+
+    // 🌟 2. Đồng bộ luồng ví & khởi tạo bộ lọc phẳng ngầm ở frame kế tiếp
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final currentUser = FirebaseAuth.instance.currentUser;
+        final String remoteUid = currentUser?.uid ?? '';
+
+        context
+            .read<AccountViewModel>()
+            .loadAccounts(account.userId, remoteUid);
+        context
+            .read<AccountDetailsViewModel>()
+            .initialize(account, allTransactions);
+      }
+    });
+
+    // Lắng nghe state bộ lọc của AccountDetailsViewModel
     final detailsVM = context.watch<AccountDetailsViewModel>();
     final filterState = detailsVM.filterState;
     final ledgerState = detailsVM.ledgerState;
+
+    // Bọc mảng an toàn để UI tự tính toán Thu/Chi không bị delay nhịp render
+    final List<TransactionEntity> liveFiltered =
+        (ledgerState?.filteredTransactions != null)
+            ? ledgerState!.filteredTransactions
+            : [];
+
+    double liveTotalReceived = 0;
+    double liveTotalSpent = 0;
+
+    for (final tx in liveFiltered) {
+      if (tx.type == TransactionType.expense) {
+        liveTotalSpent += tx.amount;
+      } else {
+        liveTotalReceived += tx.amount;
+      }
+    }
 
     String activeRangeDisplay = filterState.activeRangeLabel;
     if (activeRangeDisplay == 'Custom Range...' &&
@@ -141,143 +189,186 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
         backgroundColor: backgroundColor,
         body: SafeArea(
           top: false,
-          child: CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              // 1. APP BAR
-              SliverAppBar(
-                pinned: true,
-                backgroundColor: backgroundColor,
-                elevation: 0,
-                leading: IconButton(
-                  icon: Icon(Icons.arrow_back_ios_new_rounded,
-                      color: primaryTextColor),
-                  onPressed: () {
-                    if (Navigator.canPop(context)) {
-                      Navigator.pop(
-                          context,
-                          _hasBeenUpdated
-                              ? AccountDetailsAction.updated
-                              : AccountDetailsAction.none);
-                    }
-                  },
-                ),
-                title: Text(
-                  account.name,
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold, color: primaryTextColor),
-                ),
-                actions: [
-                  PopupMenuButton<String>(
-                    icon: Icon(Icons.more_vert, color: primaryTextColor),
-                    onSelected: (value) async {
-                      if (value == 'edit') {
-                        final result = await showModalBottomSheet(
-                          context: context,
-                          useRootNavigator: true,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (_) => EditAccountBottomSheet(
-                              viewModel: accountVM, account: account),
-                        );
-                        if (result != null) {
-                          setState(() => _hasBeenUpdated = true);
+          child: RefreshIndicator(
+            color: AppColors.primary,
+            // 🌟 CHỨC NĂNG KÉO ĐỂ REFRESH TOÀN TRANG (SẠCH LỖI ASYNC GAPS)
+            onRefresh: () async {
+              final currentUser = FirebaseAuth.instance.currentUser;
+              final String remoteUid = currentUser?.uid ?? '';
 
-                          // 🔥 FIXED: Cập nhật hàm re-initialize tương tự với 2 tham số đầu vào động
-                          final freshTx = context
-                              .read<TransactionViewModel>()
-                              .state
-                              .transactions;
-                          detailsVM.initialize(account, freshTx);
-                        }
-                      } else if (value == 'delete') {
-                        _showDeleteConfirmation(context, accountVM, account);
+              // 1. Kéo dữ liệu ví mới nhất từ SQLite
+              await context.read<AccountViewModel>().loadAccounts(
+                    account.userId,
+                    remoteUid,
+                    forceRefresh: true,
+                  );
+
+              // 🔥 KHIÊN PHÒNG VỆ: Nếu trong lúc đang await mà user lỡ bấm thoát màn hình -> Dừng luồng luôn
+              if (!context.mounted) return;
+
+              // 2. Kéo dữ liệu giao dịch mới nhất của ví hiện tại lên RAM
+              await context
+                  .read<TransactionViewModel>()
+                  .loadByAccount(widget.targetAccountId);
+            },
+            child: CustomScrollView(
+              // Physics bắt buộc để cơ chế kéo RefreshIndicator hoạt động ngon lành trên CustomScrollView
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
+              slivers: [
+                // 1. APP BAR
+                SliverAppBar(
+                  pinned: true,
+                  backgroundColor: backgroundColor,
+                  elevation: 0,
+                  leading: IconButton(
+                    icon: Icon(Icons.arrow_back_ios_new_rounded,
+                        color: primaryTextColor),
+                    onPressed: () {
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(
+                            context,
+                            _hasBeenUpdated
+                                ? AccountDetailsAction.updated
+                                : AccountDetailsAction.none);
                       }
                     },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 'edit',
-                        child: Row(
-                          children: [
-                            Icon(Icons.edit_outlined, size: 18),
-                            SizedBox(width: 10),
-                            Text('Edit Account'),
-                          ],
-                        ),
-                      ),
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete_outline_rounded,
-                                size: 18, color: AppColors.error),
-                            SizedBox(width: 10),
-                            Text('Delete Account',
-                                style: TextStyle(color: AppColors.error)),
-                          ],
-                        ),
-                      ),
-                    ],
                   ),
-                ],
-              ),
-
-              // 2. HERO CARD & SUMMARY PILLS
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AccountDetailHeroCard(account: account),
-                      const SizedBox(height: AppSizes.md),
-                      AccountDetailFilterCapsule(
-                        activeRangeDisplay: activeRangeDisplay,
-                        onPresetSelected: (label) => detailsVM.setFilter(label),
-                        onCustomRangeTap: () async {
-                          final DateTimeRange? range =
-                              await showModalBottomSheet<DateTimeRange>(
+                  title: Text(
+                    account.name,
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold, color: primaryTextColor),
+                  ),
+                  actions: [
+                    PopupMenuButton<String>(
+                      icon: Icon(Icons.more_vert, color: primaryTextColor),
+                      onSelected: (value) async {
+                        if (value == 'edit') {
+                          final result = await showModalBottomSheet(
                             context: context,
+                            useRootNavigator: true,
                             isScrollControlled: true,
                             backgroundColor: Colors.transparent,
-                            builder: (sheetCtx) => AccountCustomDatePickerSheet(
-                              initialRange:
-                                  detailsVM.filterState.customDateRange,
-                            ),
+                            builder: (_) => EditAccountBottomSheet(
+                                viewModel: accountVM, account: account),
                           );
-                          if (range != null) {
-                            detailsVM.setFilter('Custom Range...',
-                                customRange: range);
+                          if (result != null) {
+                            setState(() => _hasBeenUpdated = true);
+
+                            if (!context.mounted) return;
+                            final freshTx = context
+                                .read<TransactionViewModel>()
+                                .state
+                                .transactions;
+                            context
+                                .read<AccountDetailsViewModel>()
+                                .initialize(account, freshTx);
                           }
-                        },
-                      ),
-                      const SizedBox(height: AppSizes.md),
-                      if (ledgerState != null) ...[
-                        AccountDetailSummaryPills(
-                          totalReceived: ledgerState.totalReceived,
-                          totalSpent: ledgerState.totalSpent,
+                        } else if (value == 'delete') {
+                          _showDeleteConfirmation(context, accountVM, account);
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              Icon(Icons.edit_outlined, size: 18),
+                              SizedBox(width: 10),
+                              Text('Edit Account'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete_outline_rounded,
+                                  size: 18, color: AppColors.error),
+                              SizedBox(width: 10),
+                              Text('Delete Account',
+                                  style: TextStyle(color: AppColors.error)),
+                            ],
+                          ),
                         ),
                       ],
-                      const SizedBox(height: AppSizes.lg),
-                    ],
+                    ),
+                  ],
+                ),
+
+                // 2. HERO CARD & SUMMARY PILLS
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSizes.md),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Thẻ Hero Card bốc số dư khả dụng real-time từ ví sống
+                        AccountDetailHeroCard(account: account),
+                        const SizedBox(height: AppSizes.md),
+                        AccountDetailFilterCapsule(
+                          activeRangeDisplay: activeRangeDisplay,
+                          onPresetSelected: (label) => context
+                              .read<AccountDetailsViewModel>()
+                              .setFilter(label),
+                          onCustomRangeTap: () async {
+                            final DateTimeRange? range =
+                                await showModalBottomSheet<DateTimeRange>(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (sheetCtx) =>
+                                  AccountCustomDatePickerSheet(
+                                initialRange: context
+                                    .read<AccountDetailsViewModel>()
+                                    .filterState
+                                    .customDateRange,
+                              ),
+                            );
+                            if (range != null) {
+                              if (!context.mounted) return;
+                              context.read<AccountDetailsViewModel>().setFilter(
+                                  'Custom Range...',
+                                  customRange: range);
+                            }
+                          },
+                        ),
+                        const SizedBox(height: AppSizes.md),
+                        // Ô tổng Thu/Chi nạp dữ liệu sống tính toán trực tiếp
+                        AccountDetailSummaryPills(
+                          totalReceived: liveTotalReceived,
+                          totalSpent: liveTotalSpent,
+                        ),
+                        const SizedBox(height: AppSizes.lg),
+                      ],
+                    ),
                   ),
                 ),
-              ),
 
-              // 3. SEARCH BAR
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
-                sliver: SliverToBoxAdapter(
-                  child: AppSearchBar(
-                    controller: _searchController,
-                    hintText: 'Search transactions...',
-                    onChanged: (value) => detailsVM.setSearchQuery(value),
+                // 3. SEARCH BAR
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
+                  sliver: SliverToBoxAdapter(
+                    child: AppSearchBar(
+                      controller: _searchController,
+                      hintText: 'Search transactions...',
+                      onChanged: (value) => context
+                          .read<AccountDetailsViewModel>()
+                          .setSearchQuery(value),
+                    ),
                   ),
                 ),
-              ),
 
-              // 4. TRANSACTION FEED (SliverList phẳng xử lý dữ liệu động)
-            ],
+                // 4. TRANSACTION FEED
+                AccountTransactionFeed(
+                  transactions: liveFiltered,
+                  categories:
+                      context.watch<CategoryViewModel>().state.categories,
+                )
+              ],
+            ),
           ),
         ),
       ),

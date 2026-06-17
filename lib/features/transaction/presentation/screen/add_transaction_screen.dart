@@ -11,22 +11,23 @@ import 'package:spend_io_app/features/transaction/presentation/viewmodels/transa
 import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
 import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
 import 'package:spend_io_app/features/transaction/presentation/widgets/wallet_picker_sheet.dart';
-import 'package:spend_io_app/features/transaction/presentation/widgets/category_picker_sheet.dart';
-import 'package:spend_io_app/features/transaction/presentation/widgets/mock_categories_data.dart';
+import 'package:spend_io_app/features/category/presentation/widgets/category_selection_sheet.dart';
+import 'package:spend_io_app/features/category/domain/entities/category_entity.dart';
+import 'package:spend_io_app/features/category/presentation/viewmodels/category_viewmodel.dart';
+
 import 'package:spend_io_app/features/transaction/presentation/widgets/components/fintech_amount_input.dart';
 import 'package:spend_io_app/features/transaction/presentation/widgets/components/transaction_metadata_fields.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   final String accountId;
   final int userId;
-  final TransactionViewModel
-      transactionVM; // 🔥 FIXED: Nhận thực thể từ trang gốc truyền sang
+  final TransactionViewModel transactionVM;
 
   const AddTransactionScreen({
     super.key,
     required this.accountId,
     required this.userId,
-    required this.transactionVM, // 🔥 Ép buộc truyền vào để bẻ gãy sự phụ thuộc Context
+    required this.transactionVM,
   });
 
   @override
@@ -39,7 +40,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final _noteController = TextEditingController();
 
   TransactionType _selectedType = TransactionType.expense;
-  dynamic _selectedCategory;
+  CategoryEntity? _selectedCategory;
   DateTime _selectedDate = DateTime.now();
   AccountEntity? _selectedAccount;
 
@@ -56,6 +57,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     } else {
       _selectedAccount = null;
     }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CategoryViewModel>().loadCategories(widget.userId);
+    });
   }
 
   @override
@@ -82,10 +87,15 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => CategoryPickerSheet(
-        categories: mockCategoriesData,
+      builder: (_) => CategorySelectionSheet(
+        currentType:
+            _selectedType == TransactionType.expense ? 'expense' : 'income',
         selectedCategory: _selectedCategory,
-        onCategorySelected: (cat) => setState(() => _selectedCategory = cat),
+        onCategorySelected: (cat) {
+          setState(() {
+            _selectedCategory = cat;
+          });
+        },
       ),
     );
   }
@@ -105,12 +115,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     final double? amount = double.tryParse(_amountController.text);
     if (amount == null || amount <= 0) return;
 
-    // 🔥 THAY ĐỔI CHIẾN LƯỢC: Nếu chưa chọn ví, chặn lại hiển thị thông báo cảnh báo trực diện
     if (_selectedAccount == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please select a source wallet/account to continue.'),
-          backgroundColor: Colors.orange, // Đổi màu cảnh báo nổi bật
+          backgroundColor: Colors.orange,
         ),
       );
       return;
@@ -130,7 +139,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       id: nativeUniqueId,
       userId: widget.userId,
       accountId: _selectedAccount!.id,
-      categoryId: _selectedCategory.id.toString(),
+      categoryId: _selectedCategory!.id,
       amount: amount,
       type: _selectedType,
       note: _noteController.text.trim().isEmpty
@@ -141,7 +150,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       updatedAt: DateTime.now(),
     );
 
-    // [LOG PAYLOAD JSON CHỨA NULL AN TOÀN...]
     final Map<String, dynamic> txMapLog = {
       'id': newTx.id,
       'user_id': newTx.userId,
@@ -155,6 +163,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       'updated_at': newTx.updatedAt.toIso8601String(),
     };
 
+// log check dữ liệu
     debugPrint(
         '====================================================================================================');
     debugPrint(
@@ -207,14 +216,17 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         child: ChoiceChip(
                           label: const Center(child: Text('Expense')),
                           selected: _selectedType == TransactionType.expense,
-                          selectedColor: AppColors.error.withOpacity(0.2),
+                          selectedColor: AppColors.error.withValues(alpha: 0.2),
                           labelStyle: TextStyle(
                               color: _selectedType == TransactionType.expense
                                   ? AppColors.error
                                   : Colors.grey,
                               fontWeight: FontWeight.bold),
-                          onSelected: (val) => setState(
-                              () => _selectedType = TransactionType.expense),
+                          onSelected: (val) => setState(() {
+                            _selectedType = TransactionType.expense;
+                            _selectedCategory =
+                                null; // Reset category when switching tab
+                          }),
                         ),
                       ),
                       const SizedBox(width: AppSizes.sm),
@@ -222,14 +234,17 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         child: ChoiceChip(
                           label: const Center(child: Text('Income')),
                           selected: _selectedType == TransactionType.income,
-                          selectedColor: Colors.green.withOpacity(0.2),
+                          selectedColor: Colors.green.withValues(alpha: 0.2),
                           labelStyle: TextStyle(
                               color: _selectedType == TransactionType.income
                                   ? Colors.green
                                   : Colors.grey,
                               fontWeight: FontWeight.bold),
-                          onSelected: (val) => setState(
-                              () => _selectedType = TransactionType.income),
+                          onSelected: (val) => setState(() {
+                            _selectedType = TransactionType.income;
+                            _selectedCategory =
+                                null; // Reset category when switching tab
+                          }),
                         ),
                       ),
                     ],
