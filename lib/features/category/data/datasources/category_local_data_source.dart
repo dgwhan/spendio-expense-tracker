@@ -1,8 +1,10 @@
+import 'package:spend_io_app/core/database/tables/categories_table.dart';
 import 'package:sqflite/sqflite.dart';
 import '../models/category_model.dart';
-import '../../../../core/database/tables/categories_table.dart';
 
 abstract class CategoryLocalDataSource {
+  Future<List<CategoryModel>> getAllCategories();
+
   Future<List<CategoryModel>> getCategories(int localUserId);
 
   Future<void> insertCategory(CategoryModel category);
@@ -14,6 +16,17 @@ class CategoryLocalDataSourceImpl implements CategoryLocalDataSource {
   final Future<Database> database;
 
   CategoryLocalDataSourceImpl({required this.database});
+
+  @override
+  Future<List<CategoryModel>> getAllCategories() async {
+    final db = await database;
+
+    final List<Map<String, dynamic>> maps = await db.query(
+      CategoriesTable.tableName,
+    );
+
+    return maps.map((map) => CategoryModel.fromMap(map)).toList();
+  }
 
   @override
   Future<List<CategoryModel>> getCategories(int localUserId) async {

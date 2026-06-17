@@ -1,3 +1,5 @@
+import 'package:spend_io_app/features/category/domain/entities/category_entity.dart';
+
 class AppDefaultCategories {
   AppDefaultCategories._();
 
@@ -165,4 +167,23 @@ class AppDefaultCategories {
       'color_value': 0xFF06B6D4
     },
   ];
+
+  static List<CategoryEntity> get allDefaultCategories {
+    final nowString = DateTime.now().toIso8601String();
+
+    return rawSeedData.map((map) {
+      return CategoryEntity(
+        id: map['id'] as String,
+        userId: 0,
+        name: map['name'] as String,
+        type: map['type'] as String,
+        groupName: map['group_name'] as String,
+        iconCodePoint: map['icon_code_point'] as int,
+        iconFontFamily: 'MaterialIcons',
+        colorValue: map['color_value'] as int,
+        createdAt: nowString,
+        updatedAt: nowString,
+      );
+    }).toList();
+  }
 }

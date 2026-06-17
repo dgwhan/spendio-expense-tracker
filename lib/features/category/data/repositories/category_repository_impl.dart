@@ -13,6 +13,32 @@ class CategoryRepositoryImpl implements CategoryRepository {
     required this.remoteDataSource,
   });
 
+  // 🌟 ĐÃ BỔ SUNG: Lấy toàn bộ danh mục không phân biệt user phục vụ UseCase khởi tạo
+  @override
+  Future<List<CategoryEntity>> getAllCategories() async {
+    return await localDataSource.getAllCategories();
+  }
+
+  // 🌟 ĐÃ BỔ SUNG: Chèn trực tiếp danh mục (Default/Custom) xuống SQLite local
+  @override
+  Future<void> insertCategory(CategoryEntity category) async {
+    // Ép kiểu (Map) từ Entity sang Data Model trước khi đẩy xuống SQLite
+    final model = CategoryModel(
+      id: category.id,
+      userId: category.userId,
+      name: category.name,
+      type: category.type,
+      groupName: category.groupName,
+      iconCodePoint: category.iconCodePoint,
+      iconFontFamily: category.iconFontFamily ?? 'MaterialIcons',
+      colorValue: category.colorValue,
+      createdAt: category.createdAt,
+      updatedAt: category.updatedAt,
+    );
+
+    await localDataSource.insertCategory(model);
+  }
+
   @override
   Future<List<CategoryEntity>> getCategories(int localUserId) async {
     return await localDataSource.getCategories(localUserId);
