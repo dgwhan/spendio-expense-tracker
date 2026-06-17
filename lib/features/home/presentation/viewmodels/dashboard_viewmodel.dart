@@ -51,18 +51,28 @@ class DashboardViewModel extends ChangeNotifier {
     }
 
     for (final tx in sourceTransactions) {
-      String categoryName = 'General';
+      String displayTitle = tx.note ?? '';
+      String categoryName = '';
+
       try {
-        categoryName = walletViewModel.categories
-                .firstWhere((c) => c.id == tx.categoryId)
-                .name ??
-            'General';
-      } catch (_) {}
+        final category =
+            walletViewModel.categories.firstWhere((c) => c.id == tx.categoryId);
+        categoryName = category.name;
+
+        if (displayTitle.trim().isEmpty) {
+          displayTitle = categoryName;
+        }
+      } catch (_) {
+        categoryName = 'Danh mục ẩn';
+        if (displayTitle.trim().isEmpty) {
+          displayTitle = 'Giao dịch không tên';
+        }
+      }
 
       allTxs.add(
         RecentTransactionModel(
           id: tx.id,
-          title: tx.note ?? categoryName,
+          title: displayTitle,
           category: categoryName,
           amount: tx.amount,
           date: tx.transactionDate,

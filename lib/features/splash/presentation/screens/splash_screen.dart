@@ -6,7 +6,6 @@ import 'package:spend_io_app/core/startup/startup_result.dart';
 import 'package:spend_io_app/features/auth/presentation/screens/start_screen.dart';
 import 'package:spend_io_app/features/navigation/presentation/screens/navigation_entry.dart';
 import 'package:spend_io_app/features/onboarding/presentation/screens/onboarding_flow_screen.dart';
-import 'package:spend_io_app/features/transaction/domain/usecases/initialize_transaction_categories_usecase.dart';
 
 /// initial splash screen
 class SplashScreen extends StatefulWidget {
