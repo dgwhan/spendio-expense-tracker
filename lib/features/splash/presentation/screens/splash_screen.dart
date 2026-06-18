@@ -1,13 +1,13 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import 'package:spend_io_app/core/startup/startup_coordinator.dart';
 import 'package:spend_io_app/core/startup/startup_result.dart';
+
 import 'package:spend_io_app/features/auth/presentation/screens/start_screen.dart';
 import 'package:spend_io_app/features/navigation/presentation/screens/navigation_entry.dart';
 import 'package:spend_io_app/features/onboarding/presentation/screens/onboarding_flow_screen.dart';
 
-/// initial splash screen
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -16,41 +16,47 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  bool _started = false;
+
   @override
   void initState() {
     super.initState();
-    startApp();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _start();
+    });
   }
 
-  /// navigate based on coordinator resolution
-  Future<void> startApp() async {
+  Future<void> _start() async {
+    if (_started) return;
+    _started = true;
+
+    final coordinator = context.read<StartupCoordinator>();
+
     final startTime = DateTime.now();
+    final result = await coordinator.resolve(context);
 
-    // Giải quyết luồng định danh trạng thái User (Login / Register / Home)
-    final startupCoordinator = context.read<StartupCoordinator>();
-    final result = await context.read<StartupCoordinator>().resolve(context);
-
-    // 3. Đảm bảo thời gian hiển thị Splash tối thiểu để trải nghiệm mượt mà
+    // đảm bảo splash minimum duration (UX smooth)
     final elapsed = DateTime.now().difference(startTime);
     const minDuration = Duration(seconds: 2);
+
     if (elapsed < minDuration) {
       await Future.delayed(minDuration - elapsed);
     }
 
     if (!mounted) return;
 
-    // 4. Điều hướng ứng dụng dựa theo kết quả startup
     switch (result) {
       case StartupResult.login:
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (_) => const StartScreen(),
-          ),
+          MaterialPageRoute(builder: (_) => const StartScreen()),
         );
         break;
+
       case StartupResult.onboarding:
-        final email = startupCoordinator.authProvider.currentUser?.email ?? '';
+        final email = coordinator.authProvider.currentUser?.email ?? '';
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -58,6 +64,7 @@ class _SplashScreenState extends State<SplashScreen> {
           ),
         );
         break;
+
       case StartupResult.home:
         Navigator.pushReplacement(
           context,
@@ -71,27 +78,22 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF5B5FEF),
+    return const Scaffold(
+      backgroundColor: Color(0xFF5B5FEF),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
+            Opacity(
+              opacity: 0.12,
+              child: Icon(
                 Icons.account_balance_wallet_rounded,
                 size: 60,
                 color: Colors.white,
               ),
             ),
-            const SizedBox(height: 32),
-            const Text(
+            SizedBox(height: 32),
+            Text(
               'Spend IO',
               style: TextStyle(
                 fontSize: 34,

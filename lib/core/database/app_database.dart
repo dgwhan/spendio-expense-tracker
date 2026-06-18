@@ -1,7 +1,6 @@
 import 'package:path/path.dart';
 import 'package:spend_io_app/core/database/database_logger.dart';
 import 'package:sqflite/sqflite.dart';
-
 import 'migrations/migration_v1.dart';
 import 'migrations/migration_v4.dart';
 import 'migrations/migration_v5.dart';
@@ -10,29 +9,20 @@ import 'migrations/migration_v7.dart';
 import 'migrations/migration_v8.dart';
 import 'migrations/migration_v9.dart';
 
-/// Application SQLite database
 class AppDatabase {
   AppDatabase._();
 
   static Database? _database;
 
-  /// Singleton database instance
   static Future<Database> get database async {
     if (_database != null) return _database!;
-
     _database = await _initializeDatabase();
-
     return _database!;
   }
 
-  /// Initialize database
   static Future<Database> _initializeDatabase() async {
     final dbPath = await getDatabasesPath();
-
-    final path = join(
-      dbPath,
-      'spendio.db',
-    );
+    final path = join(dbPath, 'spendio.db');
 
     return openDatabase(
       path,
@@ -55,9 +45,7 @@ class AppDatabase {
         if (oldVersion < 6) await MigrationV6.run(db);
         if (oldVersion < 7) await MigrationV7.run(db);
         if (oldVersion < 8) await MigrationV8.run(db);
-        if (oldVersion < 9) {
-          await MigrationV9.run(db);
-        }
+        if (oldVersion < 9) await MigrationV9.run(db);
       },
       onOpen: (db) async {
         await DatabaseLogger.onOpen(db);
@@ -65,11 +53,18 @@ class AppDatabase {
     );
   }
 
-  /// Close database
   static Future<void> close() async {
     if (_database != null) {
       await _database!.close();
-      _database = null; // Reset về null để giải phóng RAM hoàn toàn
+      _database = null;
     }
+  }
+
+  static Database get databaseInstance {
+    if (_database == null) {
+      throw StateError(
+          'Database chưa được khởi tạo! Hãy đảm bảo đã await ở SplashScreen.');
+    }
+    return _database!;
   }
 }

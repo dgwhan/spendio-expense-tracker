@@ -1,26 +1,48 @@
 import 'package:spend_io_app/features/transaction/domain/entities/transaction_entity.dart';
 
 abstract class TransactionRepository {
+  // =========================================================
+  // CRUD
+  // =========================================================
+
   Future<List<TransactionEntity>> getAllTransactions();
 
-  Future<List<TransactionEntity>> getTransactionsByAccount(String accountId);
+  Future<List<TransactionEntity>> getTransactionsByAccount(
+    String accountId,
+  );
 
-  Future<void> createTransaction(TransactionEntity transaction);
+  Future<void> createTransaction(
+    TransactionEntity transaction,
+  );
 
   Future<void> updateTransaction({
     required TransactionEntity newTransaction,
     required TransactionEntity oldTransaction,
   });
 
-  Future<void> deleteTransaction(TransactionEntity transaction);
+  Future<void> deleteTransaction(
+    TransactionEntity transaction,
+  );
+
+  // =========================================================
+  // ANALYTICS
+  // =========================================================
 
   Future<Map<String, double>> getSpentGroupByCategory({
+    required int userId,
     required DateTime startDate,
     required DateTime endDate,
   });
 
   Future<double> getTotalSpentInPeriod({
     required int userId,
+    required DateTime startDate,
+    required DateTime endDate,
+  });
+
+  Future<double> getTotalSpentByCategory({
+    required int userId,
+    required String categoryId,
     required DateTime startDate,
     required DateTime endDate,
   });

@@ -12,12 +12,20 @@ abstract class TransactionLocalDataSource {
   Future<void> delete(String id);
 
   Future<Map<String, double>> getSpentGroupByCategory({
+    required int userId,
     required String startDateIso,
     required String endDateIso,
   });
 
   Future<double> getTotalSpentInPeriod({
     required int userId,
+    required String startDateIso,
+    required String endDateIso,
+  });
+
+  Future<double> getTotalSpentByCategory({
+    required int userId,
+    required String categoryId,
     required String startDateIso,
     required String endDateIso,
   });
@@ -60,6 +68,7 @@ class TransactionLocalDataSourceImpl implements TransactionLocalDataSource {
         .query('wallets', where: 'id = ?', whereArgs: [model.accountId]);
     final cats = await db
         .query('categories', where: 'id = ?', whereArgs: [model.categoryId]);
+
     debugPrint(
         '[FK Check] user found: ${users.isNotEmpty} (id: ${model.userId})');
     debugPrint(
@@ -95,19 +104,19 @@ class TransactionLocalDataSourceImpl implements TransactionLocalDataSource {
     );
   }
 
-  // 🔴 IMPLEMENTATION 1: Query gom nhóm Group By chuẩn style _db của dự án
   @override
   Future<Map<String, double>> getSpentGroupByCategory({
+    required int userId,
     required String startDateIso,
     required String endDateIso,
   }) async {
-    final db = await _db; // Await getter của dự án bạn
+    final db = await _db;
 
     final List<Map<String, dynamic>> result = await db.query(
       TransactionsTable.tableName,
       columns: ['category_id', 'SUM(amount) AS total_amount'],
-      where: 'created_at >= ? AND created_at <= ?',
-      whereArgs: [startDateIso, endDateIso],
+      where: 'user_id = ? AND type = ? AND created_at >= ? AND created_at <= ?',
+      whereArgs: [userId, 'expense', startDateIso, endDateIso],
       groupBy: 'category_id',
     );
 
@@ -133,8 +142,29 @@ class TransactionLocalDataSourceImpl implements TransactionLocalDataSource {
     final List<Map<String, dynamic>> result = await db.query(
       TransactionsTable.tableName,
       columns: ['SUM(amount) AS total_amount'],
-      where: 'user_id = ? AND created_at >= ? AND created_at <= ?',
-      whereArgs: [userId, startDateIso, endDateIso],
+      where: 'user_id = ? AND type = ? AND created_at >= ? AND created_at <= ?',
+      whereArgs: [userId, 'expense', startDateIso, endDateIso],
+    );
+
+    if (result.isEmpty || result.first['total_amount'] == null) return 0.0;
+    return (result.first['total_amount'] as num).toDouble();
+  }
+
+  @override
+  Future<double> getTotalSpentByCategory({
+    required int userId,
+    required String categoryId,
+    required String startDateIso,
+    required String endDateIso,
+  }) async {
+    final db = await _db;
+
+    final List<Map<String, dynamic>> result = await db.query(
+      TransactionsTable.tableName,
+      columns: ['SUM(amount) AS total_amount'],
+      where:
+          'user_id = ? AND category_id = ? AND type = ? AND created_at >= ? AND created_at <= ?',
+      whereArgs: [userId, categoryId, 'expense', startDateIso, endDateIso],
     );
 
     if (result.isEmpty || result.first['total_amount'] == null) return 0.0;

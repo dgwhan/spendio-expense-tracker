@@ -1,6 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+
 import 'package:spend_io_app/features/budget/domain/entities/budget_entity.dart';
-import 'package:spend_io_app/features/budget/domain/entities/budget_state.dart';
+import 'package:spend_io_app/features/budget/domain/entities/budget_progress_entity.dart';
+
 import 'package:spend_io_app/features/budget/domain/repositories/budget_repository.dart';
 import 'package:spend_io_app/features/budget/domain/services/budget_progress_calculator.dart';
 
@@ -14,9 +16,12 @@ class BudgetViewModel extends ChangeNotifier {
   })  : _repository = repository,
         _calculator = calculator;
 
-  // ================= STATE =================
-  BudgetState? _currentBudget;
-  BudgetState? get currentBudget => _currentBudget;
+  // =========================================================
+  // STATE
+  // =========================================================
+
+  BudgetProgressEntity? _currentBudget;
+  BudgetProgressEntity? get currentBudget => _currentBudget;
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -24,9 +29,12 @@ class BudgetViewModel extends ChangeNotifier {
   int _requestId = 0;
   bool _disposed = false;
 
-  // ================= READ =================
+  // =========================================================
+  // LOAD
+  // =========================================================
+
   Future<void> loadBudget(int userId) async {
-    final int request = ++_requestId;
+    final request = ++_requestId;
 
     _isLoading = true;
     _safeNotify();
@@ -34,44 +42,90 @@ class BudgetViewModel extends ChangeNotifier {
     try {
       final budget = await _repository.getCurrentBudget(userId);
 
-      //Check stale request hoặc null trước khi tính
-      if (budget == null || _disposed || request != _requestId) {
-        if (budget == null && request == _requestId) {
-          _currentBudget = null;
-        }
+      if (_disposed || request != _requestId) return;
+
+      if (budget == null) {
+        _currentBudget = null;
         return;
       }
 
-      // Chỉ kích hoạt engine tính toán nặng khi request này vẫn là mới nhất
-      final result = await _calculator.calculateBudgetProgress(budget);
+      final result = await _calculator.calculateBudgetProgress(
+        budget,
+      );
 
-      // Check lại lần nữa phòng trường hợp user click quá nhanh trong lúc calculator đang chạy
       if (_disposed || request != _requestId) return;
 
       _currentBudget = result;
     } finally {
-      // KHÔNG CẦN CHECK DUPLICATE: Giao toàn bộ trách nhiệm kiểm tra cho _safeNotify quản lý
-      if (request == _requestId) {
+      if (!_disposed && request == _requestId) {
         _isLoading = false;
         _safeNotify();
       }
     }
   }
 
-  // ================= CREATE =================
-  Future<void> createBudget(BudgetEntity budget) async {
-    try {
-      await _repository.createBudget(budget);
-      await loadBudget(budget.userId);
-    } catch (e) {
-      debugPrint('[BudgetViewModel] Create budget failed: $e');
-    }
+  // =========================================================
+  // CREATE
+  // =========================================================
+
+  Future<void> createBudget(
+    BudgetEntity budget,
+  ) async {
+    await _repository.createBudget(
+      budget,
+    );
+
+    await loadBudget(
+      budget.userId,
+    );
   }
 
-  // ================= SAFE NOTIFY CENTRALIZED =================
-  // Đóng vai trò là chốt chặn an toàn, loại bỏ việc check '!_disposed' thủ công ở tầng trên
+  // =========================================================
+  // UPDATE
+  // =========================================================
+
+  Future<void> updateBudget(
+    BudgetEntity budget,
+  ) async {
+    await _repository.updateBudget(
+      budget,
+    );
+
+    await loadBudget(
+      budget.userId,
+    );
+  }
+
+  // =========================================================
+  // DELETE
+  // =========================================================
+
+  Future<void> deleteBudget({
+    required String budgetId,
+    required int userId,
+  }) async {
+    await _repository.deleteBudget(
+      budgetId,
+    );
+
+    await loadBudget(
+      userId,
+    );
+  }
+
+  // =========================================================
+  // HELPERS
+  // =========================================================
+
+  void clear() {
+    _currentBudget = null;
+    _safeNotify();
+  }
+
   void _safeNotify() {
-    if (!_disposed) notifyListeners();
+    if (!_disposed) {
+      notifyListeners();
+    }
   }
 
   @override

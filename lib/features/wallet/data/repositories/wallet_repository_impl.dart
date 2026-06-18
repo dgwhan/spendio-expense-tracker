@@ -15,33 +15,22 @@ class WalletRepositoryImpl implements WalletRepository {
     required this.remoteDataSource,
   });
 
-  // --------------------------------------------------------------------------
-  // SUMMARY
-  // --------------------------------------------------------------------------
-
   @override
   Future<WalletSummaryEntity> getSummary(int localUserId) async {
     final accounts = await localDataSource.getAccounts(localUserId);
     final activeAccounts = accounts.where((a) => a.deletedAt == null).toList();
     final goals = await localDataSource.getGoals(localUserId);
 
-    // 🔴 SỬA TẠI ĐÂY: Đọc hạn mức ngân sách tháng từ bảng budgets cha chuẩn xác
     final currentBudget = await localDataSource.getCurrentBudget(localUserId);
     final double budgetAmount = currentBudget?.amount ?? 0.0;
 
     return WalletSummaryEntity(
       totalAssets: activeAccounts.fold(0.0, (sum, acc) => sum + acc.balance),
-      monthlyBudget: budgetAmount, // Gán hạn mức tháng chuẩn cơm mẹ nấu
+      monthlyBudget: budgetAmount,
       totalSaved: goals.fold(0.0, (sum, goal) => sum + goal.currentAmount),
       activeGoals: goals.length,
     );
   }
-
-  // --------------------------------------------------------------------------
-  // TARGETED BALANCE UPDATE
-  // Called exclusively by UpdateWalletBalance use case after a transaction.
-  // Does NOT go through the sync pipeline — bypasses Sync Guard entirely.
-  // --------------------------------------------------------------------------
 
   @override
   Future<void> updateAccountBalance({
@@ -50,7 +39,6 @@ class WalletRepositoryImpl implements WalletRepository {
     required String accountId,
     required double newBalance,
   }) async {
-    // Step 1: Read current record from SQLite.
     final allAccounts = await localDataSource.getAccounts(localUserId);
     final account = allAccounts.firstWhere(
       (a) => a.id == accountId,
@@ -63,12 +51,10 @@ class WalletRepositoryImpl implements WalletRepository {
       updatedAt: DateTime.now(),
     );
 
-    // Step 2: Persist to SQLite via targeted UPDATE
     await localDataSource.updateAccount(localUserId, updated);
-    debugPrint('[WalletRepo] Balance updated locally — account: $accountId, '
-        'new balance: $newBalance');
+    debugPrint(
+        '[WalletRepo] Balance updated locally — account: $accountId, new balance: $newBalance');
 
-    // Step 3: Push balance patch to Firestore.
     if (remoteUid.trim().isNotEmpty) {
       await remoteDataSource.updateAccountBalance(
         remoteUid,
@@ -77,12 +63,6 @@ class WalletRepositoryImpl implements WalletRepository {
       );
     }
   }
-
-  // --------------------------------------------------------------------------
-  // FULL SYNC PIPELINE
-  // Handles metadata sync and new-device bootstrap.
-  // Sync Guard here is scoped to INSERT paths only.
-  // --------------------------------------------------------------------------
 
   @override
   Future<void> syncWithFirebase(int localUserId, String remoteUid) async {
@@ -97,11 +77,10 @@ class WalletRepositoryImpl implements WalletRepository {
     try {
       await _syncAccounts(localUserId, remoteUid);
       await _syncGoals(localUserId, remoteUid);
-
       debugPrint('[Wallet Sync] Pipeline completed successfully.');
     } catch (e) {
-      debugPrint('[Wallet Sync] Network unstable or Firestore timeout. '
-          'Offline mode active: $e');
+      debugPrint(
+          '[Wallet Sync] Network unstable or Firestore timeout. Offline mode active: $e');
     }
   }
 
@@ -118,7 +97,6 @@ class WalletRepositoryImpl implements WalletRepository {
 
     bool primaryCashInserted = false;
 
-    // Remote -> Local
     for (final remoteWallet in remoteWallets) {
       if (remoteWallet.id.trim().isEmpty || remoteWallet.name.trim().isEmpty) {
         continue;
@@ -127,13 +105,12 @@ class WalletRepositoryImpl implements WalletRepository {
       final localWallet = localMap[remoteWallet.id];
 
       if (localWallet == null) {
-        // INSERT path
         if (remoteWallet.deletedAt != null) continue;
 
         if (remoteWallet.type.name == 'cash') {
           if (primaryCashInserted) {
-            debugPrint('[Wallet Sync Guard] Blocked INSERT of duplicate remote '
-                'cash wallet (ID: ${remoteWallet.id}).');
+            debugPrint(
+                '[Wallet Sync Guard] Blocked INSERT of duplicate remote cash wallet (ID: ${remoteWallet.id}).');
             continue;
           }
           primaryCashInserted = true;
@@ -141,7 +118,6 @@ class WalletRepositoryImpl implements WalletRepository {
 
         await localDataSource.saveAccount(localUserId, remoteWallet);
       } else {
-        // UPDATE path
         if (remoteWallet.deletedAt != null && localWallet.deletedAt == null) {
           await localDataSource.saveAccount(localUserId, remoteWallet);
         } else if (remoteWallet.updatedAt.isAfter(localWallet.updatedAt)) {
@@ -155,7 +131,6 @@ class WalletRepositoryImpl implements WalletRepository {
       }
     }
 
-    // Local -> Remote
     for (final localWallet in localWallets) {
       if (remoteMap.containsKey(localWallet.id)) continue;
 
@@ -198,15 +173,11 @@ class WalletRepositoryImpl implements WalletRepository {
     }
   }
 
-  // --------------------------------------------------------------------------
-  // MISC
-  // --------------------------------------------------------------------------
-
   @override
   Future<bool> hasWalletData(int userId) async {
     final accounts = await localDataSource.hasAccounts(userId);
     final goals = await localDataSource.hasGoals(userId);
-    final categories = await localDataSource.hasCategories(userId);
+    final categories = await localDataSource.hasBudgetCategories(userId);
     return accounts || goals || categories;
   }
 

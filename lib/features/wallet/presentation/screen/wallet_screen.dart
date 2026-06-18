@@ -26,11 +26,11 @@ class _WalletScreenState extends State<WalletScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final auth = context.read<AuthProvider>();
-      final vm = context.read<WalletViewModel>();
-      vm.updateUser(auth.currentUser?.toEntity());
-    });
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   final auth = context.read<AuthProvider>();
+    //   final vm = context.read<WalletViewModel>();
+    //   vm.updateUser(auth.currentUser?.toEntity());
+    // });
   }
 
   void _handleGenerateReport(BuildContext context, WalletViewModel viewModel) {
@@ -69,14 +69,13 @@ class _WalletScreenState extends State<WalletScreen> {
         isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
     final errorTextColor = isDark ? AppColors.textPrimaryDark : Colors.black87;
 
-    final accountVM = context.watch<AccountViewModel>();
+    final accountVM = context.read<AccountViewModel>();
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      body: Consumer<WalletViewModel>(
-        builder: (context, viewModel, child) {
-          // Lớp bảo vệ 01: Trạng thái xoay tròn chờ nạp dữ liệu gốc
-          if (viewModel.isLoading || accountVM.isLoading) {
+      body: Consumer2<WalletViewModel, AccountViewModel>(
+        builder: (context, viewModel, accountViewModel, child) {
+          if (viewModel.isLoading || accountViewModel.isLoading) {
             return const Center(
               child: CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),

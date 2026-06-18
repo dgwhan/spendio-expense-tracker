@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:spend_io_app/features/budget/domain/entities/budget_state.dart';
+import 'package:spend_io_app/features/budget/domain/entities/budget_progress_entity.dart';
 
 class BudgetCategoryFormViewModel extends ChangeNotifier {
   String? _selectedCategoryId;
@@ -10,17 +10,17 @@ class BudgetCategoryFormViewModel extends ChangeNotifier {
   double get amount => _amount;
   String? get errorMessage => _errorMessage;
 
-  void updateCategory(String? categoryId, BudgetState currentBudgetState) {
+  void updateCategory(String? categoryId, BudgetProgressEntity currentBudgetProgressEntity) {
     _selectedCategoryId = categoryId;
-    _validate(currentBudgetState);
+    _validate(currentBudgetProgressEntity);
   }
 
-  void updateAmount(String val, BudgetState currentBudgetState) {
+  void updateAmount(String val, BudgetProgressEntity currentBudgetProgressEntity) {
     _amount = double.tryParse(val) ?? 0.0;
-    _validate(currentBudgetState);
+    _validate(currentBudgetProgressEntity);
   }
 
-  bool _validate(BudgetState currentBudgetState) {
+  bool _validate(BudgetProgressEntity currentBudgetProgressEntity) {
     if (_selectedCategoryId == null || _selectedCategoryId!.isEmpty) {
       _errorMessage = 'Vui lòng chọn danh mục';
       notifyListeners();
@@ -33,7 +33,7 @@ class BudgetCategoryFormViewModel extends ChangeNotifier {
     }
 
     // Kiểm tra business logic đặc thù: Tổng budget con không được vượt quá budget cha
-    if (_amount > currentBudgetState.budget.amount) {
+    if (_amount > currentBudgetProgressEntity.budget.amount) {
       _errorMessage =
           'Ngân sách danh mục không thể vượt quá tổng ngân sách tháng';
       notifyListeners();
@@ -45,8 +45,8 @@ class BudgetCategoryFormViewModel extends ChangeNotifier {
     return true;
   }
 
-  bool isSubmittable(BudgetState currentBudgetState) =>
-      _validate(currentBudgetState) && _errorMessage == null;
+  bool isSubmittable(BudgetProgressEntity currentBudgetProgressEntity) =>
+      _validate(currentBudgetProgressEntity) && _errorMessage == null;
 
   void reset() {
     _selectedCategoryId = null;

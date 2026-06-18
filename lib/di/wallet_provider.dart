@@ -1,8 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 import 'package:spend_io_app/features/budget/data/datasources/budget_local_data_source.dart';
-
-// DATA LAYER
 import 'package:spend_io_app/features/wallet/data/datasources/wallet_local_data_source.dart';
 import 'package:spend_io_app/features/wallet/data/datasources/wallet_remote_data_source.dart';
 import 'package:spend_io_app/features/account/data/datasource/account_local_data_source.dart';
@@ -11,18 +10,12 @@ import 'package:spend_io_app/features/wallet/data/datasources/goal/goal_remote_d
 import 'package:spend_io_app/features/wallet/data/repositories/wallet_repository_impl.dart';
 import 'package:spend_io_app/features/wallet/data/repositories/saving_goal_repository_impl.dart';
 import 'package:spend_io_app/features/wallet/domain/repositories/wallet_repository.dart';
-
-// DOMAIN LAYER
 import 'package:spend_io_app/features/wallet/domain/usecases/get_wallet_summary_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/goals/get_goals_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/goals/add_goal_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/check_wallet_initialization_usecase.dart';
-
-// BUDGET & APPLICATION SERVICES DEPENDENCIES
 import 'package:spend_io_app/features/budget/domain/repositories/budget_repository.dart';
 import 'package:spend_io_app/features/budget/domain/services/budget_progress_calculator.dart';
-
-// PRESENTATION LAYER
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
 import 'package:spend_io_app/features/home/presentation/viewmodels/dashboard_viewmodel.dart';
 import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
@@ -40,7 +33,6 @@ class WalletModuleProvider {
         Provider<WalletRemoteDataSource>(
             create: (_) => WalletRemoteDataSourceImpl()),
 
-        // Facade sử dụng chung BudgetLocalDataSource chuẩn, đồng bộ kiểu không chứa dấu ?
         ProxyProvider3<AccountLocalDataSource, GoalLocalDataSource,
             BudgetLocalDataSource, WalletLocalDataSource>(
           update: (context, accountLocal, goalLocal, budgetLocal, __) {
@@ -91,7 +83,7 @@ class WalletModuleProvider {
         ),
 
         // =========================================================
-        // 3. PRESENTATION LAYER
+        // 3. PRESENTATION LAYER (CẬP NHẬT ĐOẠN ĐUÔI FILE CỦA BÀ)
         // =========================================================
         ChangeNotifierProxyProvider<AuthProvider, WalletViewModel>(
           create: (context) => WalletViewModel(
@@ -101,26 +93,31 @@ class WalletModuleProvider {
             budgetRepository: context.read<BudgetRepository>(),
             budgetCalculator: context.read<BudgetProgressCalculator>(),
           ),
-          update: (context, authProvider, vm) {
-            final activeVm = vm ??
-                WalletViewModel(
-                  getWalletSummaryUseCase:
-                      context.read<GetWalletSummaryUseCase>(),
-                  getGoalsUseCase: context.read<GetGoalsUseCase>(),
-                  addGoalUseCase: context.read<AddGoalUseCase>(),
-                  budgetRepository: context.read<BudgetRepository>(),
-                  budgetCalculator: context.read<BudgetProgressCalculator>(),
-                );
-            activeVm.updateUser(authProvider.currentUser?.toEntity());
-            return activeVm;
+          update: (context, authProvider, previousViewModel) {
+            final vm = previousViewModel!;
+            final newUser = authProvider.currentUser?.toEntity();
+
+            if (vm.currentUser?.id != newUser?.id ||
+                vm.currentUser?.email != newUser?.email) {
+              debugPrint(
+                  '[PROVIDER LOG]: AuthProvider đổi user -> Đẩy sang WalletViewModel');
+              vm.updateUser(newUser);
+            }
+            return vm;
           },
         ),
 
-        // Màn hình chính Dashboard
-        ChangeNotifierProvider<DashboardViewModel>(
+        ChangeNotifierProxyProvider<WalletViewModel, DashboardViewModel>(
           create: (context) => DashboardViewModel(
             walletViewModel: context.read<WalletViewModel>(),
           ),
+          update: (context, walletVM, previousDashboardVM) {
+            final dashboardVM = previousDashboardVM!;
+            debugPrint(
+                '[PROVIDER LOG]: Luồng Proxy gán Wallet sang DashboardViewModel.');
+            dashboardVM.updateWallet(walletVM);
+            return dashboardVM;
+          },
         ),
       ];
 }

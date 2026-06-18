@@ -2,11 +2,8 @@ import 'package:spend_io_app/features/budget/domain/entities/budget_entity.dart'
 
 class BudgetProgressEntity {
   final BudgetEntity budget;
-
   final double spent;
-
   final double remaining;
-
   final double percentage;
 
   const BudgetProgressEntity({

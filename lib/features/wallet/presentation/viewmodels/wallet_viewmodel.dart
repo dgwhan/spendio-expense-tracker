@@ -2,26 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:spend_io_app/features/auth/domain/entities/user_entity.dart';
-import 'package:spend_io_app/features/budget/domain/entities/budget_category_progress_entity.dart'; // CHÍNH XÁC: Import đúng Progress từ Budget feature
+import 'package:spend_io_app/features/budget/domain/entities/budget_category_progress_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/financial_health_status.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/saving_goal_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/wallet_summary_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/goals/get_goals_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/goals/add_goal_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/get_wallet_summary_usecase.dart';
-import 'package:spend_io_app/features/budget/domain/services/budget_progress_calculator.dart'; // ĐỂ LẤY PROGRESS THỰC TẾ
+import 'package:spend_io_app/features/budget/domain/services/budget_progress_calculator.dart';
 import 'package:spend_io_app/features/budget/domain/repositories/budget_repository.dart';
 
 class WalletViewModel extends ChangeNotifier {
   final GetWalletSummaryUseCase getWalletSummaryUseCase;
   final GetGoalsUseCase getGoalsUseCase;
   final AddGoalUseCase addGoalUseCase;
-  final BudgetRepository budgetRepository; // Thay thế usecase category cũ
-  final BudgetProgressCalculator
-      budgetCalculator; // Inject engine tính toán realtime
+  final BudgetRepository budgetRepository;
+  final BudgetProgressCalculator budgetCalculator;
 
   UserEntity? _currentUser;
   bool _isLoading = false;
+  bool _isInitializing = false;
   String? _errorMessage;
   int _requestId = 0;
   bool _disposed = false;
@@ -33,7 +33,6 @@ class WalletViewModel extends ChangeNotifier {
     activeGoals: 0,
   );
   List<SavingGoalEntity> _goals = [];
-
   List<BudgetCategoryProgressEntity> _categoriesProgress = [];
   DateTime selectedMonth = DateTime.now();
 
@@ -59,7 +58,7 @@ class WalletViewModel extends ChangeNotifier {
 
     final hasChanged =
         _currentUser?.id != user?.id || _currentUser?.email != user?.email;
-    if (!hasChanged && (_goals.isNotEmpty || _summary.totalAssets > 0)) return;
+    if (!hasChanged) return;
 
     _currentUser = user;
 
@@ -72,6 +71,13 @@ class WalletViewModel extends ChangeNotifier {
   String get budgetStatus => '$currentMonthLabel Budget';
 
   Future<void> initialize() async {
+    if (_isInitializing) {
+      debugPrint(
+          "[WALLET CONCURRENCY GUARD]: initialize() đang chạy từ trước. Ngắt luồng gọi đè này an toàn.");
+      return;
+    }
+
+    _isInitializing = true;
     final int request = ++_requestId;
     final isFirstLoad = _goals.isEmpty && _summary.totalAssets == 0;
 
@@ -85,26 +91,22 @@ class WalletViewModel extends ChangeNotifier {
       if (_currentUser != null) {
         final localId = _currentUser!.id ?? 1;
 
-        //Tải dữ liệu Offline cục bộ
         _summary = await getWalletSummaryUseCase(localId);
         _goals = await getGoalsUseCase(localId, _remoteUid);
 
-        //Bóc tách hạn mức tháng và tính toán phần tiến độ thực tế thông qua Calculator tập trung
         final currentBudget = await budgetRepository.getCurrentBudget(localId);
-        if (currentBudget != null && request == _requestId && !_disposed) {
+
+        if (currentBudget == null) {
+          debugPrint(
+              '[DATA MISMATCH NOTICE]: Table budgets đang trống cho User ID: $localId.');
+          _categoriesProgress = [];
+        } else if (request == _requestId && !_disposed) {
           _categoriesProgress =
               await budgetCalculator.calculateCategoryProgressList(
-            budgetId: currentBudget.id,
-            startDate: currentBudget.startDate,
-            endDate: currentBudget.endDate,
+            userId: localId,
           );
         }
 
-        if (_disposed || request != _requestId) return;
-        _isLoading = false;
-        _safeNotify();
-
-        //Silent Sync ngầm với Firebase
         final rUid = _remoteUid;
         if (rUid.isNotEmpty) {
           await getWalletSummaryUseCase.repository
@@ -112,31 +114,31 @@ class WalletViewModel extends ChangeNotifier {
 
           if (_disposed || request != _requestId) return;
 
-          //Nạp lại dữ liệu sạch sau khi sync
           _summary = await getWalletSummaryUseCase(localId);
           _goals = await getGoalsUseCase(localId, _remoteUid);
 
           final syncBudget = await budgetRepository.getCurrentBudget(localId);
-          if (syncBudget != null && request == _requestId && !_disposed) {
+          if (syncBudget == null) {
+            _categoriesProgress = [];
+          } else if (request == _requestId && !_disposed) {
             _categoriesProgress =
                 await budgetCalculator.calculateCategoryProgressList(
-              budgetId: syncBudget.id,
-              startDate: syncBudget.startDate,
-              endDate: syncBudget.endDate,
+              userId: localId,
             );
           }
-
-          _safeNotify();
         }
       } else {
         _resetStates();
       }
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint('[RUNTIME ERROR IN WALLET_VM]: $e\n$stack');
       if (request == _requestId) {
         _errorMessage = e.toString();
-        _isLoading = false;
-        _safeNotify();
       }
+    } finally {
+      _isInitializing = false;
+      _isLoading = false;
+      _safeNotify();
     }
   }
 
@@ -205,8 +207,8 @@ class WalletViewModel extends ChangeNotifier {
   FinancialHealthStatus get healthStatus {
     if (summary.totalAssets < 0) return FinancialHealthStatus.critical;
     if (summary.totalAssets > 0 &&
-        summary.totalSaved == 0 &&
-        summary.monthlyBudget == 0) {
+        summary.monthlyBudget == 0 &&
+        summary.totalSaved == 0) {
       return FinancialHealthStatus.good;
     }
     if (summary.totalAssets == 0) return FinancialHealthStatus.good;

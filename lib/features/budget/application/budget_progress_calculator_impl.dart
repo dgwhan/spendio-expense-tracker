@@ -1,9 +1,9 @@
-import 'package:spend_io_app/features/budget/domain/entities/budget_category_entity.dart';
 import 'package:spend_io_app/features/budget/domain/entities/budget_category_progress_entity.dart';
 import 'package:spend_io_app/features/budget/domain/entities/budget_entity.dart';
-import 'package:spend_io_app/features/budget/domain/entities/budget_state.dart';
+import 'package:spend_io_app/features/budget/domain/entities/budget_progress_entity.dart';
 import 'package:spend_io_app/features/budget/domain/repositories/budget_repository.dart';
 import 'package:spend_io_app/features/budget/domain/services/budget_progress_calculator.dart';
+import 'package:spend_io_app/features/home/presentation/widgets/monthly_budget/widgets/budget_progress_bar.dart';
 import 'package:spend_io_app/features/transaction/domain/repositories/transaction_repository.dart';
 
 class BudgetProgressCalculatorImpl implements BudgetProgressCalculator {
@@ -16,56 +16,63 @@ class BudgetProgressCalculatorImpl implements BudgetProgressCalculator {
   });
 
   @override
-  Future<BudgetState?> calculateBudgetProgress(BudgetEntity? budget) async {
+  Future<BudgetProgressEntity?> calculateBudgetProgress(
+    BudgetEntity? budget,
+  ) async {
     if (budget == null) return null;
 
-    // 1 câu lệnh Query duy nhất lấy tổng chi tiêu của user trong mốc thời gian của Budget cha
-    final double totalSpent = await transactionRepository.getTotalSpentInPeriod(
+    final totalSpent = await transactionRepository.getTotalSpentInPeriod(
       userId: budget.userId,
       startDate: budget.startDate,
       endDate: budget.endDate,
     );
 
-    return BudgetState(
+    return BudgetProgressEntity(
       budget: budget,
       spent: totalSpent,
       remaining: budget.amount - totalSpent,
-      percentage: budget.amount > 0 ? (totalSpent / budget.amount) : 0.0,
+      percentage: budget.amount <= 0 ? 0.0 : totalSpent / budget.amount,
     );
   }
 
   @override
   Future<List<BudgetCategoryProgressEntity>> calculateCategoryProgressList({
-    required String budgetId,
-    required DateTime startDate,
-    required DateTime endDate,
+    required int userId,
   }) async {
-    // Lấy danh sách toàn bộ budget con thuộc budget cha này
-    final List<BudgetCategoryEntity> categories =
-        await budgetRepository.getBudgetCategories(budgetId);
-
-    if (categories.isEmpty) return [];
-
-    //Gọi duy nhất 1 lần xuống TransactionRepository để lấy map thống kê
-    final Map<String, double> spentMap =
-        await transactionRepository.getSpentGroupByCategory(
-      startDate: startDate,
-      endDate: endDate,
+    final categories = await budgetRepository.getBudgetCategories(
+      userId,
     );
 
-    //Map dữ liệu realtime on-the-fly cực kỳ nhanh trên RAM mà không đụng vào DB nữa
-    return categories.map((catBudget) {
-      final double spent = spentMap[catBudget.categoryId] ?? 0.0;
-      final double remaining = catBudget.amount - spent;
-      final double percentage =
-          catBudget.amount > 0 ? (spent / catBudget.amount) : 0.0;
+    if (categories.isEmpty) {
+      return [];
+    }
 
-      return BudgetCategoryProgressEntity(
-        budgetCategory: catBudget,
-        spent: spent,
-        remaining: remaining,
-        percentage: percentage,
+    final List<BudgetCategoryProgressEntity> result = [];
+
+    for (final categoryBudget in categories) {
+      final spentMap = await transactionRepository.getSpentGroupByCategory(
+        userId: userId,
+        startDate: categoryBudget.startDate,
+        endDate: categoryBudget.endDate,
       );
-    }).toList();
+
+      final double spent = spentMap[categoryBudget.categoryId] ?? 0.0;
+
+      final double remaining = categoryBudget.amount - spent;
+
+      final double percentage =
+          categoryBudget.amount <= 0 ? 0.0 : spent / categoryBudget.amount;
+
+      result.add(
+        BudgetCategoryProgressEntity(
+          budgetCategory: categoryBudget,
+          spent: spent,
+          remaining: remaining,
+          percentage: percentage,
+        ),
+      );
+    }
+
+    return result;
   }
 }

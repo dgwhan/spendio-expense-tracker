@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+
 import 'package:spend_io_app/features/budget/domain/entities/budget_category_entity.dart';
 import 'package:spend_io_app/features/budget/domain/entities/budget_category_progress_entity.dart';
-import 'package:spend_io_app/features/budget/domain/entities/budget_state.dart';
-import 'package:spend_io_app/features/budget/domain/services/budget_progress_calculator.dart';
 import 'package:spend_io_app/features/budget/domain/repositories/budget_repository.dart';
+import 'package:spend_io_app/features/budget/domain/services/budget_progress_calculator.dart';
 
 class BudgetCategoryViewModel extends ChangeNotifier {
   final BudgetRepository _repository;
@@ -15,10 +15,14 @@ class BudgetCategoryViewModel extends ChangeNotifier {
   })  : _repository = repository,
         _calculator = calculator;
 
-  // ================= STATE =================
-  List<BudgetCategoryProgressEntity> _categoryProgressList = [];
-  List<BudgetCategoryProgressEntity> get categoryProgressList =>
-      List.unmodifiable(_categoryProgressList);
+  // state
+
+  List<BudgetCategoryEntity> _categories = [];
+  List<BudgetCategoryEntity> get categories => List.unmodifiable(_categories);
+
+  List<BudgetCategoryProgressEntity> _progressList = [];
+  List<BudgetCategoryProgressEntity> get progressList =>
+      List.unmodifiable(_progressList);
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -26,23 +30,36 @@ class BudgetCategoryViewModel extends ChangeNotifier {
   int _requestId = 0;
   bool _disposed = false;
 
-  // ================= READ =================
-  Future<void> loadCategoriesProgress(BudgetState state) async {
-    final int request = ++_requestId;
+  // load categories
+
+  Future<void> loadCategories(
+    int userId,
+  ) async {
+    _categories = await _repository.getBudgetCategories(
+      userId,
+    );
+
+    _safeNotify();
+  }
+
+  // load progress
+
+  Future<void> loadProgress(
+    int userId,
+  ) async {
+    final request = ++_requestId;
 
     _isLoading = true;
     _safeNotify();
 
     try {
       final result = await _calculator.calculateCategoryProgressList(
-        budgetId: state.budget.id,
-        startDate: state.budget.startDate,
-        endDate: state.budget.endDate,
+        userId: userId,
       );
 
       if (_disposed || request != _requestId) return;
 
-      _categoryProgressList = result;
+      _progressList = result;
     } finally {
       if (!_disposed && request == _requestId) {
         _isLoading = false;
@@ -51,36 +68,65 @@ class BudgetCategoryViewModel extends ChangeNotifier {
     }
   }
 
-  // ================= CREATE =================
-  Future<void> createCategory({
-    required BudgetCategoryEntity category,
-    required BudgetState state,
-  }) async {
-    await _repository.createBudgetCategory(category);
-    await loadCategoriesProgress(state);
+  // create
+
+  Future<void> createCategory(
+    BudgetCategoryEntity category,
+  ) async {
+    await _repository.createBudgetCategory(
+      category,
+    );
+
+    await loadCategories(
+      category.userId,
+    );
+
+    await loadProgress(
+      category.userId,
+    );
   }
 
-  // ================= UPDATE =================
-  Future<void> updateCategory({
-    required BudgetCategoryEntity category,
-    required BudgetState state,
-  }) async {
-    await _repository.updateBudgetCategory(category);
-    await loadCategoriesProgress(state);
+  // update
+
+  Future<void> updateCategory(
+    BudgetCategoryEntity category,
+  ) async {
+    await _repository.updateBudgetCategory(
+      category,
+    );
+
+    await loadCategories(
+      category.userId,
+    );
+
+    await loadProgress(
+      category.userId,
+    );
   }
 
-  // ================= DELETE =================
+  // delete
+
   Future<void> deleteCategory({
     required String id,
-    required BudgetState state,
+    required int userId,
   }) async {
-    await _repository.deleteBudgetCategory(id);
-    await loadCategoriesProgress(state);
+    await _repository.deleteBudgetCategory(
+      id,
+    );
+
+    await loadCategories(
+      userId,
+    );
+
+    await loadProgress(
+      userId,
+    );
   }
 
-  // ================= SAFE NOTIFY =================
   void _safeNotify() {
-    if (!_disposed) notifyListeners();
+    if (!_disposed) {
+      notifyListeners();
+    }
   }
 
   @override

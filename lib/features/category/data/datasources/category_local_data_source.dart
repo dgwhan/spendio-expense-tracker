@@ -13,15 +13,15 @@ abstract class CategoryLocalDataSource {
 }
 
 class CategoryLocalDataSourceImpl implements CategoryLocalDataSource {
-  final Future<Database> database;
+  // ✅ ĐÃ SỬA: Chuyển từ Future<Database> sang kiểu Database đồng bộ sạch
+  final Database database;
 
   CategoryLocalDataSourceImpl({required this.database});
 
   @override
   Future<List<CategoryModel>> getAllCategories() async {
-    final db = await database;
-
-    final List<Map<String, dynamic>> maps = await db.query(
+    // ✅ ĐÃ TỐI ƯU: Gọi trực tiếp vào database vật lý, không cần tốn nhịp await lấy db nữa
+    final List<Map<String, dynamic>> maps = await database.query(
       CategoriesTable.tableName,
     );
 
@@ -30,10 +30,8 @@ class CategoryLocalDataSourceImpl implements CategoryLocalDataSource {
 
   @override
   Future<List<CategoryModel>> getCategories(int localUserId) async {
-    final db = await database;
-
     // Select entries where user_id is 0 (global) OR matches the logged-in user
-    final List<Map<String, dynamic>> maps = await db.query(
+    final List<Map<String, dynamic>> maps = await database.query(
       CategoriesTable.tableName,
       where: 'user_id = 0 OR user_id = ?',
       whereArgs: [localUserId],
@@ -44,8 +42,7 @@ class CategoryLocalDataSourceImpl implements CategoryLocalDataSource {
 
   @override
   Future<void> insertCategory(CategoryModel category) async {
-    final db = await database;
-    await db.insert(
+    await database.insert(
       CategoriesTable.tableName,
       category.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
@@ -54,10 +51,8 @@ class CategoryLocalDataSourceImpl implements CategoryLocalDataSource {
 
   @override
   Future<void> deleteCategory(String categoryId) async {
-    final db = await database;
-
     // Data Integrity Check: Verify if any transaction is bound to this specific id
-    final List<Map<String, dynamic>> countResult = await db.rawQuery(
+    final List<Map<String, dynamic>> countResult = await database.rawQuery(
       'SELECT COUNT(*) as total FROM transactions WHERE category_id = ?',
       [categoryId],
     );
@@ -69,7 +64,7 @@ class CategoryLocalDataSourceImpl implements CategoryLocalDataSource {
           'Cannot delete category. Active transactions are linked to it.');
     }
 
-    await db.delete(
+    await database.delete(
       CategoriesTable.tableName,
       where: 'id = ?',
       whereArgs: [categoryId],

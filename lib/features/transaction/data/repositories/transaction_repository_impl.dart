@@ -91,9 +91,6 @@ class TransactionRepositoryImpl implements TransactionRepository {
     await _rollbackTransactionBalance(transaction);
   }
 
-  // ===========================================================================
-  // BALANCE ENGINE & HELPER METHODS
-  // ===========================================================================
   Future<AccountEntity> _findAccount(int userId, String accountId) async {
     final accounts = await accountRepository.getAccounts(userId, remoteUid);
     try {
@@ -140,15 +137,14 @@ class TransactionRepositoryImpl implements TransactionRepository {
         transaction.userId, remoteUid, updatedAccount);
   }
 
-  // ===========================================================================
-  // OVERRIDE 2 PHƯƠNG THỨC MỚI ĐỂ HOÀN THÀNH HỢP ĐỒNG INTERFACE
-  // ===========================================================================
   @override
   Future<Map<String, double>> getSpentGroupByCategory({
+    required int userId,
     required DateTime startDate,
     required DateTime endDate,
   }) async {
     return await localDataSource.getSpentGroupByCategory(
+      userId: userId,
       startDateIso: startDate.toIso8601String(),
       endDateIso: endDate.toIso8601String(),
     );
@@ -162,6 +158,21 @@ class TransactionRepositoryImpl implements TransactionRepository {
   }) async {
     return await localDataSource.getTotalSpentInPeriod(
       userId: userId,
+      startDateIso: startDate.toIso8601String(),
+      endDateIso: endDate.toIso8601String(),
+    );
+  }
+
+  @override
+  Future<double> getTotalSpentByCategory({
+    required int userId,
+    required String categoryId,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    return await localDataSource.getTotalSpentByCategory(
+      userId: userId,
+      categoryId: categoryId,
       startDateIso: startDate.toIso8601String(),
       endDateIso: endDate.toIso8601String(),
     );

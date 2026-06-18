@@ -1,4 +1,4 @@
-import 'package:spend_io_app/features/budget/data/datasources/budget_local_data_source.dart'; // Đã trỏ đúng nguồn chuẩn
+import 'package:spend_io_app/features/budget/data/datasources/budget_local_data_source.dart';
 import 'package:spend_io_app/features/budget/data/models/budget_model.dart';
 import 'package:spend_io_app/features/budget/data/models/budget_category_model.dart';
 import 'package:spend_io_app/features/account/data/models/account_model.dart';
@@ -6,8 +6,6 @@ import 'package:spend_io_app/features/wallet/data/models/saving_goal_model.dart'
 import 'package:spend_io_app/features/account/data/datasource/account_local_data_source.dart';
 import 'package:spend_io_app/features/wallet/data/datasources/goal/goal_local_data_source.dart';
 
-/// Facade aggregates all local datasources.
-/// Consumers depend on this single contract; sub-sources handle the detail.
 abstract class WalletLocalDataSource
     implements
         AccountLocalDataSource,
@@ -27,9 +25,6 @@ class WalletLocalDataSourceImpl implements WalletLocalDataSource {
         _goalLocal = goalLocal,
         _budgetLocal = budgetLocal;
 
-  // =====================================================================
-  // 1. ACCOUNT MODULE SUB-ROUTING
-  // =====================================================================
   @override
   Future<List<AccountModel>> getAccounts(int userId) =>
       _accountLocal.getAccounts(userId);
@@ -61,9 +56,6 @@ class WalletLocalDataSourceImpl implements WalletLocalDataSource {
   @override
   Future<bool> hasAccounts(int userId) => _accountLocal.hasAccounts(userId);
 
-  // =====================================================================
-  // 2. SAVINGS GOAL MODULE SUB-ROUTING
-  // =====================================================================
   @override
   Future<List<SavingGoalModel>> getGoals(int userId) =>
       _goalLocal.getGoals(userId);
@@ -78,9 +70,6 @@ class WalletLocalDataSourceImpl implements WalletLocalDataSource {
   @override
   Future<bool> hasGoals(int userId) => _goalLocal.hasGoals(userId);
 
-  // =====================================================================
-  // 3. BUDGET MODULE SUB-ROUTING (🔴 ĐÃ CẬP NHẬT THEO SCHEMAS MỚI CHUẨN)
-  // =====================================================================
   @override
   Future<BudgetModel?> getCurrentBudget(int userId) =>
       _budgetLocal.getCurrentBudget(userId);
@@ -98,8 +87,9 @@ class WalletLocalDataSourceImpl implements WalletLocalDataSource {
       _budgetLocal.deleteBudget(budgetId);
 
   @override
-  Future<List<BudgetCategoryModel>> getBudgetCategories(String budgetId) =>
-      _budgetLocal.getBudgetCategories(budgetId);
+  Future<List<BudgetCategoryModel>> getBudgetCategories(
+          {required int userId}) =>
+      _budgetLocal.getBudgetCategories(userId: userId);
 
   @override
   Future<void> createBudgetCategory(BudgetCategoryModel category) =>
@@ -113,7 +103,17 @@ class WalletLocalDataSourceImpl implements WalletLocalDataSource {
   Future<void> deleteBudgetCategory(String id) =>
       _budgetLocal.deleteBudgetCategory(id);
 
-  // 🔴 ĐÃ VÁ LỖI TRỰC TIẾP: Trỏ đúng sang hàm hasCategories an toàn của BudgetLocalDataSource chuẩn mới
   @override
-  Future<bool> hasCategories(int userId) => _budgetLocal.hasCategories(userId);
+  Future<List<BudgetCategoryModel>> getBudgetCategoriesByPeriod({
+    required int userId,
+    required DateTime date,
+  }) =>
+      _budgetLocal.getBudgetCategoriesByPeriod(
+        userId: userId,
+        date: date,
+      );
+
+  @override
+  Future<bool> hasBudgetCategories(int userId) =>
+      _budgetLocal.hasBudgetCategories(userId);
 }

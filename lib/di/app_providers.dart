@@ -1,52 +1,60 @@
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
-import 'package:spend_io_app/core/database/app_database.dart';
-import 'package:spend_io_app/core/startup/startup_coordinator.dart';
-import 'package:spend_io_app/di/account_provider.dart'; 
-import 'package:spend_io_app/di/auth_provider.dart';
-import 'package:spend_io_app/di/budget_provider.dart';
-import 'package:spend_io_app/di/category_provider.dart'; 
-import 'package:spend_io_app/di/onboarding_provider.dart';
-import 'package:spend_io_app/di/profile_provider.dart';
-import 'package:spend_io_app/di/transaction_provider.dart';
-import 'package:spend_io_app/di/wallet_provider.dart';
-import 'package:spend_io_app/features/auth/domain/usecases/get_current_user_usecase.dart';
 import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
-import 'package:spend_io_app/features/wallet/domain/usecases/check_wallet_initialization_usecase.dart';
 import 'package:sqflite/sqflite.dart';
+
+import 'package:spend_io_app/core/startup/startup_coordinator.dart';
+
+import 'package:spend_io_app/di/auth_provider.dart';
+import 'package:spend_io_app/di/account_provider.dart';
+import 'package:spend_io_app/di/onboarding_provider.dart';
+import 'package:spend_io_app/di/category_provider.dart';
+import 'package:spend_io_app/di/transaction_provider.dart';
+import 'package:spend_io_app/di/budget_provider.dart';
+import 'package:spend_io_app/di/wallet_provider.dart';
+import 'package:spend_io_app/di/profile_provider.dart';
+
+import 'package:spend_io_app/features/auth/domain/usecases/get_current_user_usecase.dart';
+import 'package:spend_io_app/features/wallet/domain/usecases/check_wallet_initialization_usecase.dart';
 
 class AppProviders {
   AppProviders._();
 
-  static List<SingleChildWidget> get providers => [
-        // =========================================================
-        // PHASE 1: CORE INFRASTRUCTURE (Khôi phục Future gốc của bạn)
-        // =========================================================
-        Provider<Future<Database>>(
-          create: (_) => AppDatabase.database,
-          lazy: false,
-        ),
+  static List<SingleChildWidget> providers(Database database) {
+    return [
+      // =========================
+      // CORE DB (SAFE SINGLETON)
+      // =========================
+      Provider<Database>.value(
+        value: database,
+      ),
 
-        ...AuthModuleProvider.providers,
-        ...OnboardingModuleProvider.providers,
-        ...AccountProvider.providers,
-        ...CategoryProvider.providers, // Khớp chuẩn 100% với file gốc của bạn
+      // =========================
+      // FEATURE MODULES
+      // =========================
+      ...AuthModuleProvider.providers,
+      ...OnboardingModuleProvider.providers,
+      ...AccountProvider.providers,
+      ...CategoryProvider.providers,
+      ...TransactionProvider.providers,
+      ...BudgetModuleProvider.providers,
+      ...WalletModuleProvider.providers,
+      ...ProfileModuleProvider.providers,
 
-        // PHASE 3: DEPENDENCY ORDERING ENGINE
-        ...TransactionProvider.providers,
-        ...BudgetModuleProvider.providers, 
-        ...WalletModuleProvider.providers,
-        ...ProfileModuleProvider.providers,
-
-        // PHASE 4: CORE ORCHESTRATION ENGINE
-        ProxyProvider2<AuthProvider, CheckWalletInitializationUseCase, StartupCoordinator>(
-          update: (context, authProvider, checkWalletInit, previous) =>
-              previous ??
+      // =========================
+      // STARTUP ORCHESTRATOR
+      // =========================
+      ProxyProvider2<AuthProvider, CheckWalletInitializationUseCase,
+          StartupCoordinator>(
+        update: (context, auth, walletCheck, previous) {
+          return previous ??
               StartupCoordinator(
-                authProvider: authProvider,
-                checkWalletInitializationUseCase: checkWalletInit,
+                authProvider: auth,
+                checkWalletInitializationUseCase: walletCheck,
                 getCurrentUserUseCase: context.read<GetCurrentUserUseCase>(),
-              ),
-        ),
-      ];
+              );
+        },
+      ),
+    ];
+  }
 }

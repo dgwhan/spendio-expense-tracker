@@ -12,20 +12,33 @@ import 'package:spend_io_app/features/home/data/models/financial_pulse_model.dar
 import 'package:spend_io_app/features/home/data/models/monthly_budget_model.dart';
 
 class DashboardViewModel extends ChangeNotifier {
-  final WalletViewModel walletViewModel;
+  // Chuyển thành non-final để ProxyProvider cập nhật instance sạch liên tục
+  WalletViewModel walletViewModel;
 
   DashboardViewModel({required this.walletViewModel}) {
-    walletViewModel.addListener(_onWalletChanged);
+    debugPrint('[DASHBOARD DIAGNOSTIC]: Khởi tạo DashboardViewModel Instance.');
+    // 🔴 ĐÃ PHÁ XÍCH: Tuyệt đối không dùng walletViewModel.addListener(_onWalletChanged) ở đây nữa!
   }
 
-  void _onWalletChanged() {
-    notifyListeners();
-  }
+  /// Hàm cập nhật instance Wallet mới từ ProxyProvider mà không gây Loop
+  void updateWallet(WalletViewModel newWalletVM) {
+    if (walletViewModel == newWalletVM) return;
 
-  @override
-  void dispose() {
-    walletViewModel.removeListener(_onWalletChanged);
-    super.dispose();
+    debugPrint(
+        '[DASHBOARD LOG]: Phát hiện WalletViewModel instance đổi mới. Đang cập nhật tham chiếu...');
+    walletViewModel = newWalletVM;
+
+    // In log giám sát kích thước dữ liệu chuyển giao xem có bị dội không
+    debugPrint(
+        '[DASHBOARD LOG STATUS]: Assets: ${walletViewModel.summary.totalAssets} | Goals: ${walletViewModel.goals.length} | Progress Categories: ${walletViewModel.categoriesProgress.length}');
+
+    // Chỉ notify khi thực sự có dữ liệu để tránh spam khung hình đầu
+    if (walletViewModel.goals.isNotEmpty ||
+        walletViewModel.summary.totalAssets > 0) {
+      debugPrint(
+          '[DASHBOARD LOG]: Dữ liệu Wallet hợp lệ, trigger notifyListeners() lên UI.');
+      notifyListeners();
+    }
   }
 
   double get totalAssets => walletViewModel.summary.totalAssets;
@@ -35,7 +48,6 @@ class DashboardViewModel extends ChangeNotifier {
 
   List<SavingGoalEntity> get savingsGoals => walletViewModel.goals;
 
-  // 🌐 Helper chuyển ID danh mục từ database sang tên hiển thị Tiếng Việt trên giao diện Home
   String _getCategoryDisplayName(String categoryId) {
     switch (categoryId.toLowerCase()) {
       case 'dining':
@@ -56,10 +68,8 @@ class DashboardViewModel extends ChangeNotifier {
     }
   }
 
-  // 🌟 RECENT TRANSACTIONS: Nạp động danh sách lịch sử giao dịch gần đây ra màn hình chính
   List<RecentTransactionModel> getRecentTransactions(BuildContext context) {
     final List<RecentTransactionModel> allTxs = [];
-
     final activeAccounts = context.read<AccountViewModel>().accounts;
     final sourceTransactions =
         context.read<TransactionViewModel>().state.transactions;
@@ -92,7 +102,6 @@ class DashboardViewModel extends ChangeNotifier {
     return allTxs.take(10).toList();
   }
 
-  // 📊 MONTHLY BUDGET SUMMARY: Thống kê ngân sách tổng quát của tháng hiển thị ở Home
   MonthlyBudgetModel get monthlyBudget {
     return MonthlyBudgetModel(
       totalBudget: monthlyBudgetAmount,
@@ -101,11 +110,11 @@ class DashboardViewModel extends ChangeNotifier {
     );
   }
 
-  // 📈 SPENDING BREAKDOWN: Phân tích cơ cấu chi tiêu theo thời gian
   SpendingBreakdownModel get spendingBreakdownWeek =>
       _getBreakdown('THIS WEEK');
   SpendingBreakdownModel get spendingBreakdownMonth => _getBreakdown(
-      walletViewModel.currentMonthLabel.split(' ').first.toUpperCase());
+        walletViewModel.currentMonthLabel.split(' ').first.toUpperCase(),
+      );
   SpendingBreakdownModel get spendingBreakdownYear => _getBreakdown('2026');
 
   SpendingBreakdownModel _getBreakdown(String period) {
@@ -135,7 +144,8 @@ class DashboardViewModel extends ChangeNotifier {
     );
   }
 
-  // 🩺 FINANCIAL PULSE: Đo lường sức khỏe tài chính và vẽ biểu đồ mật độ chi tiêu hàng tuần
+  FinancialHealthStatus get healthStatus => walletViewModel.healthStatus;
+
   FinancialPulseModel get financialPulse {
     final double weeklySpend = totalSpent / 4;
     final progressList = walletViewModel.categoriesProgress;
