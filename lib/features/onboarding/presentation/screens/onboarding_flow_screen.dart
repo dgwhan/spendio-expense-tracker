@@ -29,9 +29,43 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
       StreamController<bool>.broadcast();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final onboardingVM = context.read<OnboardingViewModel>();
+      await onboardingVM.loadOnboarding(email: widget.userEmail);
+
+      debugPrint('[ONBOARDING] Flow STARTED for user: ${widget.userEmail}');
+      debugPrint('[ONBOARDING DATA INITIAL] '
+          'displayName: ${onboardingVM.displayName}, '
+          'occupation: ${onboardingVM.occupation}, '
+          'goals: ${onboardingVM.goals}, '
+          'currencyCode: ${onboardingVM.currencyCode}, '
+          'initialBalance: ${onboardingVM.initialBalance}');
+    });
+  }
+
+  @override
   void dispose() {
     _shakeTrigger.close();
     super.dispose();
+  }
+
+  String _getStepName(int step) {
+    switch (step) {
+      case 0:
+        return 'Identity';
+      case 1:
+        return 'Profession';
+      case 2:
+        return 'Goals';
+      case 3:
+        return 'Currency';
+      case 4:
+        return 'Balance';
+      default:
+        return 'Unknown';
+    }
   }
 
   @override
@@ -44,7 +78,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
       IdentityPhaseScreen(userEmail: widget.userEmail),
       const ProfessionPhaseScreen(),
       const GoalsPhaseScreen(),
-      const CurrencyPhaseScreen(), // 🇺🇸/🇻🇳 Sẽ tự động detect miền và in log tại đây
+      const CurrencyPhaseScreen(),
       const BalancePhaseScreen()
     ];
 
@@ -54,24 +88,51 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
       onBack: currentStep == 0
           ? null
           : () {
+              debugPrint(
+                  '[ONBOARDING] User click BACK: Step $currentStep -> ${currentStep - 1}');
               viewModel.setError(false);
               viewModel.previousStep();
             },
       onNext: () async {
+        debugPrint(
+            '[ONBOARDING INTERACT] User triggered NEXT at step $currentStep (${_getStepName(currentStep)})');
+        debugPrint('[ONBOARDING CURRENT STATE] '
+            'displayName: ${viewModel.displayName}, '
+            'occupation: ${viewModel.occupation}, '
+            'goals: ${viewModel.goals}, '
+            'currencyCode: ${viewModel.currencyCode}, '
+            'initialBalance: ${viewModel.initialBalance}');
+
         if (viewModel.canContinue()) {
           viewModel.setError(false);
 
           if (currentStep < totalSteps - 1) {
+            debugPrint(
+                '[ONBOARDING] Step $currentStep SUCCESS -> Moving to step ${currentStep + 1} (${_getStepName(currentStep + 1)})');
             viewModel.nextStep();
           } else {
-            // ─── CHẶNG CUỐI: HOÀN THÀNH PROFILE BOOTSTRAP ───
+            FocusScope.of(context).unfocus();
+            debugPrint(
+                '[ONBOARDING] User clicked GET STARTED at final step. Submitting to local DB...');
+
             await viewModel.completeOnboarding(email: widget.userEmail);
 
             if (!context.mounted) return;
             await context.read<AuthProvider>().reloadUser();
 
+            debugPrint(
+                '[ONBOARDING SUCCESS] PROFILE SAVED COMPLETE FOR ${widget.userEmail}');
+            debugPrint('[ONBOARDING FINAL DATA GATHERED] '
+                'displayName: ${viewModel.displayName}, '
+                'occupation: ${viewModel.occupation}, '
+                'goals: ${viewModel.goals}, '
+                'currencyCode: ${viewModel.currencyCode}, '
+                'initialBalance: ${viewModel.initialBalance}');
+
             if (!context.mounted) return;
-            // Tiến hành đẩy sang màn hình chính sau khi DB Local đã ghi nhận xong
+            await Future.delayed(const Duration(milliseconds: 150));
+
+            if (!context.mounted) return;
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
                 builder: (context) => const NavigationEntry(),
@@ -81,6 +142,8 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
         } else {
           viewModel.setError(true);
           _shakeTrigger.add(true);
+          debugPrint(
+              '[ONBOARDING VALIDATION FAILED] at step $currentStep (${_getStepName(currentStep)}). Triggering Shake animation.');
         }
       },
       nextButtonText:
@@ -107,15 +170,5 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
         ),
       ),
     );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context
-          .read<OnboardingViewModel>()
-          .loadOnboarding(email: widget.userEmail);
-    });
   }
 }

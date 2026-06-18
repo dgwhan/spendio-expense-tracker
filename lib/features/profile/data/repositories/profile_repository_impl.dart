@@ -1,29 +1,24 @@
-import 'package:spend_io_app/features/profile/data/models/profile_user_model.dart';
-
-import '../../domain/repositories/profile_repository.dart';
-import '../datasources/profile_local_datasource.dart';
-import '../datasources/profile_remote_datasource.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:spend_io_app/features/auth/domain/entities/user_entity.dart';
+import 'package:spend_io_app/features/profile/data/datasources/profile_local_datasource.dart';
+import 'package:spend_io_app/features/profile/domain/repositories/profile_repository.dart';
 
 class ProfileRepositoryImpl implements ProfileRepository {
   final ProfileLocalDataSource localDataSource;
-  final ProfileRemoteDataSource remoteDataSource;
+  final FirebaseAuth _firebaseAuth =
+      FirebaseAuth.instance; // Remote source trực tiếp
 
-  ProfileRepositoryImpl({
-    required this.localDataSource,
-    required this.remoteDataSource,
-  });
+  ProfileRepositoryImpl({required this.localDataSource});
 
   @override
-  Future<ProfileUserEntity?> getCurrentUser() async {
-    return null;
+  Future<UserEntity?> getProfile(int userId) async {
+    final userModel = await localDataSource.getUserById(userId);
+    return userModel?.toEntity();
   }
 
   @override
   Future<void> logout() async {
-    try {
-      await remoteDataSource.signOutFromCloud();
-    } finally {
-      await localDataSource.clearSessionData();
-    }
+    //ngắt kết nối Session trên Cloud Firebase Auth
+    await _firebaseAuth.signOut();
   }
 }

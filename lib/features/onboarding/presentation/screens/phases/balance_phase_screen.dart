@@ -14,8 +14,7 @@ class BalancePhaseScreen extends StatefulWidget {
 
 class _BalancePhaseScreenState extends State<BalancePhaseScreen> {
   late final TextEditingController _balanceController;
-  late final String
-      _activeCurrencyCode; // 🔥 Lưu lại mã tiền tệ động cho toàn bộ State screen
+  late final String _activeCurrencyCode;
 
   @override
   void initState() {
@@ -23,7 +22,6 @@ class _BalancePhaseScreenState extends State<BalancePhaseScreen> {
     final viewModel = context.read<OnboardingViewModel>();
     final existingBalance = viewModel.initialBalance;
 
-    // 🔥 Dynamic Currency Extraction: Tìm item trùng khớp với mã được lưu trên RAM ViewModel
     final selectedCurrencyItem = supportedCurrencies.firstWhere(
       (element) => element.code == viewModel.currencyCode,
       orElse: () => supportedCurrencies.first,
@@ -37,6 +35,7 @@ class _BalancePhaseScreenState extends State<BalancePhaseScreen> {
       _balanceController = TextEditingController(text: formattedText);
     } else {
       _balanceController = TextEditingController(text: '');
+      viewModel.updateInitialBalance(0.0);
     }
   }
 
@@ -55,7 +54,7 @@ class _BalancePhaseScreenState extends State<BalancePhaseScreen> {
 
   void _onBalanceChanged(String value, OnboardingViewModel viewModel) {
     if (value.isEmpty) {
-      viewModel.updateInitialBalance(0);
+      viewModel.updateInitialBalance(0.0);
       return;
     }
 

@@ -1,3 +1,4 @@
+import '../../domain/entities/onboarding_entity.dart';
 import '../repositories/onboarding_repository.dart';
 
 class CompleteOnboardingUseCase {
@@ -9,9 +10,11 @@ class CompleteOnboardingUseCase {
 
   Future<void> call({
     required String email,
+    required OnboardingEntity entity,
   }) async {
     await repository.completeOnboarding(
       email: email,
+      entity: entity,
     );
   }
 }

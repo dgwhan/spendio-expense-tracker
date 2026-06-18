@@ -18,11 +18,46 @@ class OnboardingRemoteDataSource {
     final String? rawRemoteCurrency = model.currencyCode;
     if (rawRemoteCurrency == null || rawRemoteCurrency.trim().isEmpty) {
       debugPrint(
-          '🚨 [Onboarding Remote Sync Paused]: Can not sync on Firestore because "currencyCode" empty.');
+          '[Onboarding Remote Sync Paused]: Can not sync on Firestore because currencyCode empty.');
       return;
     }
 
     final String remoteCurrencyCode = rawRemoteCurrency;
+
+    final Map<String, dynamic> userUpdateData = {
+      'display_name': model.displayName,
+      'occupation': model.occupation,
+      'financial_goal': model.goals.join(','),
+      'currency_code': remoteCurrencyCode,
+      'onboarding_completed': 1,
+      'updated_at': nowStr,
+    };
+
+    debugPrint('[FIREBASE TRACE] Preparing to update user document...');
+    debugPrint('[FIREBASE TRACE] Target UID: $uid');
+    debugPrint(
+        '[FIREBASE TRACE] Payload sent to users collection: $userUpdateData');
+
+    try {
+      await _firestore.collection('users').doc(uid).update(userUpdateData);
+
+      debugPrint(
+          '[FIREBASE SUCCESS] Updated document users/$uid with onboarding_completed: 1');
+    } catch (e) {
+      debugPrint(
+          '[FIREBASE ERROR] Failed to update user document, attempting fallback set-merge...');
+      try {
+        await _firestore
+            .collection('users')
+            .doc(uid)
+            .set(userUpdateData, SetOptions(merge: true));
+        debugPrint(
+            '[FIREBASE SUCCESS] Executed fallback set-merge on users/$uid successfully.');
+      } catch (innerError) {
+        debugPrint(
+            '[FIREBASE CRITICAL ERROR] Completely failed to write user data to Cloud: $innerError');
+      }
+    }
 
     await _firestore
         .collection('users')
@@ -61,14 +96,13 @@ class OnboardingRemoteDataSource {
 
     double? initialBalance;
     String? currencyCode;
-    String? walletId; // 🔥 Thêm biến hứng walletId từ Firestore
+    String? walletId;
 
     if (walletSnap.docs.isNotEmpty) {
       final walletData = walletSnap.docs.first.data();
       initialBalance = (walletData['balance'] as num?)?.toDouble();
       currencyCode = walletData['currency_code'] as String?;
-      walletId = walletData['id']
-          ?.toString(); // 🔥 FIX BUG VỪA PHÁT HIỆN: Bốc ID ví gốc từ server về
+      walletId = walletData['id']?.toString();
     }
 
     return OnboardingModel(

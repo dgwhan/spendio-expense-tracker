@@ -132,24 +132,20 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
   @override
   Future<void> completeOnboarding({
     required String email,
+    required OnboardingEntity
+        entity, // 🟢 Đã sửa: Nhận trực tiếp entity từ ViewModel
   }) async {
-    final onboarding = await getOnboarding(
-      email: email,
-    );
-
-    if (onboarding == null) return;
-
     final updatedEntity = OnboardingEntity(
-      displayName: onboarding.displayName,
-      occupation: onboarding.occupation,
-      goals: onboarding.goals,
-      currencyCode: onboarding.currencyCode,
-      initialBalance: onboarding.initialBalance,
-      onboardingCompleted: true, // Đánh dấu hoàn thành chặng cuối
-      walletId: onboarding
-          .walletId, // Đảm bảo giữ nguyên cấu trúc ví sạch, không sinh ID mới
+      displayName: entity.displayName,
+      occupation: entity.occupation,
+      goals: entity.goals,
+      currencyCode: entity.currencyCode,
+      initialBalance: entity.initialBalance,
+      onboardingCompleted: true, // Khóa cứng trạng thái hoàn thành
+      walletId: entity.walletId,
     );
 
+    // Gọi hàm saveOnboarding để vừa cập nhật SQLite vừa đẩy trực tiếp data chuẩn lên Cloud
     await saveOnboarding(
       email: email,
       entity: updatedEntity,

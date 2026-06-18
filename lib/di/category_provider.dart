@@ -15,11 +15,13 @@ class CategoryProvider {
 
   /// Bundles all category-related dependency injection states
   static List<SingleChildWidget> get providers => [
-        // 1. Inject Local Data Source
-        // Yêu cầu `Future<Database>` đã được cung cấp ở đỉnh cây AppProviders
+        // =========================================================
+        // 1. DATA SOURCES
+        // =========================================================
         ProxyProvider<Future<Database>, CategoryLocalDataSource>(
-          update: (_, dbFuture, __) =>
-              CategoryLocalDataSourceImpl(database: dbFuture),
+          update: (_, dbFuture, __) {
+            return CategoryLocalDataSourceImpl(database: dbFuture);
+          },
         ),
 
         // 2. Inject Remote Data Source
@@ -29,7 +31,9 @@ class CategoryProvider {
           ),
         ),
 
-        // 3. Inject Repository (Kết hợp cả Local và Remote Data Sources)
+        // =========================================================
+        // 3. REPOSITORY LAYER
+        // =========================================================
         ProxyProvider2<CategoryLocalDataSource, CategoryRemoteDataSource,
             CategoryRepository>(
           update: (_, localSrc, remoteSrc, __) => CategoryRepositoryImpl(
@@ -38,8 +42,9 @@ class CategoryProvider {
           ),
         ),
 
-        // 4. Inject ViewModel sử dụng ChangeNotifierProxyProvider chuẩn chỉ
-        // Đảm bảo nếu Repository có bị làm mới (re-create), ViewModel vẫn nhận được bản cập nhật
+        // =========================================================
+        // 4. PRESENTATION LAYER
+        // =========================================================
         ChangeNotifierProxyProvider<CategoryRepository, CategoryViewModel>(
           create: (context) => CategoryViewModel(
             repository: context.read<CategoryRepository>(),
@@ -48,7 +53,6 @@ class CategoryProvider {
             if (previous == null) {
               return CategoryViewModel(repository: repo);
             }
-            // Gọi hàm cập nhật repo bên trong ViewModel (nếu có) để tránh rò rỉ dữ liệu cũ
             previous.updateRepository(repo);
             return previous;
           },

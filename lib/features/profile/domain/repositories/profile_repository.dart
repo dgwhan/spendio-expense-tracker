@@ -1,6 +1,6 @@
-import 'package:spend_io_app/features/profile/data/models/profile_user_model.dart';
+import 'package:spend_io_app/features/auth/domain/entities/user_entity.dart';
 
 abstract class ProfileRepository {
-  Future<ProfileUserEntity?> getCurrentUser();
+  Future<UserEntity?> getProfile(int userId);
   Future<void> logout();
 }

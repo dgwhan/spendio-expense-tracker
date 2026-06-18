@@ -1,4 +1,4 @@
-import 'package:spend_io_app/core/database/app_database.dart';
+import 'package:spend_io_app/core/database/app_database.dart'; // 🟢 Import file chứa AppDatabase của bạn
 import 'package:spend_io_app/features/budget/data/models/budget_model.dart';
 import 'package:spend_io_app/features/budget/data/models/budget_category_model.dart';
 import 'package:sqflite/sqflite.dart';
@@ -18,7 +18,7 @@ abstract class BudgetLocalDataSource {
 }
 
 class BudgetLocalDataSourceImpl implements BudgetLocalDataSource {
-  Future<Database> get _db => AppDatabase.database;
+  Future<Database> get _db async => await AppDatabase.database;
 
   BudgetLocalDataSourceImpl();
 

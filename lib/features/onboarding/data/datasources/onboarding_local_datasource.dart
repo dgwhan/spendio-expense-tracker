@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:spend_io_app/core/database/app_database.dart';
+import 'package:spend_io_app/core/database/tables/users_table.dart';
+import 'package:spend_io_app/features/onboarding/data/models/onboarding_model.dart';
 import 'package:sqflite/sqflite.dart';
-import '../../../../core/database/app_database.dart';
-import '../../../../core/database/tables/users_table.dart';
-import '../models/onboarding_model.dart';
 
 abstract class OnboardingLocalDataSource {
   Future<void> saveOnboarding({
@@ -32,6 +32,10 @@ class OnboardingLocalDataSourceImpl implements OnboardingLocalDataSource {
     final db = await _db;
     final nowStr = DateTime.now().toIso8601String();
 
+    final bool isFinalStep =
+        model.currencyCode != null && model.occupation != null;
+    final int finalStatus = (model.onboardingCompleted || isFinalStep) ? 1 : 0;
+
     await db.update(
       UsersTable.tableName,
       {
@@ -39,12 +43,15 @@ class OnboardingLocalDataSourceImpl implements OnboardingLocalDataSource {
         'occupation': model.occupation,
         'financial_goal': model.goals.join(','),
         'currency_code': model.currencyCode,
-        'onboarding_completed': model.onboardingCompleted ? 1 : 0,
+        'onboarding_completed': finalStatus,
         'updated_at': nowStr,
       },
       where: 'email = ?',
       whereArgs: [email],
     );
+
+    debugPrint(
+        '[Onboarding Local Guard]: Saved onboarding_completed as $finalStatus into SQLite.');
 
     final userResult = await db.query(
       UsersTable.tableName,
@@ -67,7 +74,7 @@ class OnboardingLocalDataSourceImpl implements OnboardingLocalDataSource {
       final String? rawCurrencyCode = model.currencyCode;
       if (rawCurrencyCode == null || rawCurrencyCode.trim().isEmpty) {
         debugPrint(
-            '[Onboarding Local Critical]: "currencyCode" form screen Onboarding is empty!');
+            '[Onboarding Local Critical]: currencyCode form screen Onboarding is empty!');
         return;
       }
 

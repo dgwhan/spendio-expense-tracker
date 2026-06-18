@@ -2,10 +2,10 @@ import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 import 'package:spend_io_app/core/database/app_database.dart';
 import 'package:spend_io_app/core/startup/startup_coordinator.dart';
-import 'package:spend_io_app/di/account_provider.dart';
+import 'package:spend_io_app/di/account_provider.dart'; 
 import 'package:spend_io_app/di/auth_provider.dart';
 import 'package:spend_io_app/di/budget_provider.dart';
-import 'package:spend_io_app/di/category_provider.dart';
+import 'package:spend_io_app/di/category_provider.dart'; 
 import 'package:spend_io_app/di/onboarding_provider.dart';
 import 'package:spend_io_app/di/profile_provider.dart';
 import 'package:spend_io_app/di/transaction_provider.dart';
@@ -19,36 +19,27 @@ class AppProviders {
   AppProviders._();
 
   static List<SingleChildWidget> get providers => [
-        // =====================================================================
-        // PHASE 1: CORE INFRASTRUCTURE
-        // =====================================================================
-        FutureProvider<Database?>(
+        // =========================================================
+        // PHASE 1: CORE INFRASTRUCTURE (Khôi phục Future gốc của bạn)
+        // =========================================================
+        Provider<Future<Database>>(
           create: (_) => AppDatabase.database,
-          initialData: null,
           lazy: false,
         ),
 
-        // =====================================================================
-        // PHASE 2: INDEPENDENT MODULES & CORE AUTH
-        // =====================================================================
         ...AuthModuleProvider.providers,
         ...OnboardingModuleProvider.providers,
         ...AccountProvider.providers,
-        ...CategoryProvider.providers,
+        ...CategoryProvider.providers, // Khớp chuẩn 100% với file gốc của bạn
 
-        // =====================================================================
         // PHASE 3: DEPENDENCY ORDERING ENGINE
-        // =====================================================================
         ...TransactionProvider.providers,
-        ...BudgetModuleProvider.providers,
+        ...BudgetModuleProvider.providers, 
         ...WalletModuleProvider.providers,
         ...ProfileModuleProvider.providers,
 
-        // =====================================================================
         // PHASE 4: CORE ORCHESTRATION ENGINE
-        // =====================================================================
-        ProxyProvider2<AuthProvider, CheckWalletInitializationUseCase,
-            StartupCoordinator>(
+        ProxyProvider2<AuthProvider, CheckWalletInitializationUseCase, StartupCoordinator>(
           update: (context, authProvider, checkWalletInit, previous) =>
               previous ??
               StartupCoordinator(

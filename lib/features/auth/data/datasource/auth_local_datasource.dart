@@ -91,9 +91,27 @@ class AuthLocalDatasource {
               ? userModel.currency
               : localUserMap['currency_code'] as String?;
 
-      final int finalOnboardingStatus = (userModel.onboardingCompleted)
+      final int localStatusRaw =
+          localUserMap['onboarding_completed'] as int? ?? 0;
+
+      // Kiểm tra xem dữ liệu Firebase truyền xuống có chứa thông tin Onboarding hay chưa
+      final bool hasOnboardingDataOnFirebase = (userModel.currency != null &&
+              userModel.currency!.trim().isNotEmpty) ||
+          (userModel.occupation != null &&
+              userModel.occupation!.trim().isNotEmpty);
+
+      // Nếu local đã là 1, hoặc Firebase báo true, hoặc Firebase chứa data tài chính -> Khóa cứng bằng 1
+      final int finalOnboardingStatus = (localStatusRaw == 1 ||
+              userModel.onboardingCompleted ||
+              hasOnboardingDataOnFirebase)
           ? 1
-          : (localUserMap['onboarding_completed'] as int? ?? 0);
+          : 0;
+
+      // In log bắt quả tang nếu có hiện tượng đè dữ liệu lỗi xảy ra:
+      if (finalOnboardingStatus == 1 && localStatusRaw == 0) {
+        debugPrint(
+            '[Auth Local Safe Guard 🛡️]: Detected sync race condition! Forced onboarding_completed to 1 to protect local state.');
+      }
 
       await db.update(
         'users',
@@ -103,7 +121,8 @@ class AuthLocalDatasource {
           'financial_goal':
               userModel.financialGoal ?? localUserMap['financial_goal'],
           'currency_code': finalCurrency,
-          'onboarding_completed': finalOnboardingStatus,
+          'onboarding_completed':
+              finalOnboardingStatus, // Luôn ghi số 1 vững chắc
           'updated_at': DateTime.now().toIso8601String(),
         },
         where: 'id = ?',
@@ -121,20 +140,20 @@ class AuthLocalDatasource {
 
       final nowStr = DateTime.now().toIso8601String();
 
-      // Read once more from the highly protected user table data above
+      // Đọc lại trường bảo mật từ DB
       final userCheck = await db.query('users',
           columns: ['currency_code'], where: 'id = ?', whereArgs: [userId]);
       final String? verifiedCurrencyCode = userCheck.isNotEmpty
           ? userCheck.first['currency_code'] as String?
           : null;
 
-      // CRITICAL GUARD CLAUSE: If both datasets are empty, kill execution to defend DB integrity
       if (verifiedCurrencyCode == null || verifiedCurrencyCode.trim().isEmpty) {
         debugPrint(
             '[Auth Local Safe Guard]: Aborted default wallet initialization! Reason: Valid currency settings not found for User ID: $userId.');
         return;
       }
 
+      // Khớp cấu trúc bảng wallets đại diện cho Account con của bạn
       if (walletResult.isEmpty) {
         final walletId =
             (firestoreWalletId != null && firestoreWalletId.trim().isNotEmpty)

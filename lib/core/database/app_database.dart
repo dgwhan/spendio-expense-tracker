@@ -34,7 +34,6 @@ class AppDatabase {
       'spendio.db',
     );
 
-    // app_database.dart
     return openDatabase(
       path,
       version: 9,
@@ -56,7 +55,9 @@ class AppDatabase {
         if (oldVersion < 6) await MigrationV6.run(db);
         if (oldVersion < 7) await MigrationV7.run(db);
         if (oldVersion < 8) await MigrationV8.run(db);
-        if (oldVersion < 9) await MigrationV8.run(db);
+        if (oldVersion < 9) {
+          await MigrationV9.run(db);
+        }
       },
       onOpen: (db) async {
         await DatabaseLogger.onOpen(db);
@@ -68,8 +69,7 @@ class AppDatabase {
   static Future<void> close() async {
     if (_database != null) {
       await _database!.close();
-
-      _database = null;
+      _database = null; // Reset về null để giải phóng RAM hoàn toàn
     }
   }
 }

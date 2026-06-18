@@ -11,7 +11,6 @@ abstract class TransactionLocalDataSource {
   Future<void> update(TransactionModel model);
   Future<void> delete(String id);
 
-  // 🔴 INTERFACE: Khai báo 2 hàm mới cho Budget tính toán
   Future<Map<String, double>> getSpentGroupByCategory({
     required String startDateIso,
     required String endDateIso,

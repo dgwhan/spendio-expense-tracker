@@ -1,5 +1,3 @@
-// chức năng: định nghĩa đối tượng ng dùng
-
 class UserEntity {
   final int? id;
   final String email;
@@ -16,6 +14,8 @@ class UserEntity {
     this.occupation,
     this.financialGoal,
     this.currency,
-    this.onboardingCompleted = false ,
+    this.onboardingCompleted = false,
   });
+
+  String get displayName => email.split('@').first;
 }

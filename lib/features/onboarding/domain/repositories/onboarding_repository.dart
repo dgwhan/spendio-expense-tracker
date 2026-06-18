@@ -1,4 +1,4 @@
-import '../entities/onboarding_entity.dart';
+import 'package:spend_io_app/features/onboarding/domain/entities/onboarding_entity.dart';
 
 abstract class OnboardingRepository {
   Future<void> saveOnboarding({
@@ -16,5 +16,6 @@ abstract class OnboardingRepository {
 
   Future<void> completeOnboarding({
     required String email,
+    required OnboardingEntity entity,
   });
 }
