@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/shared/dashboard_section_container.dart';
-import 'package:spend_io_app/features/home/presentation/widgets/budget_categories/budget_category_card.dart';
-import 'package:spend_io_app/features/wallet/domain/entities/budget_category_entity.dart';
+import 'package:spend_io_app/features/budget/presentation/widgets/budget_category_card.dart';
+import 'package:spend_io_app/features/budget/domain/entities/budget_category_progress_entity.dart'; // SỬA: Import đúng Progress Entity
 
 class BudgetCategoriesGrid extends StatelessWidget {
-  final List<BudgetCategoryEntity> categories;
+  final List<BudgetCategoryProgressEntity> categories;
 
   const BudgetCategoriesGrid({
     super.key,
@@ -14,6 +14,8 @@ class BudgetCategoriesGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -24,7 +26,9 @@ class BudgetCategoriesGrid extends StatelessWidget {
             'Spending Categories',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimaryLight,
+                  color: isDark
+                      ? AppColors.textPrimaryDark
+                      : AppColors.textPrimaryLight,
                 ),
           ),
         ),
@@ -35,10 +39,10 @@ class BudgetCategoriesGrid extends StatelessWidget {
             physics: const NeverScrollableScrollPhysics(),
             itemCount: categories.length,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2, //chia ra 2 cột
-              mainAxisSpacing: 12, //khoảng cách hàng dọc
-              crossAxisSpacing: 12, //khoảng cách hàng ngang
-              childAspectRatio: 1.7, //tỷ lệ khung
+              crossAxisCount: 2, // Chia ra 2 cột
+              mainAxisSpacing: 12, // Khoảng cách hàng dọc
+              crossAxisSpacing: 12, // Khoảng cách hàng ngang
+              childAspectRatio: 1.7, // Tỷ lệ khung
             ),
             itemBuilder: (context, index) {
               return BudgetCategoryCard(category: categories[index]);

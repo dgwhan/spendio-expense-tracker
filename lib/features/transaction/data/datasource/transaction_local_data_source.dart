@@ -6,11 +6,22 @@ import '../models/transaction_model.dart';
 
 abstract class TransactionLocalDataSource {
   Future<List<TransactionModel>> getAll();
-
   Future<List<TransactionModel>> getByAccountId(String accountId);
   Future<void> insert(TransactionModel model);
   Future<void> update(TransactionModel model);
   Future<void> delete(String id);
+
+  // 🔴 INTERFACE: Khai báo 2 hàm mới cho Budget tính toán
+  Future<Map<String, double>> getSpentGroupByCategory({
+    required String startDateIso,
+    required String endDateIso,
+  });
+
+  Future<double> getTotalSpentInPeriod({
+    required int userId,
+    required String startDateIso,
+    required String endDateIso,
+  });
 }
 
 class TransactionLocalDataSourceImpl implements TransactionLocalDataSource {
@@ -83,5 +94,51 @@ class TransactionLocalDataSourceImpl implements TransactionLocalDataSource {
       where: 'id = ?',
       whereArgs: [id],
     );
+  }
+
+  // 🔴 IMPLEMENTATION 1: Query gom nhóm Group By chuẩn style _db của dự án
+  @override
+  Future<Map<String, double>> getSpentGroupByCategory({
+    required String startDateIso,
+    required String endDateIso,
+  }) async {
+    final db = await _db; // Await getter của dự án bạn
+
+    final List<Map<String, dynamic>> result = await db.query(
+      TransactionsTable.tableName,
+      columns: ['category_id', 'SUM(amount) AS total_amount'],
+      where: 'created_at >= ? AND created_at <= ?',
+      whereArgs: [startDateIso, endDateIso],
+      groupBy: 'category_id',
+    );
+
+    final Map<String, double> spentMap = {};
+    for (var row in result) {
+      final String? categoryId = row['category_id'] as String?;
+      final num? totalAmount = row['total_amount'] as num?;
+      if (categoryId != null && totalAmount != null) {
+        spentMap[categoryId] = totalAmount.toDouble();
+      }
+    }
+    return spentMap;
+  }
+
+  @override
+  Future<double> getTotalSpentInPeriod({
+    required int userId,
+    required String startDateIso,
+    required String endDateIso,
+  }) async {
+    final db = await _db;
+
+    final List<Map<String, dynamic>> result = await db.query(
+      TransactionsTable.tableName,
+      columns: ['SUM(amount) AS total_amount'],
+      where: 'user_id = ? AND created_at >= ? AND created_at <= ?',
+      whereArgs: [userId, startDateIso, endDateIso],
+    );
+
+    if (result.isEmpty || result.first['total_amount'] == null) return 0.0;
+    return (result.first['total_amount'] as num).toDouble();
   }
 }

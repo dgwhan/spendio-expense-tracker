@@ -1,12 +1,14 @@
-import '../entities/budget_category_entity.dart';
-import '../repositories/budget_category_repository.dart';
+// import 'package:spend_io_app/features/budget/data/models/budget_category_model.dart';
+// import 'package:spend_io_app/features/wallet/data/repositories/budget_category_repository_impl.dart';
 
-class GetCategoriesUseCase {
-  final BudgetCategoryRepository repository;
+// import '../entities/budget_category_entity.dart';
 
-  GetCategoriesUseCase(this.repository);
+// class GetCategoriesUseCase {
+//   final BudgetCategoryRepositoryImpl repository;
 
-  Future<List<BudgetCategoryEntity>> call(int localUserId) {
-    return repository.getCategories(localUserId);
-  }
-}
+//   GetCategoriesUseCase(this.repository);
+
+//   Future<List<BudgetCategoryEntity>> call(int localUserId) {
+//     return repository.getCategories(localUserId);
+//   }
+// }

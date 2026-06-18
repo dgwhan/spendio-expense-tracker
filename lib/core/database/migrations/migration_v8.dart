@@ -1,7 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import '../tables/categories_table.dart';
 import '../tables/transactions_table.dart';
-import '../../../core/utils/app_default_categories.dart'; // Import single source of truth
+import '../../../core/utils/app_default_categories.dart';
 
 class MigrationV8 {
   static Future<void> run(Database db) async {

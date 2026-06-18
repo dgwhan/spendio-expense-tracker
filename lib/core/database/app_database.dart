@@ -1,4 +1,3 @@
-
 import 'package:path/path.dart';
 import 'package:spend_io_app/core/database/database_logger.dart';
 import 'package:sqflite/sqflite.dart';
@@ -9,6 +8,7 @@ import 'migrations/migration_v5.dart';
 import 'migrations/migration_v6.dart';
 import 'migrations/migration_v7.dart';
 import 'migrations/migration_v8.dart';
+import 'migrations/migration_v9.dart';
 
 /// Application SQLite database
 class AppDatabase {
@@ -37,7 +37,7 @@ class AppDatabase {
     // app_database.dart
     return openDatabase(
       path,
-      version: 8,
+      version: 9,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
@@ -48,6 +48,7 @@ class AppDatabase {
         await MigrationV6.run(db);
         await MigrationV7.run(db);
         await MigrationV8.run(db);
+        await MigrationV9.run(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 4) await MigrationV4.run(db);
@@ -55,6 +56,7 @@ class AppDatabase {
         if (oldVersion < 6) await MigrationV6.run(db);
         if (oldVersion < 7) await MigrationV7.run(db);
         if (oldVersion < 8) await MigrationV8.run(db);
+        if (oldVersion < 9) await MigrationV8.run(db);
       },
       onOpen: (db) async {
         await DatabaseLogger.onOpen(db);

@@ -2,26 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:spend_io_app/features/auth/domain/entities/user_entity.dart';
-import 'package:spend_io_app/features/wallet/domain/entities/budget_category_entity.dart';
+import 'package:spend_io_app/features/budget/domain/entities/budget_category_progress_entity.dart'; // CHÍNH XÁC: Import đúng Progress từ Budget feature
 import 'package:spend_io_app/features/wallet/domain/entities/financial_health_status.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/saving_goal_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/wallet_summary_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/goals/get_goals_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/goals/add_goal_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/get_wallet_summary_usecase.dart';
-import 'package:spend_io_app/features/wallet/domain/usecases/get_categories_usecase.dart';
-import 'package:spend_io_app/features/wallet/domain/usecases/initialize_budget_categories_usecase.dart';
+import 'package:spend_io_app/features/budget/domain/services/budget_progress_calculator.dart'; // ĐỂ LẤY PROGRESS THỰC TẾ
+import 'package:spend_io_app/features/budget/domain/repositories/budget_repository.dart';
 
 class WalletViewModel extends ChangeNotifier {
   final GetWalletSummaryUseCase getWalletSummaryUseCase;
   final GetGoalsUseCase getGoalsUseCase;
   final AddGoalUseCase addGoalUseCase;
-  final GetCategoriesUseCase getCategoriesUseCase;
-  final InitializeBudgetCategoriesUseCase initializeBudgetCategoriesUseCase;
+  final BudgetRepository budgetRepository; // Thay thế usecase category cũ
+  final BudgetProgressCalculator
+      budgetCalculator; // Inject engine tính toán realtime
 
   UserEntity? _currentUser;
   bool _isLoading = false;
   String? _errorMessage;
+  int _requestId = 0;
+  bool _disposed = false;
 
   WalletSummaryEntity _summary = const WalletSummaryEntity(
     totalAssets: 0.0,
@@ -30,93 +33,110 @@ class WalletViewModel extends ChangeNotifier {
     activeGoals: 0,
   );
   List<SavingGoalEntity> _goals = [];
-  List<BudgetCategoryEntity> _categories = [];
+
+  List<BudgetCategoryProgressEntity> _categoriesProgress = [];
   DateTime selectedMonth = DateTime.now();
 
   WalletViewModel({
     required this.getWalletSummaryUseCase,
     required this.getGoalsUseCase,
     required this.addGoalUseCase,
-    required this.getCategoriesUseCase,
-    required this.initializeBudgetCategoriesUseCase,
+    required this.budgetRepository,
+    required this.budgetCalculator,
   });
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   WalletSummaryEntity get summary => _summary;
   List<SavingGoalEntity> get goals => _goals;
-  List<BudgetCategoryEntity> get categories => _categories;
+  List<BudgetCategoryProgressEntity> get categoriesProgress =>
+      _categoriesProgress;
   UserEntity? get currentUser => _currentUser;
   String get remoteUid => _remoteUid;
 
   void updateUser(UserEntity? user) {
-    if (_isLoading) return;
+    if (_isLoading || _disposed) return;
 
     final hasChanged =
         _currentUser?.id != user?.id || _currentUser?.email != user?.email;
-
-    // Nếu thông tin user không đổi và RAM đã có sẵn dữ liệu thì đứng im, không tự ý nạp lại gây rollback
     if (!hasChanged && (_goals.isNotEmpty || _summary.totalAssets > 0)) return;
 
     _currentUser = user;
 
-    // if (_currentUser != null) {
-    //   Future.microtask(() => initialize());
-    // }
+    if (_currentUser != null) {
+      Future.microtask(() => initialize());
+    }
   }
 
-  String get currentMonthLabel {
-    return DateFormat('MMMM yyyy').format(selectedMonth);
-  }
+  String get currentMonthLabel => DateFormat('MMMM yyyy').format(selectedMonth);
+  String get budgetStatus => '$currentMonthLabel Budget';
 
-  String get budgetStatus {
-    return '$currentMonthLabel Budget';
-  }
-
-  // 🔥 ĐÃ FIX HOÀN TOÀN: Luồng Khởi tạo hỗ trợ Silent Refresh bảo vệ trạng thái RAM
   Future<void> initialize() async {
-    // Chỉ bật loading xoay tròn nếu là lần đầu tiên nạp (chưa có dữ liệu), tránh làm UI bị giật về 0
+    final int request = ++_requestId;
     final isFirstLoad = _goals.isEmpty && _summary.totalAssets == 0;
 
     if (isFirstLoad) {
       _isLoading = true;
       _errorMessage = null;
-      notifyListeners();
+      _safeNotify();
     }
 
     try {
       if (_currentUser != null) {
         final localId = _currentUser!.id ?? 1;
 
-        // 1. Tải toàn bộ dữ liệu offline từ Local DB lên trước để hiển thị tức thì
-        await initializeCategories(localId);
-        await loadSummary(localId);
-        await loadGoals(localId);
-        await loadCategories(localId);
+        //Tải dữ liệu Offline cục bộ
+        _summary = await getWalletSummaryUseCase(localId);
+        _goals = await getGoalsUseCase(localId, _remoteUid);
 
-        // Sau khi data local đã sẵn sàng trên RAM, tắt loading ngay để UI hiển thị mượt mà
+        //Bóc tách hạn mức tháng và tính toán phần tiến độ thực tế thông qua Calculator tập trung
+        final currentBudget = await budgetRepository.getCurrentBudget(localId);
+        if (currentBudget != null && request == _requestId && !_disposed) {
+          _categoriesProgress =
+              await budgetCalculator.calculateCategoryProgressList(
+            budgetId: currentBudget.id,
+            startDate: currentBudget.startDate,
+            endDate: currentBudget.endDate,
+          );
+        }
+
+        if (_disposed || request != _requestId) return;
         _isLoading = false;
-        notifyListeners();
+        _safeNotify();
 
-        // 2. Tiến hành đồng bộ ngầm (Silent Sync) với Firebase mà không block UI
+        //Silent Sync ngầm với Firebase
         final rUid = _remoteUid;
         if (rUid.isNotEmpty) {
           await getWalletSummaryUseCase.repository
               .syncWithFirebase(localId, rUid);
 
-          // Sau khi sync xong, nạp đè dữ liệu mới nhất từ DB vật lý lên RAM
-          await loadSummary(localId);
-          await loadGoals(localId);
-          await loadCategories(localId);
-          notifyListeners();
+          if (_disposed || request != _requestId) return;
+
+          //Nạp lại dữ liệu sạch sau khi sync
+          _summary = await getWalletSummaryUseCase(localId);
+          _goals = await getGoalsUseCase(localId, _remoteUid);
+
+          final syncBudget = await budgetRepository.getCurrentBudget(localId);
+          if (syncBudget != null && request == _requestId && !_disposed) {
+            _categoriesProgress =
+                await budgetCalculator.calculateCategoryProgressList(
+              budgetId: syncBudget.id,
+              startDate: syncBudget.startDate,
+              endDate: syncBudget.endDate,
+            );
+          }
+
+          _safeNotify();
         }
       } else {
         _resetStates();
       }
     } catch (e) {
-      _errorMessage = e.toString();
-      _isLoading = false;
-      notifyListeners();
+      if (request == _requestId) {
+        _errorMessage = e.toString();
+        _isLoading = false;
+        _safeNotify();
+      }
     }
   }
 
@@ -128,9 +148,9 @@ class WalletViewModel extends ChangeNotifier {
       activeGoals: 0,
     );
     _goals = [];
-    _categories = [];
+    _categoriesProgress = [];
     _isLoading = false;
-    notifyListeners();
+    _safeNotify();
   }
 
   String get _remoteUid {
@@ -141,26 +161,10 @@ class WalletViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> initializeCategories(int localId) async {
-    await initializeBudgetCategoriesUseCase(localId);
-  }
-
-  Future<void> loadSummary(int localId) async {
-    _summary = await getWalletSummaryUseCase(localId);
-  }
-
-  Future<void> loadGoals(int localId) async {
-    _goals = await getGoalsUseCase(localId, _remoteUid);
-  }
-
-  Future<void> loadCategories(int localId) async {
-    _categories = await getCategoriesUseCase(localId);
-  }
-
   Future<void> fetchWalletSummary() async {
     if (_currentUser == null) return;
-    await loadSummary(_currentUser!.id ?? 1);
-    notifyListeners();
+    _summary = await getWalletSummaryUseCase(_currentUser!.id ?? 1);
+    _safeNotify();
   }
 
   Future<void> addNewGoal(SavingGoalEntity goal) async {
@@ -169,7 +173,7 @@ class WalletViewModel extends ChangeNotifier {
     final rUid = _remoteUid;
 
     _isLoading = true;
-    notifyListeners();
+    _safeNotify();
 
     try {
       await addGoalUseCase(localId, rUid, goal);
@@ -177,7 +181,7 @@ class WalletViewModel extends ChangeNotifier {
     } catch (e) {
       _errorMessage = e.toString();
       _isLoading = false;
-      notifyListeners();
+      _safeNotify();
     }
   }
 
@@ -187,12 +191,10 @@ class WalletViewModel extends ChangeNotifier {
   }
 
   double get totalSpent {
-    return categories.fold(0.0, (sum, item) => sum + item.spent);
+    return _categoriesProgress.fold(0.0, (sum, item) => sum + item.spent);
   }
 
-  double get totalBudget {
-    return summary.monthlyBudget;
-  }
+  double get totalBudget => summary.monthlyBudget;
 
   int get daysLeft {
     final now = DateTime.now();
@@ -214,5 +216,15 @@ class WalletViewModel extends ChangeNotifier {
     if (ratio >= 0.25) return FinancialHealthStatus.good;
     if (ratio >= 0.10) return FinancialHealthStatus.warning;
     return FinancialHealthStatus.critical;
+  }
+
+  void _safeNotify() {
+    if (!_disposed) notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 }

@@ -9,7 +9,7 @@ import 'package:spend_io_app/features/account/presentation/viewmodels/account_vi
 import 'package:spend_io_app/features/account/presentation/screen/account_details_screen.dart';
 import 'package:spend_io_app/features/account/presentation/widgets/accounts_section.dart';
 import 'package:spend_io_app/features/account/presentation/screen/account_list_screen.dart';
-import 'package:spend_io_app/features/wallet/presentation/widgets/budget/budget_section.dart';
+import 'package:spend_io_app/features/budget/presentation/widgets/budget_section.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/goals/goals_section.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/header/wallet_header.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/hero/total_assets_card.dart';
@@ -155,14 +155,15 @@ class _WalletScreenState extends State<WalletScreen> {
                           totalSpent: viewModel.totalSpent,
                           totalBudget: viewModel.totalBudget,
                           daysLeft: viewModel.daysLeft,
-                          categories: viewModel.categories,
+                          categories: viewModel
+                              .categoriesProgress, // 🔴 ĐÃ SỬA: Trỏ chính xác vào categoriesProgress sạch lỗi compile!
                         ),
                       ],
                     ),
                   ),
                 ),
 
-                // Phase 02: My Accounts (Hiển thị danh sách ví tài khoản chuẩn xác)
+                // Phase 02: My Accounts
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
                   sliver: AccountsSection(
@@ -194,7 +195,7 @@ class _WalletScreenState extends State<WalletScreen> {
                   ),
                 ),
 
-                // Phase 03: Savings Goals (Đặt mục tiêu tiết kiệm)
+                // Phase 03: Savings Goals
                 const SliverPadding(
                   padding: EdgeInsets.fromLTRB(
                     AppSizes.md,

@@ -1,11 +1,12 @@
-import '../../../account/data/models/account_model.dart';
-import '../models/saving_goal_model.dart';
-import '../models/budget_category_model.dart';
-import '../../../account/data/datasource/account_local_data_source.dart';
-import 'goal/goal_local_data_source.dart';
-import 'budget/budget_local_data_source.dart';
+import 'package:spend_io_app/features/budget/data/datasources/budget_local_data_source.dart'; // Đã trỏ đúng nguồn chuẩn
+import 'package:spend_io_app/features/budget/data/models/budget_model.dart';
+import 'package:spend_io_app/features/budget/data/models/budget_category_model.dart';
+import 'package:spend_io_app/features/account/data/models/account_model.dart';
+import 'package:spend_io_app/features/wallet/data/models/saving_goal_model.dart';
+import 'package:spend_io_app/features/account/data/datasource/account_local_data_source.dart';
+import 'package:spend_io_app/features/wallet/data/datasources/goal/goal_local_data_source.dart';
 
-/// Facade that aggregates all local datasources.
+/// Facade aggregates all local datasources.
 /// Consumers depend on this single contract; sub-sources handle the detail.
 abstract class WalletLocalDataSource
     implements
@@ -26,8 +27,9 @@ class WalletLocalDataSourceImpl implements WalletLocalDataSource {
         _goalLocal = goalLocal,
         _budgetLocal = budgetLocal;
 
-  // Account
-
+  // =====================================================================
+  // 1. ACCOUNT MODULE SUB-ROUTING
+  // =====================================================================
   @override
   Future<List<AccountModel>> getAccounts(int userId) =>
       _accountLocal.getAccounts(userId);
@@ -59,8 +61,9 @@ class WalletLocalDataSourceImpl implements WalletLocalDataSource {
   @override
   Future<bool> hasAccounts(int userId) => _accountLocal.hasAccounts(userId);
 
-  // Goal
-
+  // =====================================================================
+  // 2. SAVINGS GOAL MODULE SUB-ROUTING
+  // =====================================================================
   @override
   Future<List<SavingGoalModel>> getGoals(int userId) =>
       _goalLocal.getGoals(userId);
@@ -75,20 +78,42 @@ class WalletLocalDataSourceImpl implements WalletLocalDataSource {
   @override
   Future<bool> hasGoals(int userId) => _goalLocal.hasGoals(userId);
 
-  //Budget
+  // =====================================================================
+  // 3. BUDGET MODULE SUB-ROUTING (🔴 ĐÃ CẬP NHẬT THEO SCHEMAS MỚI CHUẨN)
+  // =====================================================================
+  @override
+  Future<BudgetModel?> getCurrentBudget(int userId) =>
+      _budgetLocal.getCurrentBudget(userId);
 
   @override
-  Future<List<BudgetCategoryModel>> getCategories(int userId) =>
-      _budgetLocal.getCategories(userId);
+  Future<void> createBudget(BudgetModel budget) =>
+      _budgetLocal.createBudget(budget);
 
   @override
-  Future<void> insertCategory(int userId, BudgetCategoryModel category) =>
-      _budgetLocal.insertCategory(userId, category);
+  Future<void> updateBudget(BudgetModel budget) =>
+      _budgetLocal.updateBudget(budget);
 
   @override
-  Future<void> updateCategory(int userId, BudgetCategoryModel category) =>
-      _budgetLocal.updateCategory(userId, category);
+  Future<void> deleteBudget(String budgetId) =>
+      _budgetLocal.deleteBudget(budgetId);
 
+  @override
+  Future<List<BudgetCategoryModel>> getBudgetCategories(String budgetId) =>
+      _budgetLocal.getBudgetCategories(budgetId);
+
+  @override
+  Future<void> createBudgetCategory(BudgetCategoryModel category) =>
+      _budgetLocal.createBudgetCategory(category);
+
+  @override
+  Future<void> updateBudgetCategory(BudgetCategoryModel category) =>
+      _budgetLocal.updateBudgetCategory(category);
+
+  @override
+  Future<void> deleteBudgetCategory(String id) =>
+      _budgetLocal.deleteBudgetCategory(id);
+
+  // 🔴 ĐÃ VÁ LỖI TRỰC TIẾP: Trỏ đúng sang hàm hasCategories an toàn của BudgetLocalDataSource chuẩn mới
   @override
   Future<bool> hasCategories(int userId) => _budgetLocal.hasCategories(userId);
 }

@@ -24,11 +24,14 @@ class WalletRepositoryImpl implements WalletRepository {
     final accounts = await localDataSource.getAccounts(localUserId);
     final activeAccounts = accounts.where((a) => a.deletedAt == null).toList();
     final goals = await localDataSource.getGoals(localUserId);
-    final categories = await localDataSource.getCategories(localUserId);
+
+    // 🔴 SỬA TẠI ĐÂY: Đọc hạn mức ngân sách tháng từ bảng budgets cha chuẩn xác
+    final currentBudget = await localDataSource.getCurrentBudget(localUserId);
+    final double budgetAmount = currentBudget?.amount ?? 0.0;
 
     return WalletSummaryEntity(
       totalAssets: activeAccounts.fold(0.0, (sum, acc) => sum + acc.balance),
-      monthlyBudget: categories.fold(0.0, (sum, cat) => sum + cat.budget),
+      monthlyBudget: budgetAmount, // Gán hạn mức tháng chuẩn cơm mẹ nấu
       totalSaved: goals.fold(0.0, (sum, goal) => sum + goal.currentAmount),
       activeGoals: goals.length,
     );
@@ -60,17 +63,12 @@ class WalletRepositoryImpl implements WalletRepository {
       updatedAt: DateTime.now(),
     );
 
-    // Step 2: Persist to SQLite via targeted UPDATE (ConflictAlgorithm.replace
-    // is handled inside AccountLocalDataSourceImpl.updateAccount).
+    // Step 2: Persist to SQLite via targeted UPDATE
     await localDataSource.updateAccount(localUserId, updated);
     debugPrint('[WalletRepo] Balance updated locally — account: $accountId, '
         'new balance: $newBalance');
 
     // Step 3: Push balance patch to Firestore.
-    // updateAccountBalance on the remote datasource uses .update() (not .set()),
-    // so only the balance field is overwritten. Network failures are caught
-    // inside the remote datasource and logged; the app remains functional
-    // in offline mode via SQLite.
     if (remoteUid.trim().isNotEmpty) {
       await remoteDataSource.updateAccountBalance(
         remoteUid,
@@ -83,8 +81,7 @@ class WalletRepositoryImpl implements WalletRepository {
   // --------------------------------------------------------------------------
   // FULL SYNC PIPELINE
   // Handles metadata sync and new-device bootstrap.
-  // Sync Guard here is scoped to INSERT paths only — UPDATE paths
-  // are guarded by ID-existence checks, not type-based filtering.
+  // Sync Guard here is scoped to INSERT paths only.
   // --------------------------------------------------------------------------
 
   @override
@@ -112,9 +109,6 @@ class WalletRepositoryImpl implements WalletRepository {
     final localWallets = await localDataSource.getAccounts(localUserId);
     final remoteWallets = await remoteDataSource.getAccounts(remoteUid);
 
-    // Build ID-keyed maps first. Duplicate filtering below applies only to
-    // the INSERT path — records whose IDs already exist in the local map
-    // are treated as updates and are never skipped.
     final Map<String, AccountModel> localMap = {
       for (var w in localWallets) w.id: w
     };
@@ -122,9 +116,6 @@ class WalletRepositoryImpl implements WalletRepository {
       for (var w in remoteWallets) w.id: w
     };
 
-    // Guard state: tracks whether a primary cash wallet has already been
-    // inserted during THIS sync pass. Only blocks INSERT of a second cash
-    // wallet when no local record with that ID exists yet.
     bool primaryCashInserted = false;
 
     // Remote -> Local
@@ -136,7 +127,7 @@ class WalletRepositoryImpl implements WalletRepository {
       final localWallet = localMap[remoteWallet.id];
 
       if (localWallet == null) {
-        // INSERT path — guard applies here.
+        // INSERT path
         if (remoteWallet.deletedAt != null) continue;
 
         if (remoteWallet.type.name == 'cash') {
@@ -150,24 +141,21 @@ class WalletRepositoryImpl implements WalletRepository {
 
         await localDataSource.saveAccount(localUserId, remoteWallet);
       } else {
-        // UPDATE path — guard never applies; ID already exists locally.
+        // UPDATE path
         if (remoteWallet.deletedAt != null && localWallet.deletedAt == null) {
-          // Remote soft-delete is authoritative.
           await localDataSource.saveAccount(localUserId, remoteWallet);
         } else if (remoteWallet.updatedAt.isAfter(localWallet.updatedAt)) {
-          // Remote metadata wins; preserve local balance.
           await localDataSource.saveAccount(
             localUserId,
             remoteWallet.copyWith(balance: localWallet.balance),
           );
         } else if (localWallet.updatedAt.isAfter(remoteWallet.updatedAt)) {
-          // Local metadata wins; push up to Firestore.
           await remoteDataSource.saveAccount(remoteUid, localWallet);
         }
       }
     }
 
-    // Local -> Remote (bootstrap offline-created wallets)
+    // Local -> Remote
     for (final localWallet in localWallets) {
       if (remoteMap.containsKey(localWallet.id)) continue;
 
@@ -224,9 +212,6 @@ class WalletRepositoryImpl implements WalletRepository {
 
   @override
   Future<AccountModel> getAccount(String accountId) async {
-    // getAccounts requires a userId; passing 0 as a fallback is a known
-    // limitation — replace with a dedicated getAccountById on the datasource
-    // when available.
     final allAccounts = await localDataSource.getAccounts(0);
     return allAccounts.firstWhere(
       (a) => a.id == accountId,
@@ -237,8 +222,6 @@ class WalletRepositoryImpl implements WalletRepository {
 
   @override
   Future<void> updateAccount(AccountModel account) async {
-    // Full-model upsert used internally by the sync pipeline.
-    // Do NOT call this from transaction use cases — use updateAccountBalance.
     await localDataSource.saveAccount(account.userId, account);
   }
 }

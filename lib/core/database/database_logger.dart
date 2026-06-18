@@ -10,8 +10,17 @@ class DatabaseLogger {
 
     await _logVersion(db);
     await _logTables(db);
-    await _logCategories(db);
-    await _logTransactions(db);
+
+    await _logCount(db, 'categories', 'Categories');
+    await _logCount(db, 'transactions', 'Transactions');
+    await _logCount(db, 'budgets', 'Budgets');
+    await _logCount(
+      db,
+      'budget_categories',
+      'Budget Categories',
+    );
+
+    await _logBudgetSummary(db);
 
     debugPrint('===================================');
     debugPrint('');
@@ -28,7 +37,7 @@ class DatabaseLogger {
       '''
       SELECT name
       FROM sqlite_master
-      WHERE type='table'
+      WHERE type = 'table'
       ORDER BY name
       ''',
     );
@@ -40,33 +49,64 @@ class DatabaseLogger {
     }
   }
 
-  static Future<void> _logCategories(Database db) async {
-    try {
-      final result = await db.rawQuery(
-        '''
-        SELECT COUNT(*) AS total
-        FROM categories
-        ''',
-      );
+  static Future<void> _logCount(
+    Database db,
+    String tableName,
+    String label,
+  ) async {
+    if (!await _tableExists(db, tableName)) {
+      return;
+    }
 
-      debugPrint(
-        '[DB] Categories: ${result.first['total']}',
-      );
-    } catch (_) {}
+    final result = await db.rawQuery(
+      '''
+      SELECT COUNT(*) AS total
+      FROM $tableName
+      ''',
+    );
+
+    debugPrint(
+      '[DB] $label: ${result.first['total']}',
+    );
   }
 
-  static Future<void> _logTransactions(Database db) async {
-    try {
-      final result = await db.rawQuery(
-        '''
-        SELECT COUNT(*) AS total
-        FROM transactions
-        ''',
-      );
+  static Future<void> _logBudgetSummary(
+    Database db,
+  ) async {
+    if (!await _tableExists(db, 'budgets')) {
+      return;
+    }
 
-      debugPrint(
-        '[DB] Transactions: ${result.first['total']}',
-      );
-    } catch (_) {}
+    final result = await db.rawQuery(
+      '''
+      SELECT
+        COUNT(*) AS total,
+        COALESCE(SUM(amount), 0) AS total_budget
+      FROM budgets
+      ''',
+    );
+
+    debugPrint(
+      '[DB] Budget Summary: '
+      '${result.first['total']} budgets'
+      ' | Total Budget = ${result.first['total_budget']}',
+    );
+  }
+
+  static Future<bool> _tableExists(
+    Database db,
+    String tableName,
+  ) async {
+    final result = await db.rawQuery(
+      '''
+      SELECT name
+      FROM sqlite_master
+      WHERE type = 'table'
+        AND name = ?
+      ''',
+      [tableName],
+    );
+
+    return result.isNotEmpty;
   }
 }

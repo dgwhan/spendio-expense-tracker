@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/saving_goal_entity.dart';
-import 'package:spend_io_app/features/wallet/domain/entities/budget_category_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/financial_health_status.dart';
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
 import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
@@ -35,13 +34,32 @@ class DashboardViewModel extends ChangeNotifier {
   double get totalSpent => walletViewModel.totalSpent;
 
   List<SavingGoalEntity> get savingsGoals => walletViewModel.goals;
-  List<BudgetCategoryEntity> get budgetCategories => walletViewModel.categories;
 
-  // 🌟 NẠP ĐỘNG KHÔNG TREO: Sử dụng BuildContext lấy danh sách giao dịch tổng mà không dính bẫy đệ quy
+  // 🌐 Helper chuyển ID danh mục từ database sang tên hiển thị Tiếng Việt trên giao diện Home
+  String _getCategoryDisplayName(String categoryId) {
+    switch (categoryId.toLowerCase()) {
+      case 'dining':
+      case 'food':
+        return 'Ăn uống';
+      case 'transport':
+        return 'Di chuyển';
+      case 'shopping':
+        return 'Mua sắm';
+      case 'health':
+        return 'Sức khỏe';
+      case 'bills':
+        return 'Hóa đơn';
+      case 'entertainment':
+        return 'Giải trí';
+      default:
+        return categoryId;
+    }
+  }
+
+  // 🌟 RECENT TRANSACTIONS: Nạp động danh sách lịch sử giao dịch gần đây ra màn hình chính
   List<RecentTransactionModel> getRecentTransactions(BuildContext context) {
     final List<RecentTransactionModel> allTxs = [];
 
-    // Đọc data từ 2 ViewModel kia một cách tường minh tại thời điểm UI gọi render ngoài Home
     final activeAccounts = context.read<AccountViewModel>().accounts;
     final sourceTransactions =
         context.read<TransactionViewModel>().state.transactions;
@@ -52,21 +70,10 @@ class DashboardViewModel extends ChangeNotifier {
 
     for (final tx in sourceTransactions) {
       String displayTitle = tx.note ?? '';
-      String categoryName = '';
+      final String categoryName = _getCategoryDisplayName(tx.categoryId);
 
-      try {
-        final category =
-            walletViewModel.categories.firstWhere((c) => c.id == tx.categoryId);
-        categoryName = category.name;
-
-        if (displayTitle.trim().isEmpty) {
-          displayTitle = categoryName;
-        }
-      } catch (_) {
-        categoryName = 'Danh mục ẩn';
-        if (displayTitle.trim().isEmpty) {
-          displayTitle = 'Giao dịch không tên';
-        }
+      if (displayTitle.trim().isEmpty) {
+        displayTitle = categoryName;
       }
 
       allTxs.add(
@@ -85,6 +92,7 @@ class DashboardViewModel extends ChangeNotifier {
     return allTxs.take(10).toList();
   }
 
+  // 📊 MONTHLY BUDGET SUMMARY: Thống kê ngân sách tổng quát của tháng hiển thị ở Home
   MonthlyBudgetModel get monthlyBudget {
     return MonthlyBudgetModel(
       totalBudget: monthlyBudgetAmount,
@@ -93,6 +101,7 @@ class DashboardViewModel extends ChangeNotifier {
     );
   }
 
+  // 📈 SPENDING BREAKDOWN: Phân tích cơ cấu chi tiêu theo thời gian
   SpendingBreakdownModel get spendingBreakdownWeek =>
       _getBreakdown('THIS WEEK');
   SpendingBreakdownModel get spendingBreakdownMonth => _getBreakdown(
@@ -100,20 +109,21 @@ class DashboardViewModel extends ChangeNotifier {
   SpendingBreakdownModel get spendingBreakdownYear => _getBreakdown('2026');
 
   SpendingBreakdownModel _getBreakdown(String period) {
-    final cats = walletViewModel.categories;
-    if (cats.isEmpty) {
+    final progressList = walletViewModel.categoriesProgress;
+    if (progressList.isEmpty) {
       return SpendingBreakdownModel(
         periodTitle: '$period TOTAL',
         totalAmount: 0,
         items: [],
       );
     }
+
     final total = totalSpent;
-    final items = cats.map((c) {
-      final double pct = total > 0 ? (c.spent / total) : 0.0;
+    final items = progressList.map((progressItem) {
+      final double pct = total > 0 ? (progressItem.spent / total) : 0.0;
       return SpendingItemModel(
-        name: c.name,
-        amount: c.spent,
+        name: _getCategoryDisplayName(progressItem.budgetCategory.categoryId),
+        amount: progressItem.spent,
         percentage: pct,
       );
     }).toList();
@@ -125,14 +135,17 @@ class DashboardViewModel extends ChangeNotifier {
     );
   }
 
+  // 🩺 FINANCIAL PULSE: Đo lường sức khỏe tài chính và vẽ biểu đồ mật độ chi tiêu hàng tuần
   FinancialPulseModel get financialPulse {
     final double weeklySpend = totalSpent / 4;
-    final highestCategoryName = walletViewModel.categories.isNotEmpty
-        ? walletViewModel.categories.first.name
+    final progressList = walletViewModel.categoriesProgress;
+
+    final highestCategoryName = progressList.isNotEmpty
+        ? _getCategoryDisplayName(progressList.first.budgetCategory.categoryId)
         : 'None';
-    final highestCategoryPct = totalSpent > 0 &&
-            walletViewModel.categories.isNotEmpty
-        ? ((walletViewModel.categories.first.spent / totalSpent) * 100).toInt()
+
+    final highestCategoryPct = totalSpent > 0 && progressList.isNotEmpty
+        ? ((progressList.first.spent / totalSpent) * 100).toInt()
         : 0;
 
     String advice =
