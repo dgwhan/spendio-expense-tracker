@@ -121,7 +121,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     }
   }
 
-  void _submitData() {
+  Future<void> _submitData() async {
     if (!_formKey.currentState!.validate()) return;
     final double? amount = double.tryParse(_amountController.text);
     if (amount == null || amount <= 0) return;
@@ -142,6 +142,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       );
       return;
     }
+    //ẩn phím ảo
+    FocusScope.of(context).unfocus();
 
     final String nativeUniqueId =
         '${DateTime.now().microsecondsSinceEpoch}_${Random().nextInt(999)}';
@@ -182,9 +184,18 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     debugPrint(
         '====================================================================================================');
 
-    widget.transactionVM.addTransaction(newTx).then((_) {
-      if (mounted) Navigator.pop(context);
-    });
+    final navigator = Navigator.of(context);
+
+    try {
+      await widget.transactionVM.addTransaction(newTx);
+
+      if (mounted) {
+        navigator.pop();
+        debugPrint('[UX SUCCESS]: Đã tạo giao dịch thành công.');
+      }
+    } catch (e) {
+      debugPrint('[UX ERROR]: Thất bại khi lưu giao dịch: $e');
+    }
   }
 
   @override
