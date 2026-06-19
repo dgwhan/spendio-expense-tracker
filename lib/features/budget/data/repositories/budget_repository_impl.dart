@@ -99,15 +99,15 @@ class BudgetRepositoryImpl implements BudgetRepository {
     return localDataSource.hasBudgetCategories(userId);
   }
 
-  @override
-  Future<List<BudgetCategoryEntity>> getBudgetCategoriesByPeriod({
-    required int userId,
-    required DateTime date,
-  }) async {
-    final models = await localDataSource.getBudgetCategoriesByPeriod(
-      userId: userId,
-      date: date,
-    );
-    return models.map((model) => model.toEntity()).toList();
-  }
+  // @override
+  // Future<List<BudgetCategoryEntity>> getBudgetCategoriesByPeriod({
+  //   required int userId,
+  //   required DateTime date,
+  // }) async {
+  //   final models = await localDataSource.getBudgetCategoriesByPeriod(
+  //     userId: userId,
+  //     date: date,
+  //   );
+  //   return models.map((model) => model.toEntity()).toList();
+  // }
 }
