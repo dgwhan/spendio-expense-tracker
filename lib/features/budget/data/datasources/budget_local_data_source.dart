@@ -5,28 +5,15 @@ import 'package:spend_io_app/features/budget/data/models/budget_category_model.d
 
 abstract class BudgetLocalDataSource {
   Future<BudgetModel?> getCurrentBudget(int userId);
-
   Future<void> createBudget(BudgetModel budget);
-
   Future<void> updateBudget(BudgetModel budget);
-
   Future<void> deleteBudget(String budgetId);
-
-  Future<List<BudgetCategoryModel>> getBudgetCategories({
-    required int userId,
-  });
-
-  Future<List<BudgetCategoryModel>> getBudgetCategoriesByPeriod({
-    required int userId,
-    required DateTime date,
-  });
-
+  Future<List<BudgetCategoryModel>> getBudgetCategories({required int userId});
+  Future<List<BudgetCategoryModel>> getBudgetCategoriesByPeriod(
+      {required int userId, required DateTime date});
   Future<void> createBudgetCategory(BudgetCategoryModel category);
-
   Future<void> updateBudgetCategory(BudgetCategoryModel category);
-
   Future<void> deleteBudgetCategory(String id);
-
   Future<bool> hasBudgetCategories(int userId);
 }
 
@@ -52,11 +39,14 @@ class BudgetLocalDataSourceImpl implements BudgetLocalDataSource {
 
     if (result.isEmpty) {
       debugPrint(
-          '[DATA MISMATCH NOTICE]: No budget found in table "budgets" for User ID: $userId');
+          '[💡 SQLITE FETCH NOTICE]: Không tìm thấy budget nào cho User ID: $userId');
       return null;
     }
 
-    return BudgetModel.fromMap(result.first);
+    final budget = BudgetModel.fromMap(result.first);
+    debugPrint(
+        '[✅ SQLITE FETCH SUCCESS]: Đã tải thành công ngân sách [${budget.name}] - Số tiền: \$${budget.amount} từ SQLite lên RAM.');
+    return budget;
   }
 
   @override
@@ -66,8 +56,14 @@ class BudgetLocalDataSourceImpl implements BudgetLocalDataSource {
       budget.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    debugPrint(
-        '[DB INSERT]: Saved budget ${budget.id} for User ID: ${budget.userId}');
+    // 🌟 LOG THEO DÕI INSERT BUDGET
+    debugPrint('------------------------------------------------------------');
+    debugPrint('[📥 SQLITE BUDGET INSERTED]: Ghi dữ liệu LOCAL thành công!');
+    debugPrint('  ❖ ID: ${budget.id}');
+    debugPrint('  ❖ User ID: ${budget.userId}');
+    debugPrint('  ❖ Name: ${budget.name}');
+    debugPrint('  ❖ Amount: \$${budget.amount}');
+    debugPrint('------------------------------------------------------------');
   }
 
   @override
@@ -80,7 +76,10 @@ class BudgetLocalDataSourceImpl implements BudgetLocalDataSource {
     );
     if (count == 0) {
       debugPrint(
-          '[DATA MISMATCH ERROR]: Cannot update budget. ID ${budget.id} not found.');
+          '[❌ SQLITE UPDATE ERROR]: Không tìm thấy Budget ID ${budget.id} để cập nhật.');
+    } else {
+      debugPrint(
+          '[✏️ SQLITE BUDGET UPDATED]: Cập nhật thành công Budget [${budget.name}] ở Local SQLite.');
     }
   }
 
@@ -93,52 +92,38 @@ class BudgetLocalDataSourceImpl implements BudgetLocalDataSource {
     );
     if (count == 0) {
       debugPrint(
-          '[DATA MISMATCH ERROR]: Cannot delete budget. ID $budgetId not found.');
+          '[❌ SQLITE DELETE ERROR]: Thất bại! Không tìm thấy Budget ID $budgetId để xóa.');
+    } else {
+      debugPrint(
+          '[🗑️ SQLITE BUDGET DELETED]: Đã xóa sạch Budget ID $budgetId khỏi SQLite.');
     }
   }
 
   @override
-  Future<List<BudgetCategoryModel>> getBudgetCategories({
-    required int userId,
-  }) async {
+  Future<List<BudgetCategoryModel>> getBudgetCategories(
+      {required int userId}) async {
     final result = await database.query(
       'budget_categories',
       where: 'user_id = ?',
       whereArgs: [userId],
       orderBy: 'created_at DESC',
     );
-
-    if (result.isEmpty) {
-      debugPrint(
-          '[DATA MISMATCH NOTICE]: No records found in "budget_categories" for User ID: $userId');
-    } else {
-      debugPrint(
-          '[DB QUERY]: Fetched ${result.length} items from "budget_categories" for User ID: $userId');
-    }
-
+    debugPrint(
+        '[🔍 SQLITE QUERY]: Đã nạp ${result.length} ngân sách danh mục con từ SQLite cho User $userId.');
     return result.map(BudgetCategoryModel.fromMap).toList();
   }
 
   @override
-  Future<List<BudgetCategoryModel>> getBudgetCategoriesByPeriod({
-    required int userId,
-    required DateTime date,
-  }) async {
+  Future<List<BudgetCategoryModel>> getBudgetCategoriesByPeriod(
+      {required int userId, required DateTime date}) async {
     final dateIso = date.toIso8601String();
     final result = await database.query(
       'budget_categories',
       where: 'user_id = ? AND start_date <= ? AND end_date >= ?',
       whereArgs: [userId, dateIso, dateIso],
     );
-
-    if (result.isEmpty) {
-      debugPrint(
-          '[DATA MISMATCH NOTICE]: No active category budget found for User ID: $userId at date: $dateIso');
-    } else {
-      debugPrint(
-          '[DB QUERY]: Found ${result.length} active category budgets for date: $dateIso');
-    }
-
+    debugPrint(
+        '[🔍 SQLITE QUERY PERIOD]: Tìm thấy ${result.length} mục ngân sách con hoạt động trong chu kỳ $dateIso.');
     return result.map(BudgetCategoryModel.fromMap).toList();
   }
 
@@ -149,8 +134,14 @@ class BudgetLocalDataSourceImpl implements BudgetLocalDataSource {
       category.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+    // 🌟 LOG THEO DÕI INSERT BUDGET CATEGORY
+    debugPrint('------------------------------------------------------------');
     debugPrint(
-        '[DB INSERT]: Saved budget category ${category.id} for User ID: ${category.userId}');
+        '[📥 SQLITE CATEGORY INSERTED]: Ghi danh mục ngân sách LOCAL thành công!');
+    debugPrint('  ❖ Sub-ID: ${category.id}');
+    debugPrint('  ❖ Category ID gốc: ${category.categoryId}');
+    debugPrint('  ❖ Hạn mức danh mục: \$${category.amount}');
+    debugPrint('------------------------------------------------------------');
   }
 
   @override
@@ -163,7 +154,10 @@ class BudgetLocalDataSourceImpl implements BudgetLocalDataSource {
     );
     if (count == 0) {
       debugPrint(
-          '[DATA MISMATCH ERROR]: Cannot update budget category. ID ${category.id} not found.');
+          '[❌ SQLITE CATEGORY UPDATE ERROR]: Không tìm thấy danh mục ngân sách con ${category.id} để cập nhật.');
+    } else {
+      debugPrint(
+          '[✏️ SQLITE CATEGORY UPDATED]: Cập nhật thành công hạn mức danh mục [${category.categoryId}] ở Local.');
     }
   }
 
@@ -176,7 +170,10 @@ class BudgetLocalDataSourceImpl implements BudgetLocalDataSource {
     );
     if (count == 0) {
       debugPrint(
-          '[DATA MISMATCH ERROR]: Cannot delete budget category. ID $id not found.');
+          '[❌ SQLITE CATEGORY DELETE ERROR]: Không tìm thấy danh mục ${id} để xóa.');
+    } else {
+      debugPrint(
+          '[🗑️ SQLITE CATEGORY DELETED]: Đã xóa danh mục ngân sách con $id khỏi SQLite.');
     }
   }
 
@@ -186,9 +183,7 @@ class BudgetLocalDataSourceImpl implements BudgetLocalDataSource {
       'SELECT COUNT(*) count FROM budget_categories WHERE user_id = ?',
       [userId],
     );
-
     final count = Sqflite.firstIntValue(result) ?? 0;
-    debugPrint('[DB CHECK]: User ID: $userId has $count budget categories.');
     return count > 0;
   }
 }

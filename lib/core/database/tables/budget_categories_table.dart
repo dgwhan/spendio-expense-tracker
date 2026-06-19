@@ -5,6 +5,8 @@ class BudgetCategoriesTable {
     CREATE TABLE IF NOT EXISTS $tableName (
       id TEXT PRIMARY KEY,
 
+      name TEXT,
+
       user_id INTEGER NOT NULL,
 
       category_id TEXT NOT NULL,

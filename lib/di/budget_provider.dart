@@ -1,5 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
+import 'package:spend_io_app/features/budget/domain/usecase/monthly/delete_budget_usecase.dart';
+import 'package:spend_io_app/features/budget/domain/usecase/monthly/update_budget_usecase.dart';
+import 'package:spend_io_app/features/budget/domain/usecase/category/create_budget_category_usecase.dart';
+import 'package:spend_io_app/features/budget/domain/usecase/category/get_budget_categories_usecase.dart';
+import 'package:spend_io_app/features/budget/domain/usecase/category/update_budget_category_usecase.dart';
+import 'package:spend_io_app/features/budget/domain/usecase/category/delete_budget_category_usecase.dart';
 import 'package:spend_io_app/features/transaction/domain/repositories/transaction_repository.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -10,8 +17,9 @@ import 'package:spend_io_app/features/budget/domain/repositories/budget_reposito
 import 'package:spend_io_app/features/budget/domain/services/budget_progress_calculator.dart';
 import 'package:spend_io_app/features/budget/application/budget_progress_calculator_impl.dart';
 
-import 'package:spend_io_app/features/budget/presentation/viewmodels/budget_viewmodel.dart';
-import 'package:spend_io_app/features/budget/presentation/viewmodels/budget_category_viewmodel.dart';
+import 'package:spend_io_app/features/budget/presentation/viewmodels/monthly/budget_viewmodel.dart';
+import 'package:spend_io_app/features/budget/presentation/viewmodels/category/budget_category_viewmodel.dart';
+import 'package:spend_io_app/features/budget/presentation/viewmodels/category/budget_category_form_viewmodel.dart'; // ✅ IMPORT FILE FORM VIEWMODEL MỚI
 
 class BudgetModuleProvider {
   BudgetModuleProvider._();
@@ -28,7 +36,9 @@ class BudgetModuleProvider {
     ),
 
     Provider<BudgetRemoteDataSource>(
-      create: (_) => BudgetRemoteDataSourceImpl(),
+      create: (_) => BudgetRemoteDataSourceImpl(
+        firestore: FirebaseFirestore.instance,
+      ),
     ),
 
     // =========================
@@ -42,6 +52,40 @@ class BudgetModuleProvider {
           remoteDataSource: remote,
         );
       },
+    ),
+
+    // =========================
+    // MONTHLY BUDGET USE CASES
+    // =========================
+    ProxyProvider<BudgetRepository, UpdateBudgetUseCase>(
+      update: (_, repo, previous) => previous ?? UpdateBudgetUseCase(repo),
+    ),
+
+    ProxyProvider<BudgetRepository, DeleteBudgetUseCase>(
+      update: (_, repo, previous) => previous ?? DeleteBudgetUseCase(repo),
+    ),
+
+    // =========================
+    // CATEGORY BUDGET USE CASES
+    // =========================
+    ProxyProvider<BudgetRepository, CreateBudgetCategoryUseCase>(
+      update: (_, repo, previous) =>
+          previous ?? CreateBudgetCategoryUseCase(repo),
+    ),
+
+    ProxyProvider<BudgetRepository, GetBudgetCategoriesUseCase>(
+      update: (_, repo, previous) =>
+          previous ?? GetBudgetCategoriesUseCase(repo),
+    ),
+
+    ProxyProvider<BudgetRepository, UpdateBudgetCategoryUseCase>(
+      update: (_, repo, previous) =>
+          previous ?? UpdateBudgetCategoryUseCase(repo),
+    ),
+
+    ProxyProvider<BudgetRepository, DeleteBudgetCategoryUseCase>(
+      update: (_, repo, previous) =>
+          previous ?? DeleteBudgetCategoryUseCase(repo),
     ),
 
     // =========================
@@ -70,15 +114,33 @@ class BudgetModuleProvider {
           previous ?? BudgetViewModel(repository: repo, calculator: calc),
     ),
 
-    ChangeNotifierProxyProvider2<BudgetRepository, BudgetProgressCalculator,
+    ChangeNotifierProxyProvider5<
+        CreateBudgetCategoryUseCase,
+        GetBudgetCategoriesUseCase,
+        UpdateBudgetCategoryUseCase,
+        DeleteBudgetCategoryUseCase,
+        BudgetProgressCalculator,
         BudgetCategoryViewModel>(
       create: (context) => BudgetCategoryViewModel(
-        repository: context.read<BudgetRepository>(),
+        createUseCase: context.read<CreateBudgetCategoryUseCase>(),
+        getUseCase: context.read<GetBudgetCategoriesUseCase>(),
+        updateUseCase: context.read<UpdateBudgetCategoryUseCase>(),
+        deleteUseCase: context.read<DeleteBudgetCategoryUseCase>(),
         calculator: context.read<BudgetProgressCalculator>(),
       ),
-      update: (_, repo, calc, previous) =>
+      update: (_, create, get, update, delete, calc, previous) =>
           previous ??
-          BudgetCategoryViewModel(repository: repo, calculator: calc),
+          BudgetCategoryViewModel(
+            createUseCase: create,
+            getUseCase: get,
+            updateUseCase: update,
+            deleteUseCase: delete,
+            calculator: calc,
+          ),
+    ),
+
+    ChangeNotifierProvider<BudgetCategoryFormViewModel>(
+      create: (_) => BudgetCategoryFormViewModel(),
     ),
   ];
 }

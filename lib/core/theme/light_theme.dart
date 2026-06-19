@@ -1,6 +1,7 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import '../constants/app_colors.dart';
 import '../constants/app_radius.dart';
 
@@ -9,39 +10,35 @@ class LightTheme {
 
   static ThemeData theme = ThemeData(
     useMaterial3: true,
-
     brightness: Brightness.light,
-
     scaffoldBackgroundColor: AppColors.backgroundLight,
-
     fontFamily: GoogleFonts.inter().fontFamily,
-
     colorScheme: const ColorScheme.light(
       primary: AppColors.primary,
       secondary: AppColors.gradientEnd,
       surface: AppColors.surfaceLight,
       error: AppColors.error,
     ),
-
     textTheme: GoogleFonts.interTextTheme().apply(
       bodyColor: AppColors.textPrimaryLight,
       displayColor: AppColors.textPrimaryLight,
     ),
-
-    // APP BAR
-    appBarTheme: const AppBarTheme(
-      backgroundColor: Colors.transparent,
+    appBarTheme: AppBarTheme(
+      backgroundColor: AppColors.backgroundLight.withValues(alpha: 0.7),
       elevation: 0,
       scrolledUnderElevation: 0,
-      iconTheme: IconThemeData(color: AppColors.textPrimaryLight),
-      titleTextStyle: TextStyle(
+      iconTheme: const IconThemeData(color: AppColors.textPrimaryLight),
+      titleTextStyle: const TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.w700,
         color: AppColors.textPrimaryLight,
       ),
+      systemOverlayStyle: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+      ),
     ),
-
-    // CARD (future dashboard)
     cardTheme: CardThemeData(
       color: AppColors.surfaceLight,
       elevation: 0,
@@ -49,18 +46,12 @@ class LightTheme {
         borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
     ),
-
-    // DIVIDER
     dividerColor: AppColors.dividerLight,
-
-    // TEXT SELECTION
     textSelectionTheme: const TextSelectionThemeData(
       cursorColor: AppColors.primary,
       selectionColor: Color(0x335B5FEF),
       selectionHandleColor: AppColors.primary,
     ),
-
-    // INPUT (login/register ready)
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: AppColors.surfaceSecondaryLight,
@@ -88,8 +79,6 @@ class LightTheme {
         fontSize: 14,
       ),
     ),
-
-    // PRIMARY BUTTON SYSTEM (quan trọng cho screen của bạn)
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
@@ -105,8 +94,6 @@ class LightTheme {
         ),
       ),
     ),
-
-    // TEXT BUTTON (LOGIN button)
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: AppColors.primary,
@@ -121,8 +108,6 @@ class LightTheme {
         ),
       ),
     ),
-
-    // SPLASH/HIGHLIGHT
     splashColor: Colors.transparent,
     highlightColor: Colors.transparent,
   );

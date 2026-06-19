@@ -104,6 +104,18 @@ class TransactionLocalDataSourceImpl implements TransactionLocalDataSource {
     );
   }
 
+  // So sanh thoi gian qua ham datetime() cua SQLite thay vi so sanh chuoi
+  // ASCII thuan. datetime() chuan hoa duoc ca hai dang co va khong co ky tu
+  // 'T', tranh viec lech ket qua khi du lieu cu trong DB con sai format.
+  static const String _periodWhereClause = 'user_id = ? AND type = ? '
+      'AND datetime(transaction_date) >= datetime(?) '
+      'AND datetime(transaction_date) <= datetime(?)';
+
+  static const String _periodWithCategoryWhereClause =
+      'user_id = ? AND category_id = ? AND type = ? '
+      'AND datetime(transaction_date) >= datetime(?) '
+      'AND datetime(transaction_date) <= datetime(?)';
+
   @override
   Future<Map<String, double>> getSpentGroupByCategory({
     required int userId,
@@ -115,10 +127,13 @@ class TransactionLocalDataSourceImpl implements TransactionLocalDataSource {
     final List<Map<String, dynamic>> result = await db.query(
       TransactionsTable.tableName,
       columns: ['category_id', 'SUM(amount) AS total_amount'],
-      where: 'user_id = ? AND type = ? AND created_at >= ? AND created_at <= ?',
+      where: _periodWhereClause,
       whereArgs: [userId, 'expense', startDateIso, endDateIso],
       groupBy: 'category_id',
     );
+
+    debugPrint(
+        '[BUDGET SYNC] getSpentGroupByCategory range=$startDateIso..$endDateIso rows=${result.length}');
 
     final Map<String, double> spentMap = {};
     for (var row in result) {
@@ -142,9 +157,12 @@ class TransactionLocalDataSourceImpl implements TransactionLocalDataSource {
     final List<Map<String, dynamic>> result = await db.query(
       TransactionsTable.tableName,
       columns: ['SUM(amount) AS total_amount'],
-      where: 'user_id = ? AND type = ? AND created_at >= ? AND created_at <= ?',
+      where: _periodWhereClause,
       whereArgs: [userId, 'expense', startDateIso, endDateIso],
     );
+
+    debugPrint(
+        '[BUDGET SYNC] getTotalSpentInPeriod range=$startDateIso..$endDateIso total=${result.isNotEmpty ? result.first['total_amount'] : 0}');
 
     if (result.isEmpty || result.first['total_amount'] == null) return 0.0;
     return (result.first['total_amount'] as num).toDouble();
@@ -162,8 +180,7 @@ class TransactionLocalDataSourceImpl implements TransactionLocalDataSource {
     final List<Map<String, dynamic>> result = await db.query(
       TransactionsTable.tableName,
       columns: ['SUM(amount) AS total_amount'],
-      where:
-          'user_id = ? AND category_id = ? AND type = ? AND created_at >= ? AND created_at <= ?',
+      where: _periodWithCategoryWhereClause,
       whereArgs: [userId, categoryId, 'expense', startDateIso, endDateIso],
     );
 

@@ -19,7 +19,7 @@ class _AppMonthPickerDialogState extends State<AppMonthPickerDialog> {
 
   final List<String> _months = [
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    'Jul', 'Aug' 'Sep', 'Oct', 'Nov', 'Dec'
   ];
 
   @override

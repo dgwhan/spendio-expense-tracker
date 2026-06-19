@@ -8,14 +8,13 @@ import 'package:spend_io_app/features/category/data/repositories/category_reposi
 import 'package:spend_io_app/features/category/domain/repositories/category_repository.dart';
 import 'package:spend_io_app/features/category/presentation/viewmodels/category_viewmodel.dart';
 
-class CategoryProvider {
-  CategoryProvider._();
+class CategoryModuleProvider {
+  CategoryModuleProvider._();
 
   static List<SingleChildWidget> get providers => [
         // =========================================================
         // 1. DATA SOURCES
         // =========================================================
-        // ✅ ĐÃ VÁ TRIỆT ĐỂ: Thay thế kiểu Future<Database> thành Database đồng bộ thuần túy
         ProxyProvider<Database, CategoryLocalDataSource>(
           update: (_, dbInstance, __) {
             return CategoryLocalDataSourceImpl(database: dbInstance);
@@ -56,4 +55,3 @@ class CategoryProvider {
         ),
       ];
 }
-  

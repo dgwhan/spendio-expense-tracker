@@ -17,6 +17,7 @@ import 'package:spend_io_app/features/category/presentation/viewmodels/category_
 
 import 'package:spend_io_app/features/transaction/presentation/widgets/components/fintech_amount_input.dart';
 import 'package:spend_io_app/features/transaction/presentation/widgets/components/transaction_metadata_fields.dart';
+import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
 import 'package:spend_io_app/shared/widgets/date_picker/app_date_picker_sheet.dart';
 
 class AddTransactionScreen extends StatefulWidget {
@@ -186,12 +187,19 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
     final navigator = Navigator.of(context);
 
+    final walletVM = context.read<WalletViewModel>();
+
     try {
+      //Lưu giao dịch xuống cơ sở dữ liệu local và đẩy lên Firebase
       await widget.transactionVM.addTransaction(newTx);
+
+      //Ép WalletViewModel tính toán lại tiền Spent tổng tháng realtime
+      await walletVM.refreshBudgetProgress();
 
       if (mounted) {
         navigator.pop();
-        debugPrint('[UX SUCCESS]: Đã tạo giao dịch thành công.');
+        debugPrint(
+            '[UX SUCCESS]: Đã tạo giao dịch và ép cập nhật tiến trình Wallet Card thành công.');
       }
     } catch (e) {
       debugPrint('[UX ERROR]: Thất bại khi lưu giao dịch: $e');

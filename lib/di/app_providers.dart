@@ -22,28 +22,31 @@ class AppProviders {
 
   static List<SingleChildWidget> providers(Database database) {
     return [
-      // =========================
-      // CORE DB (SAFE SINGLETON)
-      // =========================
-      Provider<Database>.value(
-        value: database,
-      ),
+      // CORE
 
-      // =========================
-      // FEATURE MODULES
-      // =========================
+      Provider<Database>.value(value: database),
+
+      // AUTH + BOOTSTRAP LOW LEVEL
       ...AuthModuleProvider.providers,
       ...OnboardingModuleProvider.providers,
-      ...AccountProvider.providers,
-      ...CategoryProvider.providers,
+
+      // DOMAIN FEATURES
+      ...AccountModuleProvider.providers,
+      ...CategoryModuleProvider.providers,
+
+      // TRANSACTION
       ...TransactionProvider.providers,
+
+      // BUDGET
       ...BudgetModuleProvider.providers,
+
+      // WALLET + PROFILE
       ...WalletModuleProvider.providers,
       ...ProfileModuleProvider.providers,
 
-      // =========================
+      // =========================================================
       // STARTUP ORCHESTRATOR
-      // =========================
+      // =========================================================
       ProxyProvider2<AuthProvider, CheckWalletInitializationUseCase,
           StartupCoordinator>(
         update: (context, auth, walletCheck, previous) {

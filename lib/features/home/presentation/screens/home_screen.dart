@@ -7,7 +7,7 @@ import 'package:spend_io_app/features/account/presentation/viewmodels/account_vi
 import 'package:spend_io_app/features/home/presentation/widgets/app_header/app_header.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/balance_summary/balance_summary_card.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/financial_pulse/financial_pulse_section.dart';
-import 'package:spend_io_app/features/home/presentation/widgets/monthly_budget/monthly_budget_progress.dart';
+import 'package:spend_io_app/features/budget/presentation/widgets/monthly/monthly_budget_progress.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/quick_actions/quick_actions_grid.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/recent_activity/recent_activity_section.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/savings_goal/savings_goal_card.dart';
@@ -20,6 +20,7 @@ import 'package:spend_io_app/features/home/data/models/savings_goal_model.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
+
 
   void _navigateToInsights(BuildContext context) {
     debugPrint('Navigation Action: Redirect to Insights Tab details.');

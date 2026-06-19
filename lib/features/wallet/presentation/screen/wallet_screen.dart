@@ -4,12 +4,18 @@ import 'package:spend_io_app/features/account/presentation/screen/utils/account_
 import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
+import 'package:spend_io_app/features/budget/presentation/screens/budget_detail_screen.dart';
+import 'package:spend_io_app/features/budget/presentation/screens/category/add_category_budget_screen.dart';
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
 import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
 import 'package:spend_io_app/features/account/presentation/screen/account_details_screen.dart';
 import 'package:spend_io_app/features/account/presentation/widgets/accounts_section.dart';
 import 'package:spend_io_app/features/account/presentation/screen/account_list_screen.dart';
-import 'package:spend_io_app/features/budget/presentation/widgets/budget_section.dart';
+import 'package:spend_io_app/features/budget/presentation/widgets/section/budget_section.dart';
+import 'package:spend_io_app/features/budget/presentation/viewmodels/monthly/budget_form_viewmodel.dart';
+import 'package:spend_io_app/features/budget/presentation/viewmodels/category/budget_category_form_viewmodel.dart';
+import 'package:spend_io_app/features/budget/presentation/viewmodels/monthly/budget_viewmodel.dart';
+import 'package:spend_io_app/features/budget/presentation/screens/monthly/add_budget_screen.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/goals/goals_section.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/header/wallet_header.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/hero/total_assets_card.dart';
@@ -23,16 +29,6 @@ class WalletScreen extends StatefulWidget {
 }
 
 class _WalletScreenState extends State<WalletScreen> {
-  @override
-  void initState() {
-    super.initState();
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   final auth = context.read<AuthProvider>();
-    //   final vm = context.read<WalletViewModel>();
-    //   vm.updateUser(auth.currentUser?.toEntity());
-    // });
-  }
-
   void _handleGenerateReport(BuildContext context, WalletViewModel viewModel) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -62,17 +58,41 @@ class _WalletScreenState extends State<WalletScreen> {
     }
   }
 
+  void _navigateToBudgetForm(BuildContext context, int userId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider<BudgetFormViewModel>(
+          create: (_) => BudgetFormViewModel(),
+          child: AddBudgetScreen(userId: userId),
+        ),
+      ),
+    );
+  }
+
+  void _navigateToCategoryBudgetForm(BuildContext context, int userId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider<BudgetCategoryFormViewModel>(
+          create: (_) => BudgetCategoryFormViewModel(),
+          child: AddCategoryBudgetScreen(userId: userId),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final backgroundColor =
-        isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final errorTextColor = isDark ? AppColors.textPrimaryDark : Colors.black87;
 
+    final authProvider = context.read<AuthProvider>();
     final accountVM = context.read<AccountViewModel>();
+    final currentUserId = authProvider.currentUser?.toEntity().id ?? 0;
 
     return Scaffold(
-      backgroundColor: backgroundColor,
       body: Consumer2<WalletViewModel, AccountViewModel>(
         builder: (context, viewModel, accountViewModel, child) {
           if (viewModel.isLoading || accountViewModel.isLoading) {
@@ -83,7 +103,6 @@ class _WalletScreenState extends State<WalletScreen> {
             );
           }
 
-          // Lớp bảo vệ 02: Báo lỗi trực quan
           if (viewModel.errorMessage != null) {
             return Center(
               child: Padding(
@@ -110,102 +129,136 @@ class _WalletScreenState extends State<WalletScreen> {
             );
           }
 
-          // Lớp hiển thị chính
           return SafeArea(
             top: false,
-            child: CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                // Phase 01: Toàn bộ phần đầu & Khối Quản lý Ngân sách (Budget)
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSizes.md,
-                    AppSizes.xl * 1.5,
-                    AppSizes.md,
-                    0,
-                  ),
-                  sliver: SliverToBoxAdapter(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        WalletHeader(
-                          selectedMonth: viewModel.selectedMonth,
-                          onGenerateReport: () =>
-                              _handleGenerateReport(context, viewModel),
-                          onMonthTap: () async {
-                            final picked = await showDialog<DateTime>(
-                              context: context,
-                              builder: (context) => AppMonthPickerDialog(
-                                initialDate: viewModel.selectedMonth,
-                              ),
-                            );
-                            if (picked != null) {
-                              viewModel.selectMonth(picked);
-                            }
-                          },
-                        ),
-                        const SizedBox(height: AppSizes.lg),
-                        TotalAssetsCard(
-                          summary: viewModel.summary,
-                          healthStatus: viewModel.healthStatus,
-                        ),
-                        const SizedBox(height: AppSizes.xl),
-                        BudgetSection(
-                          totalSpent: viewModel.totalSpent,
-                          totalBudget: viewModel.totalBudget,
-                          daysLeft: viewModel.daysLeft,
-                          categories: viewModel
-                              .categoriesProgress, // 🔴 ĐÃ SỬA: Trỏ chính xác vào categoriesProgress sạch lỗi compile!
-                        ),
-                      ],
+            child: RefreshIndicator(
+              color: AppColors.primary,
+              onRefresh: () => _refreshAllWalletData(context),
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSizes.md,
+                      AppSizes.xl * 1.5,
+                      AppSizes.md,
+                      0,
+                    ),
+                    sliver: SliverToBoxAdapter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          WalletHeader(
+                            selectedMonth: viewModel.selectedMonth,
+                            onGenerateReport: () =>
+                                _handleGenerateReport(context, viewModel),
+                            onMonthTap: () async {
+                              final picked = await showDialog<DateTime>(
+                                context: context,
+                                builder: (context) => AppMonthPickerDialog(
+                                  initialDate: viewModel.selectedMonth,
+                                ),
+                              );
+                              if (picked != null) {
+                                viewModel.selectMonth(picked);
+                              }
+                            },
+                          ),
+                          const SizedBox(height: AppSizes.lg),
+                          TotalAssetsCard(
+                            summary: viewModel.summary,
+                          ),
+                          const SizedBox(height: AppSizes.xl),
+                          BudgetSection(
+                            totalSpent: viewModel.totalSpent,
+                            totalBudget: viewModel.totalBudget,
+                            daysLeft: viewModel.daysLeft,
+                            categories: viewModel.categoriesProgress,
+                            userId: currentUserId,
+                            onCreateBudgetTap: () =>
+                                _navigateToBudgetForm(context, currentUserId),
+                            onGetDetailBudgetTap: () async {
+                              if (viewModel.totalBudget > 0) {
+                                debugPrint(
+                                    '[PIPELINE INIT]: Loading budget data state container before detail context switch.');
+                                await context
+                                    .read<BudgetViewModel>()
+                                    .loadBudget(currentUserId);
+
+                                if (context.mounted) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => BudgetDetailScreen(
+                                        totalSpent: viewModel.totalSpent,
+                                        totalBudget: viewModel.totalBudget,
+                                        daysLeft: viewModel.daysLeft,
+                                        userId: currentUserId,
+                                      ),
+                                    ),
+                                  );
+                                }
+                              } else {
+                                debugPrint(
+                                    '[PIPELINE INIT]: Budget is zero. Redirecting to initialization form flow.');
+                                if (context.mounted) {
+                                  _navigateToBudgetForm(context, currentUserId);
+                                }
+                              }
+                            },
+                            onCreateCategoryBudgetTap: () =>
+                                _navigateToCategoryBudgetForm(
+                                    context, currentUserId),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
+                  SliverPadding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSizes.md),
+                    sliver: AccountsSection(
+                      accounts: accountVM.accounts,
+                      onViewAll: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AccountListScreen(),
+                          ),
+                        );
+                      },
+                      onAccountTap: (account) async {
+                        final result =
+                            await Navigator.push<AccountDetailsAction>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                AccountDetailsScreen(account: account),
+                          ),
+                        );
 
-                // Phase 02: My Accounts
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
-                  sliver: AccountsSection(
-                    accounts: accountVM.accounts,
-                    onViewAll: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const AccountListScreen(),
-                        ),
-                      );
-                    },
-                    onAccountTap: (account) async {
-                      final result = await Navigator.push<AccountDetailsAction>(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              AccountDetailsScreen(account: account),
-                        ),
-                      );
+                        if (!context.mounted || result == null) return;
 
-                      if (!context.mounted || result == null) return;
-
-                      if (result == AccountDetailsAction.deleted ||
-                          result == AccountDetailsAction.updated) {
-                        _refreshAllWalletData(context);
-                      }
-                    },
+                        if (result == AccountDetailsAction.deleted ||
+                            result == AccountDetailsAction.updated) {
+                          _refreshAllWalletData(context);
+                        }
+                      },
+                    ),
                   ),
-                ),
-
-                // Phase 03: Savings Goals
-                const SliverPadding(
-                  padding: EdgeInsets.fromLTRB(
-                    AppSizes.md,
-                    AppSizes.lg,
-                    AppSizes.md,
-                    0,
+                  const SliverPadding(
+                    padding: EdgeInsets.fromLTRB(
+                      AppSizes.md,
+                      AppSizes.lg,
+                      AppSizes.md,
+                      0,
+                    ),
+                    sliver: GoalsSection(),
                   ),
-                  sliver: GoalsSection(),
-                ),
-                const SliverToBoxAdapter(child: SizedBox(height: AppSizes.xl)),
-              ],
+                  const SliverToBoxAdapter(
+                      child: SizedBox(height: AppSizes.xl)),
+                ],
+              ),
             ),
           );
         },

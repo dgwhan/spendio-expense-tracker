@@ -2,19 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
-import 'package:spend_io_app/features/wallet/domain/entities/financial_health_status.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/wallet_summary_entity.dart';
-import 'package:spend_io_app/features/wallet/presentation/widgets/hero/financial_health_badge.dart';
-import 'package:spend_io_app/features/wallet/presentation/widgets/hero/statistics_row.dart';
 
 class TotalAssetsCard extends StatelessWidget {
   final WalletSummaryEntity summary;
-  final FinancialHealthStatus healthStatus;
 
   const TotalAssetsCard({
     super.key,
     required this.summary,
-    required this.healthStatus,
   });
 
   @override
@@ -39,19 +34,13 @@ class TotalAssetsCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Total Assets',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondaryDark,
-                    ),
-              ),
-              FinancialHealthBadge(status: healthStatus),
-            ],
+          Text(
+            'Total Assets',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondaryDark,
+                ),
           ),
           const SizedBox(height: AppSizes.sm),
           Text(
@@ -61,40 +50,6 @@ class TotalAssetsCard extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                   fontSize: 32,
                 ),
-          ),
-          const SizedBox(height: AppSizes.lg),
-
-          //đường kẻ phân mảnh
-          Container(
-            height: 1,
-            color: AppColors.surfaceLight.withValues(alpha: 0.15),
-          ),
-          const SizedBox(height: AppSizes.md),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: StatisticsRow(
-                  title: 'Monthly Budget',
-                  value: CurrencyFormatter.compact(summary.monthlyBudget),
-                  isOverDarkBackground: true,
-                ),
-              ),
-              Expanded(
-                child: StatisticsRow(
-                  title: 'Total Saved',
-                  value: CurrencyFormatter.compact(summary.totalSaved),
-                  isOverDarkBackground: true,
-                ),
-              ),
-              Expanded(
-                child: StatisticsRow(
-                  title: 'Active Goals',
-                  value: summary.activeGoals.toString(),
-                  isOverDarkBackground: true,
-                ),
-              ),
-            ],
           ),
         ],
       ),

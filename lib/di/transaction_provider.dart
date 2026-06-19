@@ -52,6 +52,12 @@ class TransactionProvider {
               previous ?? CreateTransaction(transactionRepository: txRepo),
         ),
 
+        // Khong tiem truc tiep BudgetViewModel o day vi se tao dependency
+        // cycle giua module Transaction va Budget (BudgetProgressCalculator
+        // can doc TransactionRepository, neu Transaction lai doc nguoc
+        // BudgetViewModel se khong co thu tu khai bao nao hop le).
+        // Callback onTransactionBalanceChanged duoc gan o tang App widget,
+        // xem app.dart.
         ChangeNotifierProxyProvider2<CreateTransaction, TransactionRepository,
             TransactionViewModel>(
           create: (context) => TransactionViewModel(

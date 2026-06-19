@@ -18,6 +18,11 @@ class TransactionViewModel extends ChangeNotifier {
   TransactionState get state => _state;
   String? _currentAccountId;
 
+  // Callback duoc DI lop ngoai gan vao, dung de bao cho module Budget
+  // tinh lai progress moi khi so du giao dich thay doi. TransactionViewModel
+  // khong import truc tiep BudgetViewModel de giu tach biet tang feature.
+  Future<void> Function(int userId)? onTransactionBalanceChanged;
+
   Future<void> loadByAccount(String accountId) async {
     _currentAccountId = accountId;
     _setState(_state.copyWith(isLoading: true, error: null));
@@ -55,6 +60,7 @@ class TransactionViewModel extends ChangeNotifier {
     try {
       await createTransactionUseCase(finalEntity);
       debugPrint('[TransactionVM] createTransactionUseCase completed');
+      await _notifyBudgetBalanceChanged(finalEntity.userId);
     } catch (e, stackTrace) {
       debugPrint('[TransactionVM] addTransaction error: $e');
       debugPrintStack(stackTrace: stackTrace);
@@ -82,6 +88,7 @@ class TransactionViewModel extends ChangeNotifier {
         newTransaction: finalNewEntity,
         oldTransaction: oldEntity,
       );
+      await _notifyBudgetBalanceChanged(finalNewEntity.userId);
     } catch (e, stackTrace) {
       debugPrint('[TransactionVM] updateTransaction error: $e');
       debugPrintStack(stackTrace: stackTrace);
@@ -96,6 +103,7 @@ class TransactionViewModel extends ChangeNotifier {
   Future<void> deleteTransaction(TransactionEntity entity) async {
     try {
       await repository.deleteTransaction(entity);
+      await _notifyBudgetBalanceChanged(entity.userId);
     } catch (e, stackTrace) {
       debugPrint('[TransactionVM] deleteTransaction error: $e');
       debugPrintStack(stackTrace: stackTrace);
@@ -104,6 +112,15 @@ class TransactionViewModel extends ChangeNotifier {
       if (_currentAccountId != null) {
         await loadByAccount(_currentAccountId!);
       }
+    }
+  }
+
+  Future<void> _notifyBudgetBalanceChanged(int userId) async {
+    if (onTransactionBalanceChanged == null) return;
+    try {
+      await onTransactionBalanceChanged!(userId);
+    } catch (e) {
+      debugPrint('[TransactionVM] onTransactionBalanceChanged error: $e');
     }
   }
 
@@ -116,7 +133,7 @@ class TransactionViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-//nếu ng dùng k note thì lưu default
+  // Neu nguoi dung khong nhap note thi luu note mac dinh theo ngay giao dich
   String _generateDefaultNote(DateTime date) {
     final dateFormat = DateFormat('dd/MM/yyyy').format(date);
     return 'Transaction $dateFormat';

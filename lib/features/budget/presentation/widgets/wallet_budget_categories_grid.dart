@@ -1,99 +1,117 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
-import 'package:spend_io_app/core/widgets/common/app_empty_state.dart';
-import 'package:spend_io_app/features/budget/domain/entities/budget_category_progress_entity.dart'; // ĐỔI THÀNH: Progress Entity
-import 'package:spend_io_app/features/budget/presentation/widgets/budget_category_card.dart';
+import 'package:spend_io_app/features/budget/presentation/screens/category/add_category_budget_screen.dart';
+import 'package:spend_io_app/features/budget/presentation/viewmodels/monthly/budget_viewmodel.dart';
+import 'package:spend_io_app/features/budget/presentation/viewmodels/category/budget_category_viewmodel.dart';
+import 'package:spend_io_app/features/budget/presentation/viewmodels/category/budget_category_form_viewmodel.dart';
+import 'package:spend_io_app/features/budget/presentation/viewmodels/monthly/budget_form_viewmodel.dart';
+import 'package:spend_io_app/features/budget/presentation/screens/monthly/add_budget_screen.dart';
+import 'package:spend_io_app/features/budget/presentation/screens/budget_detail_screen.dart';
+import 'package:spend_io_app/features/budget/presentation/widgets/section/budget_section.dart';
 
-class WalletBudgetCategoriesGrid extends StatelessWidget {
-  final List<BudgetCategoryProgressEntity>
-      categories; // ĐỔI KIỂU: Chứa thông tin tiến độ chi tiêu
-  final ValueChanged<BudgetCategoryProgressEntity>?
-      onTapCategory; // ĐỔI KIỂU tương ứng cho callback
+class WalletBudgetCategoriesGrid extends StatefulWidget {
+  final int userId;
 
-  const WalletBudgetCategoriesGrid({
-    super.key,
-    required this.categories,
-    this.onTapCategory,
-  });
+  const WalletBudgetCategoriesGrid({super.key, required this.userId});
+
+  @override
+  State<WalletBudgetCategoriesGrid> createState() =>
+      _WalletBudgetCategoriesGridState();
+}
+
+class _WalletBudgetCategoriesGridState
+    extends State<WalletBudgetCategoriesGrid> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<BudgetViewModel>().loadBudget(widget.userId);
+        context.read<BudgetCategoryViewModel>().loadCategories(widget.userId);
+        context.read<BudgetCategoryViewModel>().loadProgress(widget.userId);
+      }
+    });
+  }
+
+  void _navigateToCreateBudget() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider<BudgetFormViewModel>(
+          create: (_) => BudgetFormViewModel(),
+          child: AddBudgetScreen(userId: widget.userId),
+        ),
+      ),
+    );
+  }
+
+  void _navigateToCreateCategoryBudget() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider<BudgetCategoryFormViewModel>(
+          create: (_) => BudgetCategoryFormViewModel(),
+          child: AddCategoryBudgetScreen(userId: widget.userId),
+        ),
+      ),
+    );
+  }
+
+  void _navigateToDetailBudget(
+      double totalSpent, double totalBudget, int daysLeft) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BudgetDetailScreen(
+          totalSpent: totalSpent,
+          totalBudget: totalBudget,
+          daysLeft: daysLeft,
+          userId: widget.userId,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final budgetVM = context.watch<BudgetViewModel>();
+    final categoryVM = context.watch<BudgetCategoryViewModel>();
 
-    if (categories.isEmpty) {
-      return const AppEmptyState(
-        title: 'No Budget Categories',
-        subtitle: 'Create categories to track spending behavior',
-        icon: Icons.pie_chart_outline_rounded,
-        isBordered: true,
-      );
+    final currentBudgetProgress = budgetVM.currentBudget;
+    final totalSpent = currentBudgetProgress?.spent ?? 0.0;
+    final totalBudget = currentBudgetProgress?.budget.amount ?? 0.0;
+
+    int daysLeft = 0;
+    if (currentBudgetProgress != null) {
+      daysLeft = currentBudgetProgress.budget.endDate
+          .difference(DateTime.now())
+          .inDays;
+      if (daysLeft < 0) daysLeft = 0;
     }
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: AppSizes.md,
-        mainAxisSpacing: AppSizes.md,
-        childAspectRatio: 0.95,
-      ),
-      itemCount: categories.length,
-      itemBuilder: (context, index) {
-        final entity = categories[index];
-
-        return TweenAnimationBuilder<double>(
-          duration: Duration(milliseconds: 250 + (index * 40)),
-          tween: Tween(begin: 0.9, end: 1.0),
-          builder: (context, scale, child) {
-            return Transform.scale(
-              scale: scale,
-              child: child,
-            );
-          },
-          child: GestureDetector(
-            onTap: () => onTapCategory?.call(entity),
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(22),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: isDark
-                      ? [
-                          const Color(0xFF1A1D2E),
-                          const Color(0xFF0F111A),
-                        ]
-                      : [
-                          Colors.white,
-                          const Color(0xFFF7F9FF),
-                        ],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(
-                      alpha: isDark ? 0.25 : 0.06,
-                    ),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-                border: Border.all(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.05)
-                      : Colors.black.withValues(alpha: 0.04),
-                ),
-              ),
-              child: BudgetCategoryCard(
-                category:
-                    entity, // Đã khớp kiểu dữ liệu mượt mà, sạch lỗi compile!
-                onTap: () => onTapCategory?.call(entity),
-              ),
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
+      sliver: SliverToBoxAdapter(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: AppSizes.md),
+            BudgetSection(
+              totalSpent: totalSpent,
+              totalBudget: totalBudget,
+              daysLeft: daysLeft,
+              categories: categoryVM.progressList,
+              userId: widget.userId,
+              onCreateBudgetTap: _navigateToCreateBudget,
+              onGetDetailBudgetTap: () =>
+                  _navigateToDetailBudget(totalSpent, totalBudget, daysLeft),
+              onCreateCategoryBudgetTap: _navigateToCreateCategoryBudget,
             ),
-          ),
-        );
-      },
+            const SizedBox(height: AppSizes.xl),
+          ],
+        ),
+      ),
     );
   }
 }

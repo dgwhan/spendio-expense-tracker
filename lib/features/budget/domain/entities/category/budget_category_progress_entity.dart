@@ -1,4 +1,4 @@
-import 'package:spend_io_app/features/budget/domain/entities/budget_category_entity.dart';
+import 'package:spend_io_app/features/budget/domain/entities/category/budget_category_entity.dart';
 
 class BudgetCategoryProgressEntity {
   final BudgetCategoryEntity budgetCategory;

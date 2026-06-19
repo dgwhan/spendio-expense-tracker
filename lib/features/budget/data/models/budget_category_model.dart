@@ -1,4 +1,4 @@
-import 'package:spend_io_app/features/budget/domain/entities/budget_category_entity.dart';
+import 'package:spend_io_app/features/budget/domain/entities/category/budget_category_entity.dart';
 import 'package:spend_io_app/features/budget/domain/entities/budget_period.dart';
 
 class BudgetCategoryModel extends BudgetCategoryEntity {
@@ -6,6 +6,7 @@ class BudgetCategoryModel extends BudgetCategoryEntity {
     required super.id,
     required super.userId,
     required super.categoryId,
+    required super.name,
     required super.amount,
     required super.periodType,
     required super.startDate,
@@ -14,19 +15,36 @@ class BudgetCategoryModel extends BudgetCategoryEntity {
     required super.updatedAt,
   });
 
+  BudgetCategoryEntity toEntity() {
+    return BudgetCategoryEntity(
+      id: id,
+      userId: userId,
+      categoryId: categoryId,
+      name: name,
+      amount: amount,
+      periodType: periodType,
+      startDate: startDate,
+      endDate: endDate,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    );
+  }
+
   factory BudgetCategoryModel.fromMap(Map<String, dynamic> map) {
     return BudgetCategoryModel(
       id: map['id'] as String,
       userId: map['user_id'] as int,
       categoryId: map['category_id'] as String,
+      name: map['name'] as String? ?? '',
       amount: (map['amount'] as num).toDouble(),
       periodType: BudgetPeriod.values.firstWhere(
         (e) => e.name == map['period_type'],
+        orElse: () => BudgetPeriod.monthly,
       ),
-      startDate: DateTime.parse(map['start_date']),
-      endDate: DateTime.parse(map['end_date']),
-      createdAt: DateTime.parse(map['created_at']),
-      updatedAt: DateTime.parse(map['updated_at']),
+      startDate: DateTime.parse(map['start_date'] as String),
+      endDate: DateTime.parse(map['end_date'] as String),
+      createdAt: DateTime.parse(map['created_at'] as String),
+      updatedAt: DateTime.parse(map['updated_at'] as String),
     );
   }
 
@@ -35,6 +53,7 @@ class BudgetCategoryModel extends BudgetCategoryEntity {
       'id': id,
       'user_id': userId,
       'category_id': categoryId,
+      'name': name,
       'amount': amount,
       'period_type': periodType.name,
       'start_date': startDate.toIso8601String(),
@@ -51,6 +70,7 @@ class BudgetCategoryModel extends BudgetCategoryEntity {
       id: entity.id,
       userId: entity.userId,
       categoryId: entity.categoryId,
+      name: entity.name,
       amount: entity.amount,
       periodType: entity.periodType,
       startDate: entity.startDate,

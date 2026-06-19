@@ -78,12 +78,14 @@ class AccountsSection extends StatelessWidget {
           // More indicator
           final remaining = accounts.length - 3;
           return Padding(
-            padding: const EdgeInsets.only(top: AppSizes.xs, bottom: AppSizes.lg),
+            padding:
+                const EdgeInsets.only(top: AppSizes.xs, bottom: AppSizes.lg),
             child: InkWell(
               onTap: onViewAll,
               borderRadius: BorderRadius.circular(12),
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -112,4 +114,3 @@ class AccountsSection extends StatelessWidget {
     );
   }
 }
-

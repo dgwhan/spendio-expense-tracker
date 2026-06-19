@@ -1,9 +1,8 @@
-import 'package:spend_io_app/features/budget/domain/entities/budget_category_progress_entity.dart';
-import 'package:spend_io_app/features/budget/domain/entities/budget_entity.dart';
-import 'package:spend_io_app/features/budget/domain/entities/budget_progress_entity.dart';
+import 'package:spend_io_app/features/budget/domain/entities/category/budget_category_progress_entity.dart';
+import 'package:spend_io_app/features/budget/domain/entities/monthly/budget_entity.dart';
+import 'package:spend_io_app/features/budget/domain/entities/monthly/budget_progress_entity.dart';
 import 'package:spend_io_app/features/budget/domain/repositories/budget_repository.dart';
 import 'package:spend_io_app/features/budget/domain/services/budget_progress_calculator.dart';
-import 'package:spend_io_app/features/home/presentation/widgets/monthly_budget/widgets/budget_progress_bar.dart';
 import 'package:spend_io_app/features/transaction/domain/repositories/transaction_repository.dart';
 
 class BudgetProgressCalculatorImpl implements BudgetProgressCalculator {
@@ -39,9 +38,8 @@ class BudgetProgressCalculatorImpl implements BudgetProgressCalculator {
   Future<List<BudgetCategoryProgressEntity>> calculateCategoryProgressList({
     required int userId,
   }) async {
-    final categories = await budgetRepository.getBudgetCategories(
-      userId,
-    );
+    // Luồng này hoàn toàn độc lập, bốc thẳng từ bảng budget_categories, không quan tâm monthly budget null hay không
+    final categories = await budgetRepository.getBudgetCategories(userId);
 
     if (categories.isEmpty) {
       return [];
@@ -57,11 +55,11 @@ class BudgetProgressCalculatorImpl implements BudgetProgressCalculator {
       );
 
       final double spent = spentMap[categoryBudget.categoryId] ?? 0.0;
-
       final double remaining = categoryBudget.amount - spent;
 
-      final double percentage =
-          categoryBudget.amount <= 0 ? 0.0 : spent / categoryBudget.amount;
+      final double percentage = categoryBudget.amount <= 0
+          ? 0.0
+          : (spent / categoryBudget.amount) * 100.0;
 
       result.add(
         BudgetCategoryProgressEntity(

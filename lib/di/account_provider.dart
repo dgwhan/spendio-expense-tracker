@@ -12,8 +12,8 @@ import 'package:spend_io_app/features/account/domain/usecase/delete_account_usec
 import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
 import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
 
-class AccountProvider {
-  AccountProvider._();
+class AccountModuleProvider {
+  AccountModuleProvider._();
 
   static List<SingleChildWidget> get providers => [
         // =========================================================

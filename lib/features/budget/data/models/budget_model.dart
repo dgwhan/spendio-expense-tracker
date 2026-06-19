@@ -1,4 +1,4 @@
-import 'package:spend_io_app/features/budget/domain/entities/budget_entity.dart';
+import 'package:spend_io_app/features/budget/domain/entities/monthly/budget_entity.dart';
 import 'package:spend_io_app/features/budget/domain/entities/budget_period.dart';
 
 class BudgetModel extends BudgetEntity {
@@ -13,6 +13,20 @@ class BudgetModel extends BudgetEntity {
     required super.createdAt,
     required super.updatedAt,
   });
+
+  BudgetEntity toEntity() {
+    return BudgetEntity(
+      id: id,
+      userId: userId,
+      name: name,
+      amount: amount,
+      periodType: periodType,
+      startDate: startDate,
+      endDate: endDate,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    );
+  }
 
   factory BudgetModel.fromMap(Map<String, dynamic> map) {
     return BudgetModel(

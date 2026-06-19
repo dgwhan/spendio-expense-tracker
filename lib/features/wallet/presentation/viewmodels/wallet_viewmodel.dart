@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:spend_io_app/features/auth/domain/entities/user_entity.dart';
-import 'package:spend_io_app/features/budget/domain/entities/budget_category_progress_entity.dart';
+import 'package:spend_io_app/features/budget/domain/entities/category/budget_category_progress_entity.dart';
+import 'package:spend_io_app/features/budget/domain/entities/monthly/budget_progress_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/financial_health_status.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/saving_goal_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/wallet_summary_entity.dart';
@@ -34,6 +35,12 @@ class WalletViewModel extends ChangeNotifier {
   );
   List<SavingGoalEntity> _goals = [];
   List<BudgetCategoryProgressEntity> _categoriesProgress = [];
+
+  // Progress cua Budget tong tháng (khac voi _categoriesProgress la danh
+  // sach budget theo tung category con). Day la nguon du lieu dung cho
+  // card "Monthly Budget" tren Dashboard.
+  BudgetProgressEntity? _monthlyBudgetProgress;
+
   DateTime selectedMonth = DateTime.now();
 
   WalletViewModel({
@@ -50,6 +57,7 @@ class WalletViewModel extends ChangeNotifier {
   List<SavingGoalEntity> get goals => _goals;
   List<BudgetCategoryProgressEntity> get categoriesProgress =>
       _categoriesProgress;
+  BudgetProgressEntity? get monthlyBudgetProgress => _monthlyBudgetProgress;
   UserEntity? get currentUser => _currentUser;
   String get remoteUid => _remoteUid;
 
@@ -94,18 +102,7 @@ class WalletViewModel extends ChangeNotifier {
         _summary = await getWalletSummaryUseCase(localId);
         _goals = await getGoalsUseCase(localId, _remoteUid);
 
-        final currentBudget = await budgetRepository.getCurrentBudget(localId);
-
-        if (currentBudget == null) {
-          debugPrint(
-              '[DATA MISMATCH NOTICE]: Table budgets đang trống cho User ID: $localId.');
-          _categoriesProgress = [];
-        } else if (request == _requestId && !_disposed) {
-          _categoriesProgress =
-              await budgetCalculator.calculateCategoryProgressList(
-            userId: localId,
-          );
-        }
+        await _loadBudgetProgress(localId, request);
 
         final rUid = _remoteUid;
         if (rUid.isNotEmpty) {
@@ -117,15 +114,7 @@ class WalletViewModel extends ChangeNotifier {
           _summary = await getWalletSummaryUseCase(localId);
           _goals = await getGoalsUseCase(localId, _remoteUid);
 
-          final syncBudget = await budgetRepository.getCurrentBudget(localId);
-          if (syncBudget == null) {
-            _categoriesProgress = [];
-          } else if (request == _requestId && !_disposed) {
-            _categoriesProgress =
-                await budgetCalculator.calculateCategoryProgressList(
-              userId: localId,
-            );
-          }
+          await _loadBudgetProgress(localId, request);
         }
       } else {
         _resetStates();
@@ -142,6 +131,47 @@ class WalletViewModel extends ChangeNotifier {
     }
   }
 
+  // Nap Budget tong thang va danh sach Budget Category con. Goi rieng ham
+  // nay de co the gia luong sau khi them/sua/xoa transaction ma khong can
+  // chay lai toan bo initialize().
+  Future<void> _loadBudgetProgress(int localId, int request) async {
+    final currentBudget = await budgetRepository.getCurrentBudget(localId);
+
+    if (currentBudget == null) {
+      debugPrint(
+          '[DATA MISMATCH NOTICE]: Table budgets đang trống cho User ID: $localId.');
+      _categoriesProgress = [];
+      _monthlyBudgetProgress = null;
+      return;
+    }
+
+    if (request != _requestId || _disposed) return;
+
+    _monthlyBudgetProgress =
+        await budgetCalculator.calculateBudgetProgress(currentBudget);
+
+    if (request != _requestId || _disposed) return;
+
+    _categoriesProgress = await budgetCalculator.calculateCategoryProgressList(
+      userId: localId,
+    );
+  }
+
+  // Goi sau khi mot giao dich duoc them/sua/xoa de cap nhat lai progress
+  // cua Budget tong thang tren Dashboard, khong can chay lai toan bo
+  // initialize() (tranh goi du thua usecase summary/goals).
+  Future<void> refreshBudgetProgress() async {
+    if (_currentUser == null || _disposed) return;
+    final localId = _currentUser!.id ?? 1;
+    final request = ++_requestId;
+
+    await _loadBudgetProgress(localId, request);
+
+    if (request == _requestId && !_disposed) {
+      _safeNotify();
+    }
+  }
+
   void _resetStates() {
     _summary = const WalletSummaryEntity(
       totalAssets: 0.0,
@@ -151,6 +181,7 @@ class WalletViewModel extends ChangeNotifier {
     );
     _goals = [];
     _categoriesProgress = [];
+    _monthlyBudgetProgress = null;
     _isLoading = false;
     _safeNotify();
   }
@@ -192,9 +223,11 @@ class WalletViewModel extends ChangeNotifier {
     initialize();
   }
 
-  double get totalSpent {
-    return _categoriesProgress.fold(0.0, (sum, item) => sum + item.spent);
-  }
+  // Spent cua Budget tong thang. Lay tu BudgetProgressEntity da tinh qua
+  // calculateBudgetProgress(), khong con cong don tu _categoriesProgress
+  // (vi bang budget_categories co the rong neu nguoi dung chua tao budget
+  // theo danh muc con, dan den totalSpent luon bang 0 du da co transaction).
+  double get totalSpent => _monthlyBudgetProgress?.spent ?? 0.0;
 
   double get totalBudget => summary.monthlyBudget;
 
