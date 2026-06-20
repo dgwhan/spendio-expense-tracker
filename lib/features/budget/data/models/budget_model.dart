@@ -1,4 +1,4 @@
-import 'package:spend_io_app/features/budget/domain/entities/monthly/budget_entity.dart';
+import 'package:spend_io_app/features/budget/domain/entities/budget_entity.dart';
 import 'package:spend_io_app/features/budget/domain/entities/budget_period.dart';
 
 class BudgetModel extends BudgetEntity {

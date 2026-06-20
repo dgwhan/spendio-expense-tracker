@@ -1,5 +1,5 @@
 import 'package:spend_io_app/features/budget/domain/entities/category/budget_category_entity.dart';
-import 'package:spend_io_app/features/budget/domain/entities/monthly/budget_entity.dart';
+import 'package:spend_io_app/features/budget/domain/entities/budget_entity.dart';
 
 abstract class BudgetRepository {
   // =========================================================
@@ -12,7 +12,10 @@ abstract class BudgetRepository {
 
   Future<void> updateBudget(BudgetEntity budget);
 
-  Future<void> deleteBudget(String budgetId);
+  Future<void> deleteBudget({
+    required String budgetId,
+    required int userId,
+  });
 
   // =========================================================
   // CATEGORY BUDGET

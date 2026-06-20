@@ -9,7 +9,6 @@ import 'widgets/breakdown_chart.dart';
 import 'widgets/breakdown_legend.dart';
 
 class SpendingBreakdownSection extends StatefulWidget {
-  // ĐÃ SỬA: Thay vì nhận 1 model lẻ, ta nhận 3 model ứng với 3 bộ lọc từ màn hình cha
   final SpendingBreakdownModel weekData;
   final SpendingBreakdownModel monthData;
   final SpendingBreakdownModel yearData;

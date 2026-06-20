@@ -1,4 +1,4 @@
-import '../../entities/monthly/budget_entity.dart';
+import '../../entities/budget_entity.dart';
 import '../../repositories/budget_repository.dart';
 
 class CreateBudgetUseCase {

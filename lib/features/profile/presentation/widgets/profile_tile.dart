@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:spend_io_app/core/widgets/common/app_screen_title.dart';
 
 class ProfileTile extends StatelessWidget {
   final IconData icon;
@@ -33,16 +34,13 @@ class ProfileTile extends StatelessWidget {
           child: Icon(icon, color: iconColor, size: 22),
         ),
         const SizedBox(width: 16),
+
         Expanded(
-          child: Text(
-            title,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-              color: textSecondaryColor,
-            ),
-          ),
+          child: AppScreenTitle(
+              title: title, isCenter: false, color: textPrimaryColor),
         ),
+
+        // Phần hiển thị giá trị bên phải (Value)
         Text(
           value,
           style: TextStyle(

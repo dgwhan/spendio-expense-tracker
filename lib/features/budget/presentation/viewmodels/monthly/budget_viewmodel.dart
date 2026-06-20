@@ -1,8 +1,6 @@
 import 'package:flutter/foundation.dart';
-
-import 'package:spend_io_app/features/budget/domain/entities/monthly/budget_entity.dart';
-import 'package:spend_io_app/features/budget/domain/entities/monthly/budget_progress_entity.dart';
-
+import 'package:spend_io_app/features/budget/domain/entities/budget_entity.dart';
+import 'package:spend_io_app/features/budget/domain/entities/budget_progress_entity.dart';
 import 'package:spend_io_app/features/budget/domain/repositories/budget_repository.dart';
 import 'package:spend_io_app/features/budget/domain/services/budget_progress_calculator.dart';
 
@@ -16,10 +14,6 @@ class BudgetViewModel extends ChangeNotifier {
   })  : _repository = repository,
         _calculator = calculator;
 
-  // =========================================================
-  // STATE
-  // =========================================================
-
   BudgetProgressEntity? _currentBudget;
   BudgetProgressEntity? get currentBudget => _currentBudget;
 
@@ -28,10 +22,6 @@ class BudgetViewModel extends ChangeNotifier {
 
   int _requestId = 0;
   bool _disposed = false;
-
-  // =========================================================
-  // LOAD
-  // =========================================================
 
   Future<void> loadBudget(int userId) async {
     final request = ++_requestId;
@@ -49,9 +39,7 @@ class BudgetViewModel extends ChangeNotifier {
         return;
       }
 
-      final result = await _calculator.calculateBudgetProgress(
-        budget,
-      );
+      final result = await _calculator.calculateBudgetProgress(budget);
 
       if (_disposed || request != _requestId) return;
 
@@ -64,58 +52,31 @@ class BudgetViewModel extends ChangeNotifier {
     }
   }
 
-  // =========================================================
-  // CREATE
-  // =========================================================
-
-  Future<void> createBudget(
-    BudgetEntity budget,
-  ) async {
-    await _repository.createBudget(
-      budget,
-    );
-
-    await loadBudget(
-      budget.userId,
-    );
+  Future<void> createBudget(BudgetEntity budget) async {
+    await _repository.createBudget(budget);
+    await loadBudget(budget.userId);
   }
 
-  // =========================================================
-  // UPDATE
-  // =========================================================
-
-  Future<void> updateBudget(
-    BudgetEntity budget,
-  ) async {
-    await _repository.updateBudget(
-      budget,
-    );
-
-    await loadBudget(
-      budget.userId,
-    );
+  Future<void> updateBudget(BudgetEntity budget) async {
+    await _repository.updateBudget(budget);
+    await loadBudget(budget.userId);
   }
-
-  // =========================================================
-  // DELETE
-  // =========================================================
 
   Future<void> deleteBudget({
     required String budgetId,
     required int userId,
   }) async {
-    await _repository.deleteBudget(
-      budgetId,
-    );
+    try {
+      await _repository.deleteBudget(
+        budgetId: budgetId,
+        userId: userId,
+      );
 
-    await loadBudget(
-      userId,
-    );
+      await loadBudget(userId);
+    } catch (e) {
+      rethrow;
+    }
   }
-
-  // =========================================================
-  // HELPERS
-  // =========================================================
 
   void clear() {
     _currentBudget = null;

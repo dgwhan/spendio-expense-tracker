@@ -20,7 +20,12 @@ class DatabaseLogger {
       'Budget Categories',
     );
 
+    await _logCount(db, 'goals', 'Savings Goals');
+    await _logCount(db, 'goal_contributions', 'Goal Contributions');
+    await _logCount(db, 'goal_reminders', 'Goal Reminders');
+
     await _logBudgetSummary(db);
+    await _logGoalsSummary(db);
 
     debugPrint('===================================');
     debugPrint('');
@@ -90,6 +95,34 @@ class DatabaseLogger {
       '[DB] Budget Summary: '
       '${result.first['total']} budgets'
       ' | Total Budget = ${result.first['total_budget']}',
+    );
+  }
+
+  /// Bổ sung hàm thống kê nhanh tình trạng Goals đang có trong hệ thống công cụ dev
+  static Future<void> _logGoalsSummary(
+    Database db,
+  ) async {
+    if (!await _tableExists(db, 'goals')) {
+      return;
+    }
+
+    final result = await db.rawQuery(
+      '''
+      SELECT
+        COUNT(*) AS total,
+        COUNT(CASE WHEN status = 'active' THEN 1 END) AS active_count,
+        COUNT(CASE WHEN status = 'completed' THEN 1 END) AS completed_count,
+        COALESCE(SUM(target_amount), 0) AS total_target
+      FROM goals
+      WHERE deleted_at IS NULL
+      ''',
+    );
+
+    final row = result.first;
+    debugPrint(
+      '[DB] Goals Summary: '
+      '${row['total']} total (Act: ${row['active_count']} | Comp: ${row['completed_count']})'
+      ' | Total Target = ${row['total_target']}',
     );
   }
 

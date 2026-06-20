@@ -18,17 +18,26 @@ class AppHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final textPrimary =
+        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final textSecondary =
+        isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final iconColor = isDark ? AppColors.textPrimaryDark : Colors.black87;
+    final avatarBgColor =
+        isDark ? AppColors.surfaceSecondaryDark : AppColors.dividerLight;
+
     final String formattedDate =
         DateFormat('EEEE, MMMM d').format(DateTime.now());
 
     return Row(
       children: [
-        // Avatar
         GestureDetector(
           onTap: onProfileTap,
           child: CircleAvatar(
             radius: 20,
-            backgroundColor: AppColors.dividerLight,
+            backgroundColor: avatarBgColor,
             backgroundImage: (avatarUrl != null && avatarUrl!.isNotEmpty)
                 ? NetworkImage(avatarUrl!)
                 : null,
@@ -42,7 +51,6 @@ class AppHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -52,21 +60,20 @@ class AppHeader extends StatelessWidget {
                 'Good morning, $displayName',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimaryLight,
+                      color: textPrimary,
                     ),
               ),
               const SizedBox(height: 2),
               Text(
                 formattedDate,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondaryLight,
+                      color: textSecondary,
                       fontWeight: FontWeight.w500,
                     ),
               ),
             ],
           ),
         ),
-
         InkWell(
           onTap: onNotificationTap,
           borderRadius: BorderRadius.circular(20),
@@ -74,11 +81,13 @@ class AppHeader extends StatelessWidget {
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.grey.withValues(alpha: 0.1),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.06)
+                  : Colors.grey.withValues(alpha: 0.1),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.notifications_none_outlined,
-              color: Colors.black87,
+              color: iconColor,
               size: 22,
             ),
           ),

@@ -31,12 +31,14 @@ class _SplashScreenState extends State<SplashScreen> {
     if (_started) return;
     _started = true;
 
+    // stabilize provider tree
+    await Future.delayed(Duration.zero);
+
     final coordinator = context.read<StartupCoordinator>();
 
     final startTime = DateTime.now();
     final result = await coordinator.resolve(context);
 
-    // đảm bảo splash minimum duration (UX smooth)
     final elapsed = DateTime.now().difference(startTime);
     const minDuration = Duration(seconds: 2);
 
@@ -55,12 +57,13 @@ class _SplashScreenState extends State<SplashScreen> {
         break;
 
       case StartupResult.onboarding:
-        final email = coordinator.authProvider.currentUser?.email ?? '';
-
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) => OnboardingFlowScreen(userEmail: email),
+            builder: (_) => OnboardingFlowScreen(
+              userEmail:
+                  coordinator.authProvider.currentUser?.email ?? '',
+            ),
           ),
         );
         break;
@@ -99,7 +102,6 @@ class _SplashScreenState extends State<SplashScreen> {
                 fontSize: 34,
                 fontWeight: FontWeight.w700,
                 color: Colors.white,
-                letterSpacing: 1,
               ),
             ),
           ],

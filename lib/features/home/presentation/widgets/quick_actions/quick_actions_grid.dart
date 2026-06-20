@@ -3,61 +3,81 @@ import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/shared/dashboard_section_container.dart';
 
 class QuickActionsGrid extends StatelessWidget {
-  final VoidCallback? onTransactionTap;
-  final VoidCallback? onBudgetTap;
-  final VoidCallback? onAnalyticsTap;
-  final VoidCallback? onSavingGoalTap;
+  final VoidCallback? onCreateBudgetTap;
+  final VoidCallback? onTransactionHistoryTap;
+  final VoidCallback? onManageSavingsTap;
+  final VoidCallback? onInsightsTap;
+  final VoidCallback? onMonthlyBudgetTap;
+  final VoidCallback? onCategoryManagementTap;
 
-  const QuickActionsGrid(
-      {super.key,
-      this.onTransactionTap,
-      this.onBudgetTap,
-      this.onAnalyticsTap,
-      this.onSavingGoalTap});
+  const QuickActionsGrid({
+    super.key,
+    this.onCreateBudgetTap,
+    this.onTransactionHistoryTap,
+    this.onManageSavingsTap,
+    this.onInsightsTap,
+    this.onMonthlyBudgetTap,
+    this.onCategoryManagementTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return DashboardSectionContainer(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          //Transaction
-          Expanded(
-            child: _ActionItem(
-              icon: Icons.add,
-              label: 'Transaction',
-              onTap: onTransactionTap,
-            ),
-          ),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
 
-          //Budget
-          Expanded(
-            child: _ActionItem(
-              icon: Icons.savings_outlined,
-              label: 'Budget',
-              onTap: onBudgetTap,
+    return Theme(
+      data: Theme.of(context).copyWith(
+        cardColor: cardBgColor,
+        dialogBackgroundColor: cardBgColor,
+      ),
+      child: DashboardSectionContainer(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        child: GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 3,
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 8,
+          childAspectRatio: 0.85,
+          children: [
+            _ActionItem(
+              icon: Icons.add_chart_rounded,
+              label: 'Create\nBudget',
+              onTap: onCreateBudgetTap,
+              isDark: isDark,
             ),
-          ),
-
-          //Analytics
-          Expanded(
-            child: _ActionItem(
-              icon: Icons.bar_chart_outlined,
-              label: 'Analytics',
-              onTap: onAnalyticsTap,
+            _ActionItem(
+              icon: Icons.history_rounded,
+              label: 'Transaction\nHistory',
+              onTap: onTransactionHistoryTap,
+              isDark: isDark,
             ),
-          ),
-
-          //Saving Goals
-          Expanded(
-            child: _ActionItem(
-              icon: Icons.savings_outlined,
-              label: 'Budget',
-              onTap: onBudgetTap,
+            _ActionItem(
+              icon: Icons.track_changes_rounded,
+              label: 'Savings\nGoals',
+              onTap: onManageSavingsTap,
+              isDark: isDark,
             ),
-          ),
-        ],
+            _ActionItem(
+              icon: Icons.stacked_line_chart_rounded,
+              label: 'Financial\nPulse',
+              onTap: onInsightsTap,
+              isDark: isDark,
+            ),
+            _ActionItem(
+              icon: Icons.calendar_month_rounded,
+              label: 'Monthly\nBudget',
+              onTap: onMonthlyBudgetTap,
+              isDark: isDark,
+            ),
+            _ActionItem(
+              icon: Icons.grid_view_rounded,
+              label: 'Category\nManage',
+              onTap: onCategoryManagementTap,
+              isDark: isDark,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -67,15 +87,23 @@ class _ActionItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback? onTap;
+  final bool isDark;
 
   const _ActionItem({
     required this.icon,
     required this.label,
+    required this.isDark,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final containerBg = isDark
+        ? AppColors.surfaceSecondaryDark
+        : Colors.grey.withValues(alpha: 0.05);
+    final textColor =
+        isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+
     return InkWell(
       onTap: onTap,
       splashColor: AppColors.primary.withValues(alpha: 0.1),
@@ -83,16 +111,13 @@ class _ActionItem extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(
-                color: AppColors.borderLight,
-                width: 1.5,
-              ),
-              color: Colors.white,
+              color: containerBg,
             ),
             child: Icon(
               icon,
@@ -101,14 +126,20 @@ class _ActionItem extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondaryLight,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
-                ),
+          SizedBox(
+            height: 34,
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: textColor,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                    height: 1.2,
+                  ),
+            ),
           ),
         ],
       ),

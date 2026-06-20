@@ -13,13 +13,15 @@ class DashboardSectionContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: padding ?? const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.backgroundLight,
+        color: isDark ? AppColors.surfaceDark : AppColors.backgroundLight,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: AppColors.borderLight,
+          color: isDark ? AppColors.borderDark : AppColors.borderLight,
         ),
       ),
       child: child,

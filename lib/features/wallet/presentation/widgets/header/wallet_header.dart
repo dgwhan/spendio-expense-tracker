@@ -1,96 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:spend_io_app/core/constants/app_colors.dart';
-import 'package:spend_io_app/core/constants/app_sizes.dart';
-import 'package:spend_io_app/core/utils/date_formatter.dart';
+import 'package:spend_io_app/core/widgets/common/app_screen_title.dart';
 
 class WalletHeader extends StatelessWidget {
-  final DateTime selectedMonth;
-  final VoidCallback onGenerateReport;
-  final VoidCallback onMonthTap;
+  final DateTime? selectedMonth;
+  final VoidCallback? onGenerateReport;
+  final VoidCallback? onMonthTap;
 
   const WalletHeader({
     super.key,
-    required this.selectedMonth,
-    required this.onGenerateReport,
-    required this.onMonthTap,
+    this.selectedMonth,
+    this.onGenerateReport,
+    this.onMonthTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final titleColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
-    final subtitleColor = isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Wallet',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: titleColor,
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: AppSizes.xs),
-              InkWell(
-                onTap: onMonthTap,
-                borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 4.0),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        DateFormatter.toMonthYearString(selectedMonth),
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: subtitleColor,
-                            ),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(
-                        Icons.keyboard_arrow_down,
-                        size: 18,
-                        color: subtitleColor,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: AppSizes.md),
-        ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: 150,
-            minWidth: 100,
-          ),
-          child: ElevatedButton(
-            onPressed: onGenerateReport,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.surfaceLight,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.md,
-                vertical: AppSizes.sm,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              elevation: 0,
-              minimumSize: const Size(100, 48),
-            ),
-            child: const Text(
-              'Generate Report',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-        ),
-      ],
+    return const AppScreenTitle(
+      title: 'Wallet',
+      isCenter: true,
     );
   }
 }

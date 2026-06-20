@@ -1,205 +1,69 @@
-import 'package:flutter/foundation.dart';
-import 'package:spend_io_app/features/wallet/data/datasources/wallet_local_data_source.dart';
-import 'package:spend_io_app/features/wallet/data/datasources/wallet_remote_data_source.dart';
-import 'package:spend_io_app/features/account/data/models/account_model.dart';
-import 'package:spend_io_app/features/wallet/data/models/saving_goal_model.dart';
+import 'package:spend_io_app/features/account/domain/repositories/account_repository.dart';
+import 'package:spend_io_app/features/budget/domain/entities/category/budget_category_progress_entity.dart';
+import 'package:spend_io_app/features/budget/domain/repositories/budget_repository.dart';
+import 'package:spend_io_app/features/goal/domain/repositories/goal_repository.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/wallet_summary_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/repositories/wallet_repository.dart';
+import 'package:spend_io_app/features/wallet/domain/wallet_summary_result.dart';
 
 class WalletRepositoryImpl implements WalletRepository {
-  final WalletLocalDataSource localDataSource;
-  final WalletRemoteDataSource remoteDataSource;
+  final AccountRepository accountRepository;
+  final GoalRepository goalRepository;
+  final BudgetRepository budgetRepository;
 
   WalletRepositoryImpl({
-    required this.localDataSource,
-    required this.remoteDataSource,
+    required this.accountRepository,
+    required this.goalRepository,
+    required this.budgetRepository,
   });
 
   @override
-  Future<WalletSummaryEntity> getSummary(int localUserId) async {
-    final accounts = await localDataSource.getAccounts(localUserId);
+  Future<WalletSummaryResult> getSummary(int localUserId) async {
+    final accounts = await accountRepository.getAccounts(localUserId, '');
+    final goals = await goalRepository.getGoals(localUserId);
+    final budget = await budgetRepository.getCurrentBudget(localUserId);
+    final categories = await budgetRepository.getBudgetCategories(localUserId);
+
     final activeAccounts = accounts.where((a) => a.deletedAt == null).toList();
-    final goals = await localDataSource.getGoals(localUserId);
 
-    final currentBudget = await localDataSource.getCurrentBudget(localUserId);
-    final double budgetAmount = currentBudget?.amount ?? 0.0;
+    final totalAssets = activeAccounts.fold<double>(
+      0,
+      (sum, a) => sum + a.balance,
+    );
 
-    return WalletSummaryEntity(
-      totalAssets: activeAccounts.fold(0.0, (sum, acc) => sum + acc.balance),
-      monthlyBudget: budgetAmount,
-      totalSaved: goals.fold(0.0, (sum, goal) => sum + goal.currentAmount),
+    final totalSaved = goals.fold<double>(
+      0,
+      (sum, g) => sum + g.cachedCurrentAmount,
+    );
+
+    final summary = WalletSummaryEntity(
+      totalAssets: totalAssets,
+      monthlyBudget: budget?.amount ?? 0,
+      totalSaved: totalSaved,
       activeGoals: goals.length,
-    );
-  }
-
-  @override
-  Future<void> updateAccountBalance({
-    required int localUserId,
-    required String remoteUid,
-    required String accountId,
-    required double newBalance,
-  }) async {
-    final allAccounts = await localDataSource.getAccounts(localUserId);
-    final account = allAccounts.firstWhere(
-      (a) => a.id == accountId,
-      orElse: () => throw StateError(
-          '[WalletRepo] updateAccountBalance: account $accountId not found.'),
+      remainingDays: 0, 
     );
 
-    final updated = account.copyWith(
-      balance: newBalance,
-      updatedAt: DateTime.now(),
+    return WalletSummaryResult(
+      summary: summary,
+      categories: categories
+          .map(
+            (e) => BudgetCategoryProgressEntity(
+              budgetCategory: e,
+              spent: 0,
+              remaining: e.amount,
+              percentage: 0,
+            ),
+          )
+          .toList(),
     );
-
-    await localDataSource.updateAccount(localUserId, updated);
-    debugPrint(
-        '[WalletRepo] Balance updated locally — account: $accountId, new balance: $newBalance');
-
-    if (remoteUid.trim().isNotEmpty) {
-      await remoteDataSource.updateAccountBalance(
-        remoteUid,
-        accountId,
-        newBalance,
-      );
-    }
-  }
-
-  @override
-  Future<void> syncWithFirebase(int localUserId, String remoteUid) async {
-    if (remoteUid.trim().isEmpty) {
-      debugPrint('[Wallet Sync] Aborted — remoteUid is empty.');
-      return;
-    }
-
-    debugPrint(
-        '[Wallet Sync] Starting synchronization pipeline for user: $localUserId');
-
-    try {
-      await _syncAccounts(localUserId, remoteUid);
-      await _syncGoals(localUserId, remoteUid);
-      debugPrint('[Wallet Sync] Pipeline completed successfully.');
-    } catch (e) {
-      debugPrint(
-          '[Wallet Sync] Network unstable or Firestore timeout. Offline mode active: $e');
-    }
-  }
-
-  Future<void> _syncAccounts(int localUserId, String remoteUid) async {
-    final localWallets = await localDataSource.getAccounts(localUserId);
-    final remoteWallets = await remoteDataSource.getAccounts(remoteUid);
-
-    final Map<String, AccountModel> localMap = {
-      for (var w in localWallets) w.id: w
-    };
-    final Map<String, AccountModel> remoteMap = {
-      for (var w in remoteWallets) w.id: w
-    };
-
-    bool primaryCashInserted = false;
-
-    for (final remoteWallet in remoteWallets) {
-      if (remoteWallet.id.trim().isEmpty || remoteWallet.name.trim().isEmpty) {
-        continue;
-      }
-
-      final localWallet = localMap[remoteWallet.id];
-
-      if (localWallet == null) {
-        if (remoteWallet.deletedAt != null) continue;
-
-        if (remoteWallet.type.name == 'cash') {
-          if (primaryCashInserted) {
-            debugPrint(
-                '[Wallet Sync Guard] Blocked INSERT of duplicate remote cash wallet (ID: ${remoteWallet.id}).');
-            continue;
-          }
-          primaryCashInserted = true;
-        }
-
-        await localDataSource.saveAccount(localUserId, remoteWallet);
-      } else {
-        if (remoteWallet.deletedAt != null && localWallet.deletedAt == null) {
-          await localDataSource.saveAccount(localUserId, remoteWallet);
-        } else if (remoteWallet.updatedAt.isAfter(localWallet.updatedAt)) {
-          await localDataSource.saveAccount(
-            localUserId,
-            remoteWallet.copyWith(balance: localWallet.balance),
-          );
-        } else if (localWallet.updatedAt.isAfter(remoteWallet.updatedAt)) {
-          await remoteDataSource.saveAccount(remoteUid, localWallet);
-        }
-      }
-    }
-
-    for (final localWallet in localWallets) {
-      if (remoteMap.containsKey(localWallet.id)) continue;
-
-      if (localWallet.id.trim().isEmpty ||
-          localWallet.name.trim().isEmpty ||
-          localWallet.deletedAt != null) {
-        continue;
-      }
-
-      await remoteDataSource.saveAccount(remoteUid, localWallet);
-    }
-  }
-
-  Future<void> _syncGoals(int localUserId, String remoteUid) async {
-    final localGoals = await localDataSource.getGoals(localUserId);
-    final remoteGoals = await remoteDataSource.getGoals(remoteUid);
-
-    final Map<String, SavingGoalModel> localGoalsMap = {
-      for (var g in localGoals) g.id: g
-    };
-    final Map<String, SavingGoalModel> remoteGoalsMap = {
-      for (var g in remoteGoals) g.id: g
-    };
-
-    for (final remoteGoal in remoteGoals) {
-      final localGoal = localGoalsMap[remoteGoal.id];
-      if (localGoal == null) {
-        await localDataSource.saveGoal(localUserId, remoteGoal);
-      } else if (remoteGoal.updatedAt.isAfter(localGoal.updatedAt)) {
-        await localDataSource.saveGoal(localUserId, remoteGoal);
-      } else if (localGoal.updatedAt.isAfter(remoteGoal.updatedAt)) {
-        await remoteDataSource.saveGoal(remoteUid, localGoal);
-      }
-    }
-
-    for (final localGoal in localGoals) {
-      if (!remoteGoalsMap.containsKey(localGoal.id)) {
-        await remoteDataSource.saveGoal(remoteUid, localGoal);
-      }
-    }
   }
 
   @override
   Future<bool> hasWalletData(int userId) async {
-    final accounts = await localDataSource.hasAccounts(userId);
-    final goals = await localDataSource.hasGoals(userId);
-    final categories = await localDataSource.hasBudgetCategories(userId);
-    return accounts || goals || categories;
+    final accounts = await accountRepository.getAccounts(userId, '');
+    final goals = await goalRepository.getGoals(userId);
+
+    return accounts.isNotEmpty || goals.isNotEmpty;
   }
-
-  @override
-  Future<AccountModel> getAccount(String accountId) async {
-    final allAccounts = await localDataSource.getAccounts(0);
-    return allAccounts.firstWhere(
-      (a) => a.id == accountId,
-      orElse: () =>
-          throw StateError('[WalletRepo] getAccount: $accountId not found.'),
-    );
-  }
-
-  @override
-  Future<void> updateAccount(AccountModel account) async {
-    await localDataSource.saveAccount(account.userId, account);
-  }
-}
-
-extension DateTimeComparison on DateTime {
-  bool isAtLeast(DateTime other) => isAfter(other) || isAtEqual(other);
-
-  bool isAtEqual(DateTime other) =>
-      millisecondsSinceEpoch == other.millisecondsSinceEpoch;
 }

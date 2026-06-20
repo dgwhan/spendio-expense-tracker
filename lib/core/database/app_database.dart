@@ -8,6 +8,7 @@ import 'migrations/migration_v6.dart';
 import 'migrations/migration_v7.dart';
 import 'migrations/migration_v8.dart';
 import 'migrations/migration_v9.dart';
+import 'migrations/migration_v10.dart';
 
 class AppDatabase {
   AppDatabase._();
@@ -38,6 +39,7 @@ class AppDatabase {
         await MigrationV7.run(db);
         await MigrationV8.run(db);
         await MigrationV9.run(db);
+        await MigrationV10.run(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 4) await MigrationV4.run(db);
@@ -46,6 +48,7 @@ class AppDatabase {
         if (oldVersion < 7) await MigrationV7.run(db);
         if (oldVersion < 8) await MigrationV8.run(db);
         if (oldVersion < 9) await MigrationV9.run(db);
+        if (oldVersion < 10) await MigrationV10.run(db);
       },
       onOpen: (db) async {
         await DatabaseLogger.onOpen(db);

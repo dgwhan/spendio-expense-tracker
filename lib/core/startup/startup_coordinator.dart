@@ -61,8 +61,7 @@ class StartupCoordinator {
           "[STARTUP DIAGNOSTIC] Bước 3: Đang gọi checkWalletInitializationUseCase...");
       final int nonNullUserId = user.id!;
       final isInitialized =
-          await checkWalletInitializationUseCase(nonNullUserId, remoteUid)
-              .timeout(
+          await checkWalletInitializationUseCase(nonNullUserId).timeout(
         const Duration(seconds: 3),
         onTimeout: () {
           debugPrint(

@@ -3,16 +3,26 @@ import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/database/app_database.dart';
 import 'package:spend_io_app/features/auth/domain/entities/user_entity.dart';
 import 'package:spend_io_app/features/profile/domain/repositories/profile_repository.dart';
+import 'package:spend_io_app/features/profile/domain/usecase/update_app_settings_usecase.dart';
 
 class ProfileViewModel extends ChangeNotifier {
   final ProfileRepository profileRepository;
+  final UpdateAppSettingsUseCase updateAppSettingsUseCase;
+
   bool _isLoading = false;
   UserEntity? _user;
+  bool _isDarkMode = false;
+  String _currentLanguage = 'en';
 
   bool get isLoading => _isLoading;
   UserEntity? get user => _user;
+  bool get isDarkMode => _isDarkMode;
+  String get currentLanguage => _currentLanguage;
 
-  ProfileViewModel({required this.profileRepository});
+  ProfileViewModel({
+    required this.profileRepository,
+    required this.updateAppSettingsUseCase,
+  });
 
   Future<void> loadCurrentUser() async {
     final currentUser = FirebaseAuth.instance.currentUser;
@@ -54,6 +64,26 @@ class ProfileViewModel extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> toggleTheme(bool value) async {
+    _isDarkMode = value;
+    notifyListeners();
+
+    await updateAppSettingsUseCase
+        .execute(AppSettingsParams(isDarkMode: value));
+    debugPrint(
+        '[Theme Pipeline]: VM state dispatch complete via usecase block.');
+  }
+
+  Future<void> changeLanguage(String languageCode) async {
+    _currentLanguage = languageCode;
+    notifyListeners();
+
+    await updateAppSettingsUseCase
+        .execute(AppSettingsParams(languageCode: languageCode));
+    debugPrint(
+        '[Locale Pipeline]: VM locale dispatch complete via usecase block.');
   }
 
   void updateUser(UserEntity? newUser) {

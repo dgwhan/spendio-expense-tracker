@@ -1,4 +1,4 @@
-import 'dart:io'; // 🔥 BẮT BUỘC IMPORT: Để kiểm tra cài đặt vùng khu vực của thiết bị máy chủ
+import 'dart:io'; 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:spend_io_app/features/onboarding/data/models/currency_item.dart';
@@ -29,7 +29,6 @@ class _CurrencyPhaseScreenState extends State<CurrencyPhaseScreen> {
         orElse: () => supportedCurrencies.first,
       );
     } else {
-      // 🌍 AUTOMATIC LOCALE DETECTION FOR CORE LIST
       final String deviceLocale = Platform.localeName.toUpperCase();
       CurrencyItem defaultCoreCurrency;
 
@@ -46,14 +45,12 @@ class _CurrencyPhaseScreenState extends State<CurrencyPhaseScreen> {
         defaultCoreCurrency =
             supportedCurrencies.firstWhere((c) => c.code == 'EUR');
       } else {
-        // 🔥 NẰM NGOÀI DANH SÁCH CORE: Ép hiển thị cờ mặc định ban đầu là US (Mỹ)
         defaultCoreCurrency =
             supportedCurrencies.firstWhere((c) => c.code == 'USD');
       }
 
       _selectedCurrency = defaultCoreCurrency;
 
-      // 📝 IN LOG QUẢN TRỊ TRỰC QUAN
       debugPrint(
           '[Server Locale Active]: Server is currently set to English region ($deviceLocale)"');
       debugPrint(

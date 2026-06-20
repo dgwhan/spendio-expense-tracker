@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:spend_io_app/features/wallet/domain/repositories/wallet_repository.dart';
 
 class CheckWalletInitializationUseCase {
@@ -6,13 +5,7 @@ class CheckWalletInitializationUseCase {
 
   CheckWalletInitializationUseCase(this.repository);
 
-  Future<bool> call(int userId, String remoteUid) async {
-    if (remoteUid.isNotEmpty) {
-      repository.syncWithFirebase(userId, remoteUid).catchError((e) {
-        debugPrint('[CheckWalletInit] Đồng bộ Firebase ngầm thất bại: $e');
-      });
-    }
-
+  Future<bool> call(int userId) async {
     return repository.hasWalletData(userId);
   }
 }

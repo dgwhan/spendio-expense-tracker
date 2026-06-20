@@ -1,6 +1,6 @@
 import 'package:spend_io_app/features/budget/domain/entities/category/budget_category_progress_entity.dart';
-import 'package:spend_io_app/features/budget/domain/entities/monthly/budget_entity.dart';
-import 'package:spend_io_app/features/budget/domain/entities/monthly/budget_progress_entity.dart';
+import 'package:spend_io_app/features/budget/domain/entities/budget_entity.dart';
+import 'package:spend_io_app/features/budget/domain/entities/budget_progress_entity.dart';
 import 'package:spend_io_app/features/budget/domain/repositories/budget_repository.dart';
 import 'package:spend_io_app/features/budget/domain/services/budget_progress_calculator.dart';
 import 'package:spend_io_app/features/transaction/domain/repositories/transaction_repository.dart';

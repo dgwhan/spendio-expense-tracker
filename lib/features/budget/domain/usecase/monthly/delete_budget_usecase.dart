@@ -5,7 +5,13 @@ class DeleteBudgetUseCase {
 
   DeleteBudgetUseCase(this.repository);
 
-  Future<void> call({required int userId, required String budgetId}) async {
-    await repository.deleteBudget(budgetId);
+  Future<void> call({
+    required int userId,
+    required String budgetId,
+  }) async {
+    await repository.deleteBudget(
+      budgetId: budgetId,
+      userId: userId,
+    );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
+import 'package:spend_io_app/di/goal_provider.dart';
 import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -26,36 +27,26 @@ class AppProviders {
 
       Provider<Database>.value(value: database),
 
-      // AUTH + BOOTSTRAP LOW LEVEL
       ...AuthModuleProvider.providers,
       ...OnboardingModuleProvider.providers,
 
-      // DOMAIN FEATURES
       ...AccountModuleProvider.providers,
       ...CategoryModuleProvider.providers,
+      ...GoalModuleProvider.providers(database),
 
-      // TRANSACTION
       ...TransactionProvider.providers,
-
-      // BUDGET
       ...BudgetModuleProvider.providers,
-
-      // WALLET + PROFILE
       ...WalletModuleProvider.providers,
       ...ProfileModuleProvider.providers,
 
-      // =========================================================
-      // STARTUP ORCHESTRATOR
-      // =========================================================
       ProxyProvider2<AuthProvider, CheckWalletInitializationUseCase,
           StartupCoordinator>(
         update: (context, auth, walletCheck, previous) {
-          return previous ??
-              StartupCoordinator(
-                authProvider: auth,
-                checkWalletInitializationUseCase: walletCheck,
-                getCurrentUserUseCase: context.read<GetCurrentUserUseCase>(),
-              );
+          return StartupCoordinator(
+            authProvider: auth,
+            checkWalletInitializationUseCase: walletCheck,
+            getCurrentUserUseCase: context.read<GetCurrentUserUseCase>(),
+          );
         },
       ),
     ];

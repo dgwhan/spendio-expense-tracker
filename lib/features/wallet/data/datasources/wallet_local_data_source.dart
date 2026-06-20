@@ -1,29 +1,25 @@
 import 'package:spend_io_app/features/budget/data/datasources/budget_local_data_source.dart';
 import 'package:spend_io_app/features/budget/data/models/budget_model.dart';
 import 'package:spend_io_app/features/budget/data/models/budget_category_model.dart';
-import 'package:spend_io_app/features/account/data/models/account_model.dart';
-import 'package:spend_io_app/features/wallet/data/models/saving_goal_model.dart';
 import 'package:spend_io_app/features/account/data/datasource/account_local_data_source.dart';
-import 'package:spend_io_app/features/wallet/data/datasources/goal/goal_local_data_source.dart';
+import 'package:spend_io_app/features/account/data/models/account_model.dart';
 
 abstract class WalletLocalDataSource
-    implements
-        AccountLocalDataSource,
-        GoalLocalDataSource,
-        BudgetLocalDataSource {}
+    implements AccountLocalDataSource, BudgetLocalDataSource {}
 
 class WalletLocalDataSourceImpl implements WalletLocalDataSource {
   final AccountLocalDataSource _accountLocal;
-  final GoalLocalDataSource _goalLocal;
   final BudgetLocalDataSource _budgetLocal;
 
   WalletLocalDataSourceImpl({
     required AccountLocalDataSource accountLocal,
-    required GoalLocalDataSource goalLocal,
     required BudgetLocalDataSource budgetLocal,
   })  : _accountLocal = accountLocal,
-        _goalLocal = goalLocal,
         _budgetLocal = budgetLocal;
+
+  // =========================================================
+  // ACCOUNT
+  // =========================================================
 
   @override
   Future<List<AccountModel>> getAccounts(int userId) =>
@@ -56,19 +52,9 @@ class WalletLocalDataSourceImpl implements WalletLocalDataSource {
   @override
   Future<bool> hasAccounts(int userId) => _accountLocal.hasAccounts(userId);
 
-  @override
-  Future<List<SavingGoalModel>> getGoals(int userId) =>
-      _goalLocal.getGoals(userId);
-
-  @override
-  Future<void> saveGoal(int userId, SavingGoalModel goal) =>
-      _goalLocal.saveGoal(userId, goal);
-
-  @override
-  Future<void> deleteGoal(String goalId) => _goalLocal.deleteGoal(goalId);
-
-  @override
-  Future<bool> hasGoals(int userId) => _goalLocal.hasGoals(userId);
+  // =========================================================
+  // BUDGET
+  // =========================================================
 
   @override
   Future<BudgetModel?> getCurrentBudget(int userId) =>
@@ -87,8 +73,9 @@ class WalletLocalDataSourceImpl implements WalletLocalDataSource {
       _budgetLocal.deleteBudget(budgetId);
 
   @override
-  Future<List<BudgetCategoryModel>> getBudgetCategories(
-          {required int userId}) =>
+  Future<List<BudgetCategoryModel>> getBudgetCategories({
+    required int userId,
+  }) =>
       _budgetLocal.getBudgetCategories(userId: userId);
 
   @override
