@@ -1,6 +1,6 @@
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
-import 'package:spend_io_app/di/goal_provider.dart';
+import 'package:spend_io_app/di/saving_goal_provider.dart';
 import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -32,7 +32,7 @@ class AppProviders {
 
       ...AccountModuleProvider.providers,
       ...CategoryModuleProvider.providers,
-      ...GoalModuleProvider.providers(database),
+      ...SavingGoalModuleProvider.providers(database),
 
       ...TransactionProvider.providers,
       ...BudgetModuleProvider.providers,

@@ -1,20 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'package:spend_io_app/features/account/presentation/screen/utils/account_actions.dart';
-import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
-import 'package:spend_io_app/features/budget/presentation/widgets/wallet_budget_categories_grid.dart';
-import 'package:spend_io_app/features/goal/presentation/widgets/goals_section.dart';
 
-import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
-import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
+import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
 
 import 'package:spend_io_app/features/account/presentation/screen/account_details_screen.dart';
 import 'package:spend_io_app/features/account/presentation/screen/account_list_screen.dart';
-
+import 'package:spend_io_app/features/account/presentation/screen/utils/account_actions.dart';
+import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
 import 'package:spend_io_app/features/account/presentation/widgets/accounts_section.dart';
+
+import 'package:spend_io_app/features/budget/presentation/widgets/wallet_budget_categories_grid.dart';
+import 'package:spend_io_app/features/saving_goal/presentation/screens/create_saving_goal_screen.dart';
+import 'package:spend_io_app/features/saving_goal/presentation/screens/saving_goal_detail_screen.dart';
+import 'package:spend_io_app/features/saving_goal/presentation/screens/saving_goal_list_screen.dart';
+import 'package:spend_io_app/features/saving_goal/presentation/viewmodels/saving_goal_detail_viewmodel.dart';
+
+import 'package:spend_io_app/features/saving_goal/presentation/viewmodels/saving_goal_list_viewmodel.dart';
+import 'package:spend_io_app/features/saving_goal/presentation/widgets/saving_goals_section.dart';
+
+import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/header/wallet_header.dart';
 import 'package:spend_io_app/features/wallet/presentation/widgets/hero/total_assets_card.dart';
 
@@ -29,9 +36,18 @@ class _WalletScreenState extends State<WalletScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final auth = context.read<AuthProvider>();
-      context.read<WalletViewModel>().updateUser(auth.currentUser?.toEntity());
+      final user = auth.currentUser?.toEntity();
+
+      context.read<WalletViewModel>().updateUser(user);
+
+      if (user != null) {
+        await context.read<SavingGoalListViewModel>().loadGoals(
+              userId: user.id!,
+            );
+      }
     });
   }
 
@@ -42,44 +58,58 @@ class _WalletScreenState extends State<WalletScreen> {
     await context.read<WalletViewModel>().initialize();
 
     if (user != null && context.mounted) {
-      await context.read<AccountViewModel>().loadAccounts(
-            user.id!,
-            user.id.toString(),
-            forceRefresh: true,
-          );
+      await Future.wait([
+        context.read<AccountViewModel>().loadAccounts(
+              user.id!,
+              user.id.toString(),
+              forceRefresh: true,
+            ),
+        context.read<SavingGoalListViewModel>().loadGoals(
+              userId: user.id!,
+            ),
+      ]);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final backgroundColor =
         isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
 
     final authProvider = context.read<AuthProvider>();
+
     final currentUserId = authProvider.currentUser?.toEntity().id ?? 0;
 
     final accountVM = context.watch<AccountViewModel>();
+    final goalVM = context.watch<SavingGoalListViewModel>();
 
     return Scaffold(
       backgroundColor: backgroundColor,
       body: Consumer<WalletViewModel>(
-        builder: (context, vm, child) {
-          if (vm.isLoading || accountVM.isLoading) {
-            return const Center(child: CircularProgressIndicator());
+        builder: (context, walletVM, child) {
+          if (walletVM.isLoading || accountVM.isLoading || goalVM.loading) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
           }
 
-          if (vm.errorMessage != null) {
+          if (walletVM.errorMessage != null) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.error_outline, color: Colors.red),
+                  const Icon(
+                    Icons.error_outline,
+                    color: Colors.red,
+                  ),
                   const SizedBox(height: 12),
-                  Text(vm.errorMessage!),
+                  Text(walletVM.errorMessage!),
+                  const SizedBox(height: 12),
                   ElevatedButton(
                     onPressed: () => _refreshAllWalletData(context),
-                    child: const Text("Retry"),
+                    child: const Text('Retry'),
                   ),
                 ],
               ),
@@ -87,13 +117,15 @@ class _WalletScreenState extends State<WalletScreen> {
           }
 
           return SafeArea(
-            top: true,
             child: RefreshIndicator(
               onRefresh: () => _refreshAllWalletData(context),
               child: CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
-                  // ================= APP BAR GHIM TIÊU ĐỀ =================
+                  // ==================================================
+                  // HEADER
+                  // ==================================================
+
                   SliverAppBar(
                     pinned: true,
                     floating: false,
@@ -104,7 +136,10 @@ class _WalletScreenState extends State<WalletScreen> {
                     title: const WalletHeader(),
                   ),
 
-                  // ================= KHỐI TÀI SẢN (TOTAL ASSETS) =================
+                  // ==================================================
+                  // TOTAL ASSETS
+                  // ==================================================
+
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(
@@ -113,23 +148,29 @@ class _WalletScreenState extends State<WalletScreen> {
                         AppSizes.md,
                         0,
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          TotalAssetsCard(summary: vm.summary),
-                        ],
+                      child: TotalAssetsCard(
+                        summary: walletVM.summary,
                       ),
                     ),
                   ),
 
-                  // ================= NGÂN SÁCH (BUDGET SECTION) =================
-                  WalletBudgetCategoriesGrid(userId: currentUserId),
+                  // ==================================================
+                  // BUDGETS
+                  // ==================================================
 
-                  // ================= TÀI KHOẢN (ACCOUNTS SECTION) =================
+                  WalletBudgetCategoriesGrid(
+                    userId: currentUserId,
+                  ),
+
+                  // ==================================================
+                  // ACCOUNTS
+                  // ==================================================
+
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: AppSizes.md),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSizes.md,
+                      ),
                       child: AccountsSection(
                         accounts: accountVM.accounts,
                         onViewAll: () {
@@ -145,37 +186,88 @@ class _WalletScreenState extends State<WalletScreen> {
                               await Navigator.push<AccountDetailsAction>(
                             context,
                             MaterialPageRoute(
-                              builder: (_) =>
-                                  AccountDetailsScreen(account: account),
+                              builder: (_) => AccountDetailsScreen(
+                                account: account,
+                              ),
                             ),
                           );
 
-                          if (!context.mounted || result == null) return;
+                          if (!context.mounted || result == null) {
+                            return;
+                          }
 
                           if (result == AccountDetailsAction.deleted ||
                               result == AccountDetailsAction.updated) {
-                            _refreshAllWalletData(context);
+                            await _refreshAllWalletData(
+                              context,
+                            );
                           }
                         },
                       ),
                     ),
                   ),
 
-                  // ================= MỤC TIÊU (GOALS SECTION) =================
-                  const SliverToBoxAdapter(
+                  // ==================================================
+                  // SAVING GOALS
+                  // ==================================================
+
+                  SliverToBoxAdapter(
                     child: Padding(
-                      padding: EdgeInsets.fromLTRB(
+                      padding: const EdgeInsets.fromLTRB(
                         AppSizes.md,
                         AppSizes.lg,
                         AppSizes.md,
                         0,
                       ),
-                      child: GoalsSection(),
+                      child: GoalsSection(
+                        goals: goalVM.goals,
+                        onViewAll: () async {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const SavingGoalListScreen(),
+                            ),
+                          );
+                        },
+                        onAddGoal: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const CreateSavingGoalScreen(),
+                            ),
+                          );
+
+                          if (result == true && context.mounted) {
+                            await context
+                                .read<SavingGoalListViewModel>()
+                                .loadGoals(userId: currentUserId);
+                          }
+                        },
+                        onGoalTap: (goal) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ChangeNotifierProvider(
+                                create: (ctx) => SavingGoalDetailViewModel(
+                                  getGoalByIdUseCase: ctx.read(),
+                                  getGoalContributionsUseCase: ctx.read(),
+                                  addGoalContributionUseCase: ctx.read(),
+                                  updateGoalUseCase: ctx.read(),
+                                  deleteGoalUseCase: ctx.read(),
+                                ),
+                                child: SavingGoalDetailScreen(goalId: goal.id),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ),
 
                   const SliverToBoxAdapter(
-                    child: SizedBox(height: AppSizes.xl),
+                    child: SizedBox(
+                      height: AppSizes.xl,
+                    ),
                   ),
                 ],
               ),

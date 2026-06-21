@@ -7,9 +7,9 @@ import 'package:spend_io_app/core/constants/app_sizes.dart';
 class AppDatePickerSheet extends StatefulWidget {
   final DateTimeRange? initialRange;
   final bool
-      isSingleDateMode; // 🌟 true nếu chỉ chọn 1 ngày (Thêm/Sửa), false nếu chọn khoảng ngày (Bộ lọc)
+      isSingleDateMode;
   final DateTime?
-      maxDate; // 🌟 Cho phép truyền ngày tối đa từ bên ngoài để chặn tương lai
+      maxDate; 
 
   const AppDatePickerSheet({
     super.key,

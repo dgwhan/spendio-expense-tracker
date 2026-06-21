@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import 'package:spend_io_app/features/goal/data/models/goal_model.dart';
+import 'package:spend_io_app/features/saving_goal/data/models/saving_goal_model.dart';
 
 import '../../../account/data/models/account_model.dart';
 
@@ -15,8 +15,8 @@ abstract class WalletRemoteDataSource {
     double newBalance,
   );
 
-  Future<List<GoalModel>> getGoals(String userId);
-  Future<void> saveGoal(String userId, GoalModel goal);
+  Future<List<SavingGoalModel>> getGoals(String userId);
+  Future<void> saveGoal(String userId, SavingGoalModel goal);
   Future<void> deleteGoal(String userId, String goalId);
 }
 
@@ -97,7 +97,7 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
   // =========================================================
 
   @override
-  Future<List<GoalModel>> getGoals(String userId) async {
+  Future<List<SavingGoalModel>> getGoals(String userId) async {
     final snapshot = await _firestore
         .collection('users')
         .doc(userId)
@@ -106,12 +106,12 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
 
     return snapshot.docs.map((doc) {
       final data = doc.data();
-      return GoalModel.fromMap(data);
+      return SavingGoalModel.fromMap(data);
     }).toList();
   }
 
   @override
-  Future<void> saveGoal(String userId, GoalModel goal) async {
+  Future<void> saveGoal(String userId, SavingGoalModel goal) async {
     await _firestore
         .collection('users')
         .doc(userId)

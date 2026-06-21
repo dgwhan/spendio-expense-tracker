@@ -3,7 +3,7 @@ import 'package:provider/single_child_widget.dart';
 
 import 'package:spend_io_app/features/account/domain/repositories/account_repository.dart';
 import 'package:spend_io_app/features/budget/domain/repositories/budget_repository.dart';
-import 'package:spend_io_app/features/goal/domain/repositories/goal_repository.dart';
+import 'package:spend_io_app/features/saving_goal/domain/repositories/saving_goal_repository.dart';
 
 import 'package:spend_io_app/features/wallet/data/repositories/wallet_repository_impl.dart';
 import 'package:spend_io_app/features/wallet/domain/repositories/wallet_repository.dart';
@@ -23,8 +23,8 @@ class WalletModuleProvider {
         // WALLET REPOSITORY (SAFE PROXY GRAPH)
         // =========================================================
 
-        ProxyProvider3<AccountRepository, GoalRepository, BudgetRepository,
-            WalletRepository>(
+        ProxyProvider3<AccountRepository, SavingGoalRepository,
+            BudgetRepository, WalletRepository>(
           update: (
             context,
             accountRepo,

@@ -1,14 +1,14 @@
 import 'package:spend_io_app/features/account/domain/repositories/account_repository.dart';
 import 'package:spend_io_app/features/budget/domain/entities/category/budget_category_progress_entity.dart';
 import 'package:spend_io_app/features/budget/domain/repositories/budget_repository.dart';
-import 'package:spend_io_app/features/goal/domain/repositories/goal_repository.dart';
+import 'package:spend_io_app/features/saving_goal/domain/repositories/saving_goal_repository.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/wallet_summary_entity.dart';
 import 'package:spend_io_app/features/wallet/domain/repositories/wallet_repository.dart';
 import 'package:spend_io_app/features/wallet/domain/wallet_summary_result.dart';
 
 class WalletRepositoryImpl implements WalletRepository {
   final AccountRepository accountRepository;
-  final GoalRepository goalRepository;
+  final SavingGoalRepository goalRepository;
   final BudgetRepository budgetRepository;
 
   WalletRepositoryImpl({
@@ -41,7 +41,7 @@ class WalletRepositoryImpl implements WalletRepository {
       monthlyBudget: budget?.amount ?? 0,
       totalSaved: totalSaved,
       activeGoals: goals.length,
-      remainingDays: 0, 
+      remainingDays: 0,
     );
 
     return WalletSummaryResult(

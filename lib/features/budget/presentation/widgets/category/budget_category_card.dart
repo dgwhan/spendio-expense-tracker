@@ -6,7 +6,11 @@ import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/features/budget/domain/entities/category/budget_category_progress_entity.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
 import 'package:spend_io_app/features/budget/presentation/screens/category/budget_category_detail_screen.dart';
+import 'package:spend_io_app/features/budget/presentation/screens/category/edit_category_budget_screen.dart';
+import 'package:spend_io_app/features/budget/presentation/viewmodels/category/budget_category_form_viewmodel.dart';
+import 'package:spend_io_app/features/budget/presentation/viewmodels/category/budget_category_viewmodel.dart';
 import 'package:spend_io_app/features/category/presentation/viewmodels/category_viewmodel.dart';
+import 'package:spend_io_app/features/category/domain/entities/category_entity.dart';
 import 'package:spend_io_app/features/category/data/models/category_model.dart';
 
 enum BudgetCardType { horizontal, vertical }
@@ -14,16 +18,112 @@ enum BudgetCardType { horizontal, vertical }
 class BudgetCategoryCard extends StatelessWidget {
   final BudgetCategoryProgressEntity progress;
   final int userId;
-  final BudgetCardType
-      cardType; // Kiểu layout: Ngang (Horizontal) hoặc Dọc vuông (Vertical)
+  final BudgetCardType cardType;
 
   const BudgetCategoryCard({
     super.key,
     required this.progress,
     required this.userId,
-    this.cardType =
-        BudgetCardType.vertical, // Mặc định là dọc vuông giống ảnh cũ
+    this.cardType = BudgetCardType.vertical,
   });
+
+  void _handleDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Limit'),
+        content: Text(
+            'Are you sure you want to delete the budget limit for ${progress.budgetCategory.name}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child:
+                const Text('Delete', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      await context.read<BudgetCategoryViewModel>().deleteCategory(
+            id: progress.budgetCategory.id,
+            userId: userId,
+          );
+    }
+  }
+
+  void _navigateToEdit(BuildContext context, CategoryEntity currentDetails) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider<BudgetCategoryFormViewModel>(
+          create: (_) => BudgetCategoryFormViewModel(),
+          child: Builder(
+            builder: (routeContext) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                routeContext.read<BudgetCategoryFormViewModel>().setupEditMode(
+                      progress.budgetCategory,
+                      currentDetails,
+                    );
+              });
+              return EditCategoryBudgetScreen(userId: userId);
+            },
+          ),
+        ),
+      ),
+    ).then((updated) {
+      if (updated == true && context.mounted) {
+        context.read<BudgetCategoryViewModel>().loadProgress(userId);
+      }
+    });
+  }
+
+  Widget _buildPopupMenu(
+      BuildContext context, Color iconColor, CategoryEntity currentDetails) {
+    return PopupMenuButton<String>(
+      icon: Icon(Icons.more_vert_rounded, color: iconColor, size: 18),
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(),
+      style: IconButton.styleFrom(
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      onSelected: (value) {
+        if (value == 'edit') {
+          _navigateToEdit(context, currentDetails);
+        } else if (value == 'delete') {
+          _handleDelete(context);
+        }
+      },
+      itemBuilder: (context) => [
+        const PopupMenuItem(
+          value: 'edit',
+          child: Row(
+            children: [
+              Icon(Icons.edit_outlined, size: 16),
+              SizedBox(width: 8),
+              Text('Edit Limit', style: TextStyle(fontSize: 13)),
+            ],
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(Icons.delete_outline_rounded,
+                  size: 16, color: AppColors.error),
+              SizedBox(width: 8),
+              Text('Delete',
+                  style: TextStyle(color: AppColors.error, fontSize: 13)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,9 +165,17 @@ class BudgetCategoryCard extends StatelessWidget {
     final categoryColor = Color(associatedCategory.colorValue);
     final displayPercent = progress.percentage.toStringAsFixed(0);
 
-    // ==========================================
-    // 🛠️ LAYOUT 1: HÀNG NGANG (HORIZONTAL CARD)
-    // ==========================================
+    final CategoryEntity coreCategoryEntity = CategoryEntity(
+      id: associatedCategory.id,
+      userId: userId,
+      name: associatedCategory.name,
+      type: associatedCategory.type,
+      groupName: associatedCategory.groupName,
+      iconCodePoint: associatedCategory.iconCodePoint,
+      iconFontFamily: associatedCategory.iconFontFamily,
+      colorValue: associatedCategory.colorValue,
+    );
+
     if (cardType == BudgetCardType.horizontal) {
       return Container(
         decoration: BoxDecoration(
@@ -140,6 +248,9 @@ class BudgetCategoryCard extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                             color: primaryTextColor),
                       ),
+                      const SizedBox(width: 4),
+                      _buildPopupMenu(
+                          context, secondaryTextColor, coreCategoryEntity),
                     ],
                   ),
                   const SizedBox(height: AppSizes.md),
@@ -162,9 +273,6 @@ class BudgetCategoryCard extends StatelessWidget {
       );
     }
 
-    // ==========================================
-    // 🛠️ LAYOUT 2: Ô VUÔNG DỌC (VERTICAL CARD) - ĐÃ FIX CHỐNG TRÀN FLEX
-    // ==========================================
     return Container(
       decoration: BoxDecoration(
         color: surfaceColor,
@@ -182,48 +290,46 @@ class BudgetCategoryCard extends StatelessWidget {
           onTap: () => _navigateToDetail(context),
           borderRadius: BorderRadius.circular(AppRadius.cardRadiusLg),
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical:
-                    8), // Giảm nhẹ padding dọc xuống 8px để tăng không gian thở
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // 1. Icon Box
-                Container(
-                  padding: const EdgeInsets.all(
-                      4), // Thu nhỏ nhẹ padding icon chống kích thước lớn
-                  decoration: BoxDecoration(
-                    color: categoryColor.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                  ),
-                  child: Icon(
-                    IconData(associatedCategory.iconCodePoint,
-                        fontFamily: associatedCategory.iconFontFamily ??
-                            'MaterialIcons'),
-                    size:
-                        18, // Hạ nhẹ từ 20 xuống 18 để fit khít khung h=76 cực đoan
-                    color: categoryColor,
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: categoryColor.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                      ),
+                      child: Icon(
+                        IconData(associatedCategory.iconCodePoint,
+                            fontFamily: associatedCategory.iconFontFamily ??
+                                'MaterialIcons'),
+                        size: 18,
+                        color: categoryColor,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        displayName,
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: primaryTextColor,
+                            height: 1.2),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                      ),
+                    ),
+                    _buildPopupMenu(
+                        context, secondaryTextColor, coreCategoryEntity),
+                  ],
                 ),
-
-                // 2. Title Name
-                Text(
-                  displayName.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: isDark
-                        ? AppColors.textSecondaryDark
-                        : AppColors.textSecondaryLight,
-                    letterSpacing: 0.5,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-
-                // 3. Currency Row
+                const SizedBox(height: 12),
                 Flexible(
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
@@ -250,8 +356,7 @@ class BudgetCategoryCard extends StatelessWidget {
                     ),
                   ),
                 ),
-
-                // 4. Progress Bar
+                const SizedBox(height: 8),
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -260,8 +365,7 @@ class BudgetCategoryCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(AppRadius.sm),
                       child: LinearProgressIndicator(
                         value: percentage,
-                        minHeight:
-                            4, // Hạ xuống 4px để tiết kiệm diện tích dọc tối đa
+                        minHeight: 4,
                         backgroundColor: isDark
                             ? AppColors.surfaceSecondaryDark
                             : AppColors.surfaceSecondaryLight,
