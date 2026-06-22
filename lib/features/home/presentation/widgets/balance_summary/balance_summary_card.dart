@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/extensions/string_extension.dart';
+import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:spend_io_app/core/utils/localization.dart';
 import 'package:spend_io_app/features/home/data/models/dashboard_summary_model.dart';
 import 'package:spend_io_app/core/widgets/cards/app_info_card.dart';
 
@@ -21,17 +22,16 @@ class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
   bool _isObscured = false;
 
   String _formatCurrency(double amount) {
-    final formatter =
-        NumberFormat.currency(locale: 'vi_VN', symbol: 'đ', decimalDigits: 0);
-    final currencyString = formatter.format(amount).replaceAll(' ', '');
-
+    final currencyString = CurrencyFormatter.format(amount);
     return _isObscured ? currencyString.obscure : currencyString;
   }
 
   @override
   Widget build(BuildContext context) {
+    final thisMonthStr = AppLocalizations.translate('this_month').toUpperCase();
+
     return AppInfoCard(
-      title: 'TOTAL BALANCE',
+      title: AppLocalizations.translate('total_balance').toUpperCase(),
       mainBalance: _formatCurrency(widget.summary.balance),
       trailingIcon: IconButton(
         padding: EdgeInsets.zero,
@@ -51,17 +51,17 @@ class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
       ),
       items: [
         AppInfoItem(
-          label: 'INCOME (THIS MONTH)',
+          label: '${AppLocalizations.translate('income')} ($thisMonthStr)',
           value: _formatCurrency(widget.summary.income),
           valueColor: AppColors.income,
         ),
         AppInfoItem(
-          label: 'EXPENSE (THIS MONTH)',
+          label: '${AppLocalizations.translate('expense')} ($thisMonthStr)',
           value: _formatCurrency(widget.summary.expense),
           valueColor: AppColors.expense,
         ),
         AppInfoItem(
-          label: 'SAVINGS (THIS MONTH)',
+          label: '${AppLocalizations.translate('savings').toUpperCase()} ($thisMonthStr)',
           value: _formatCurrency(widget.summary.savings),
           valueColor: Colors.white.withValues(alpha: 0.9),
         ),
@@ -69,3 +69,4 @@ class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
     );
   }
 }
+

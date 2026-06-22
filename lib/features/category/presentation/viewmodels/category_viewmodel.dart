@@ -16,6 +16,9 @@ class CategoryViewModel extends ChangeNotifier {
   CategoryState _state = const CategoryState();
   CategoryState get state => _state;
 
+  int? _lastLoadedUserId;
+  int? get lastLoadedUserId => _lastLoadedUserId;
+
   Future<void> loadCategories(int localUserId) async {
     _state = _state.copyWith(isLoading: true, error: null);
     notifyListeners();
@@ -23,9 +26,16 @@ class CategoryViewModel extends ChangeNotifier {
     try {
       final data = await _repository.getCategories(localUserId);
       _state = _state.copyWith(isLoading: false, categories: data);
+      _lastLoadedUserId = localUserId;
     } catch (e) {
       _state = _state.copyWith(isLoading: false, error: e.toString());
     }
+    notifyListeners();
+  }
+
+  void clearCategories() {
+    _state = const CategoryState();
+    _lastLoadedUserId = null;
     notifyListeners();
   }
 

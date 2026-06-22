@@ -36,14 +36,12 @@ class AccountFilterBottomSheet extends StatelessWidget {
         AppSizes.lg,
         AppSizes.lg + bottomNavigationPadding,
       ),
-      // BƯỚC 1: Sử dụng SingleChildScrollView làm gốc để cho phép cuộn khi màn hình xoay ngang (Landscape)
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Thêm một thanh kéo nhỏ (Handle bar) ở trên cùng nhìn cho chuẩn UI BottomSheet
             Align(
               alignment: Alignment.center,
               child: Container(
@@ -66,12 +64,10 @@ class AccountFilterBottomSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSizes.md),
-            // BƯỚC 2: Khi màn hình xoay ngang, GridView 2 cột sẽ bị dài.
-            // Ta dùng LayoutBuilder để check nếu chiều cao quá ngắn (như khi Landscape), ta có thể linh hoạt đổi trải nghiệm
             GridView.count(
               shrinkWrap: true,
               physics:
-                  const NeverScrollableScrollPhysics(), // Chặn cuộn nội bộ vì đã có SingleChildScrollView bọc ngoài
+                  const NeverScrollableScrollPhysics(), 
               crossAxisCount: 2,
               mainAxisSpacing: 10,
               crossAxisSpacing: 10,

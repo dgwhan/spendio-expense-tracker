@@ -101,6 +101,7 @@ class UserModel {
       financialGoal: financialGoal,
       currency: currency,
       onboardingCompleted: onboardingCompleted,
+      displayNameField: displayName,
     );
   }
 }

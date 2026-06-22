@@ -1,203 +1,240 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
+import 'package:spend_io_app/core/constants/app_radius.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
-import 'package:spend_io_app/core/widgets/input/app_search_bar.dart';
+import 'package:spend_io_app/core/constants/app_text_styles.dart';
+import 'package:spend_io_app/core/dialogs/app_dialogs.dart';
+import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:spend_io_app/core/widgets/common/app_more_menu_button.dart';
 import 'package:spend_io_app/features/budget/domain/usecase/monthly/delete_budget_usecase.dart';
 import 'package:spend_io_app/features/budget/domain/usecase/monthly/update_budget_usecase.dart';
-import 'package:spend_io_app/features/budget/presentation/viewmodels/category/budget_category_viewmodel.dart';
+import 'package:spend_io_app/features/budget/presentation/screens/monthly/edit_budget_screen.dart';
+import 'package:spend_io_app/features/budget/presentation/viewmodels/monthly/budget_form_viewmodel.dart';
 import 'package:spend_io_app/features/budget/presentation/viewmodels/monthly/budget_viewmodel.dart';
-import 'package:spend_io_app/features/budget/presentation/widgets/category/budget_category_card.dart';
-import 'package:spend_io_app/features/budget/presentation/widgets/detail/progress_indicator_card.dart';
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
+import 'package:intl/intl.dart';
 
-class BudgetDetailScreen extends StatefulWidget {
+class ProgressIndicatorCard extends StatelessWidget {
   final double totalSpent;
   final double totalBudget;
+  final double percentage;
+  final bool isOverBudget;
   final int daysLeft;
   final int userId;
 
-  const BudgetDetailScreen({
+  final BudgetViewModel budgetVM;
+  final WalletViewModel walletVM;
+  final UpdateBudgetUseCase updateBudgetUseCase;
+  final DeleteBudgetUseCase deleteBudgetUseCase;
+
+  const ProgressIndicatorCard({
     super.key,
     required this.totalSpent,
     required this.totalBudget,
+    required this.percentage,
+    required this.isOverBudget,
     required this.daysLeft,
     required this.userId,
+    required this.budgetVM,
+    required this.walletVM,
+    required this.updateBudgetUseCase,
+    required this.deleteBudgetUseCase,
   });
 
-  @override
-  State<BudgetDetailScreen> createState() => _BudgetDetailScreenState();
-}
-
-class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
-  final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<BudgetCategoryViewModel>().loadProgress(widget.userId);
-      }
-    });
+  void _handleDeleteBudget(BuildContext context) async {
+    final currentBudgetEntity = budgetVM.currentBudget?.budget;
+    if (currentBudgetEntity == null) return;
+    final confirmed = await AppDialogs.showDelete(
+      context: context,
+      title: 'Delete Monthly Budget',
+      content: 'Are you sure you want to delete this month\'s total budget?',
+    );
+    if (confirmed == true && context.mounted) {
+      await budgetVM.deleteBudget(
+          budgetId: currentBudgetEntity.id, userId: userId);
+      await walletVM.refreshBudgetProgress();
+      if (context.mounted) Navigator.pop(context);
+    }
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+  void _navigateToEditBudget(BuildContext context) {
+    final budgetState = budgetVM.currentBudget;
+    if (budgetState == null) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MultiProvider(
+          providers: [
+            ChangeNotifierProvider(
+                create: (_) =>
+                    BudgetFormViewModel()..setupEditMode(budgetState.budget)),
+            ChangeNotifierProvider.value(value: budgetVM),
+            Provider.value(value: updateBudgetUseCase),
+            Provider.value(value: deleteBudgetUseCase),
+            ChangeNotifierProvider.value(value: walletVM),
+          ],
+          child: EditBudgetScreen(
+              userId: userId, existingBudget: budgetState.budget),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor =
+        isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
     final primaryTextColor =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
-    final systemBottomPadding = MediaQuery.of(context).padding.bottom;
+    final secondaryTextColor =
+        isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
 
-    final budgetCategoryVM = context.watch<BudgetCategoryViewModel>();
-    final allCategoryProgress = budgetCategoryVM.progressList;
+    final displayPercent = (percentage * 100).toStringAsFixed(0);
+    final String currentMonthStr = DateFormat.yMMMM().format(DateTime.now());
 
-    final filteredCategories = allCategoryProgress.where((progress) {
-      final categoryName = progress.budgetCategory.name.toLowerCase();
-      final query = _searchQuery.toLowerCase();
-      return categoryName.contains(query);
-    }).toList();
-
-    final remaining = widget.totalBudget - widget.totalSpent;
-    final percentage = widget.totalBudget > 0
-        ? (widget.totalSpent / widget.totalBudget).clamp(0.0, 1.0)
-        : 0.0;
-    final isOverBudget = remaining < 0;
-
-    return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leadingWidth: 40,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: AppSizes.md),
-          child: IconButton(
-            icon: Icon(Icons.arrow_back_ios_new_rounded,
-                color: primaryTextColor, size: 18),
-            onPressed: () => Navigator.pop(context),
-            constraints: const BoxConstraints(),
-            padding: EdgeInsets.zero,
-          ),
-        ),
-        title: Text(
-          'Budget Overview',
-          style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              color: primaryTextColor),
-        ),
-        centerTitle: false,
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSizes.lg),
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        borderRadius: BorderRadius.circular(AppRadius.cardRadiusLg),
+        boxShadow: const [
+          BoxShadow(
+              color: AppColors.shadowNatural1,
+              blurRadius: 16,
+              offset: Offset(0, 4))
+        ],
       ),
-      body: SafeArea(
-        child: budgetCategoryVM.isLoading && allCategoryProgress.isEmpty
-            ? const Center(child: CircularProgressIndicator())
-            : CustomScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: AppSizes.md, vertical: AppSizes.sm),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ProgressIndicatorCard(
-                            totalSpent: widget.totalSpent,
-                            totalBudget: widget.totalBudget,
-                            percentage: percentage,
-                            isOverBudget: isOverBudget,
-                            daysLeft: widget.daysLeft,
-                            userId: widget.userId,
-                            budgetVM: context.read<BudgetViewModel>(),
-                            walletVM: context.read<WalletViewModel>(),
-                            updateBudgetUseCase:
-                                context.read<UpdateBudgetUseCase>(),
-                            deleteBudgetUseCase:
-                                context.read<DeleteBudgetUseCase>(),
-                          ),
-                          const SizedBox(height: AppSizes.xl),
-                          AppSearchBar(
-                            controller: _searchController,
-                            hintText: 'Search category budgets...',
-                            onChanged: (value) =>
-                                setState(() => _searchQuery = value),
-                            onClear: () => setState(() => _searchQuery = ''),
-                          ),
-                          const SizedBox(height: AppSizes.xl),
-                          Text(
-                            'Category Budgets',
-                            style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: primaryTextColor),
-                          ),
-                          const SizedBox(height: AppSizes.md),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (filteredCategories.isEmpty)
-                    SliverToBoxAdapter(child: _buildEmptyState())
-                  else
-                    SliverPadding(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: AppSizes.md),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final currentProgress = filteredCategories[index];
-                            return Padding(
-                              padding:
-                                  const EdgeInsets.only(bottom: AppSizes.md),
-                              child: BudgetCategoryCard(
-                                progress: currentProgress,
-                                userId: widget.userId,
-                                cardType: BudgetCardType.horizontal,
-                              ),
-                            );
-                          },
-                          childCount: filteredCategories.length,
-                        ),
-                      ),
-                    ),
-                  SliverPadding(
-                      padding: EdgeInsets.only(
-                          bottom: systemBottomPadding + AppSizes.xl)),
+      child: Column(
+        children: [
+          // Row chứa Title và Menu 3 chấm ở góc phải trên cùng
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(currentMonthStr,
+                  style: AppTextStyles.headingMedium
+                      .copyWith(color: primaryTextColor)),
+              AppMoreMenuButton(
+                iconColor: secondaryTextColor,
+                actions: [
+                  AppMenuAction(
+                      label: 'Edit Budget',
+                      value: 'edit',
+                      icon: Icons.edit_outlined,
+                      onTap: () => _navigateToEditBudget(context)),
+                  AppMenuAction(
+                      label: 'Delete',
+                      value: 'delete',
+                      icon: Icons.delete_outline_rounded,
+                      isDestructive: true,
+                      onTap: () => _handleDeleteBudget(context)),
                 ],
               ),
-      ),
-    );
-  }
+            ],
+          ),
+          const SizedBox(height: AppSizes.md),
 
-  Widget _buildEmptyState() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSizes.xl * 2),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.folder_off_outlined,
-                size: 48, color: Colors.grey.withValues(alpha: 0.4)),
-            const SizedBox(height: AppSizes.sm),
-            Text(
-              _searchQuery.isEmpty
-                  ? 'No category budgets found'
-                  : 'No matching budgets found',
-              style: TextStyle(
-                  color: Colors.grey.withValues(alpha: 0.6), fontSize: 14),
+          // Trạng thái Status (SAFE/OVER) tách biệt
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: (isOverBudget ? AppColors.error : AppColors.primary)
+                    .withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                      isOverBudget
+                          ? Icons.error_outline_rounded
+                          : Icons.check_circle_outline_rounded,
+                      size: 13,
+                      color:
+                          isOverBudget ? AppColors.error : AppColors.primary),
+                  const SizedBox(width: 4),
+                  Text(isOverBudget ? 'OVER BUDGET' : 'SAFE BUDGET',
+                      style: AppTextStyles.caption.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: isOverBudget
+                              ? AppColors.error
+                              : AppColors.primary)),
+                ],
+              ),
             ),
-          ],
-        ),
+          ),
+
+          const SizedBox(height: AppSizes.lg),
+          Stack(alignment: Alignment.center, children: [
+            SizedBox(
+                width: 140,
+                height: 140,
+                child: CircularProgressIndicator(
+                    value: percentage,
+                    strokeWidth: 10,
+                    backgroundColor:
+                        isDark ? Colors.grey[800] : Colors.grey[100],
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                        isOverBudget ? AppColors.error : AppColors.primary))),
+            Column(
+              children: [
+                Text('$displayPercent%',
+                    style: AppTextStyles.headingMedium
+                        .copyWith(color: primaryTextColor, fontSize: 26)),
+                Text('SPENT',
+                    style: AppTextStyles.caption.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: secondaryTextColor,
+                        letterSpacing: 0.5)),
+              ],
+            ),
+          ]),
+          const SizedBox(height: AppSizes.md),
+          Text('SPENT THIS MONTH',
+              style: AppTextStyles.caption.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: secondaryTextColor,
+                  letterSpacing: 0.5)),
+          Text(formatCurrency(totalSpent),
+              style: AppTextStyles.headingMedium
+                  .copyWith(color: primaryTextColor, fontSize: 28)),
+          const SizedBox(height: AppSizes.md),
+          Divider(color: isDark ? Colors.grey[800] : Colors.grey[200]),
+          const SizedBox(height: AppSizes.md),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Total Budget',
+                      style: AppTextStyles.bodyNormal
+                          .copyWith(color: secondaryTextColor)),
+                  Text(formatCurrency(totalBudget),
+                      style: AppTextStyles.bodyNormal.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: primaryTextColor)),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('Remaining',
+                      style: AppTextStyles.bodyNormal
+                          .copyWith(color: secondaryTextColor)),
+                  Text('$daysLeft days left',
+                      style: AppTextStyles.bodyNormal.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary)),
+                ],
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

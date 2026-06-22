@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
+import 'package:spend_io_app/core/utils/localization.dart';
 
 class AppHeader extends StatelessWidget {
   final String displayName;
@@ -57,7 +58,7 @@ class AppHeader extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Good morning, $displayName',
+                AppLocalizations.translate('greeting_name', args: {'name': displayName}),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: textPrimary,

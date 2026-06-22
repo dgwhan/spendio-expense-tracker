@@ -11,11 +11,13 @@ import 'package:spend_io_app/shared/widgets/icon_picker/app_icon_picker_grid.dar
 class CreateCategoryScreen extends StatefulWidget {
   final int userId;
   final String remoteUid;
+  final CategoryEntity? category;
 
   const CreateCategoryScreen({
     super.key,
     required this.userId,
     required this.remoteUid,
+    this.category,
   });
 
   @override
@@ -35,8 +37,16 @@ class _CreateCategoryScreenState extends State<CreateCategoryScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedColorValue = AppColors.primary.toARGB32();
-    _selectedGroup = AppDefaultCategories.expenseGroups.first;
+    if (widget.category != null) {
+      _nameController.text = widget.category!.name;
+      _selectedType = widget.category!.type;
+      _selectedGroup = widget.category!.groupName;
+      _selectedIconCode = widget.category!.iconCodePoint;
+      _selectedColorValue = widget.category!.colorValue;
+    } else {
+      _selectedColorValue = AppColors.primary.toARGB32();
+      _selectedGroup = AppDefaultCategories.expenseGroups.first;
+    }
   }
 
   @override
@@ -48,8 +58,10 @@ class _CreateCategoryScreenState extends State<CreateCategoryScreen> {
   void _submitCategory() async {
     if (!_formKey.currentState!.validate() || _selectedGroup == null) return;
 
-    final String uniqueId =
-        'custom_cat_${DateTime.now().microsecondsSinceEpoch}';
+    final isEditing = widget.category != null;
+    final String uniqueId = isEditing
+        ? widget.category!.id
+        : 'custom_cat_${DateTime.now().microsecondsSinceEpoch}';
     final nowString = DateTime.now().toIso8601String();
 
     final newCategory = CategoryEntity(
@@ -61,7 +73,7 @@ class _CreateCategoryScreenState extends State<CreateCategoryScreen> {
       iconCodePoint: _selectedIconCode, 
       iconFontFamily: 'MaterialIcons',
       colorValue: _selectedColorValue,
-      createdAt: nowString,
+      createdAt: isEditing ? widget.category!.createdAt : nowString,
       updatedAt: nowString,
     );
 
@@ -77,13 +89,23 @@ class _CreateCategoryScreenState extends State<CreateCategoryScreen> {
 
     if (errorMessage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Category created successfully!')),
+        SnackBar(
+          content: Text(
+            isEditing
+                ? 'Category updated successfully!'
+                : 'Category created successfully!',
+          ),
+        ),
       );
       Navigator.pop(context, true);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error creating category: $errorMessage'),
+          content: Text(
+            isEditing
+                ? 'Error updating category: $errorMessage'
+                : 'Error creating category: $errorMessage',
+          ),
           backgroundColor: AppColors.error,
         ),
       );
@@ -109,7 +131,7 @@ class _CreateCategoryScreenState extends State<CreateCategoryScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Create Custom Category',
+          widget.category != null ? 'Edit Category' : 'Create Custom Category',
           style: TextStyle(
               color: isDark ? Colors.white : Colors.black,
               fontWeight: FontWeight.bold,
@@ -256,8 +278,9 @@ class _CreateCategoryScreenState extends State<CreateCategoryScreen> {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(AppSizes.md)),
                     ),
-                    child: const Text('Save Custom Category',
-                        style: TextStyle(
+                    child: Text(
+                        widget.category != null ? 'Save Changes' : 'Save Custom Category',
+                        style: const TextStyle(
                             fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
                 ),

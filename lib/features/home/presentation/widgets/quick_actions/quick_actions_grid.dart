@@ -40,12 +40,12 @@ class QuickActionsGrid extends StatelessWidget {
           crossAxisSpacing: 8,
           childAspectRatio: 0.85,
           children: [
-            _ActionItem(
-              icon: Icons.add_chart_rounded,
-              label: 'Create\nBudget',
-              onTap: onCreateBudgetTap,
-              isDark: isDark,
-            ),
+            // _ActionItem(
+            //   icon: Icons.add_chart_rounded,
+            //   label: 'Create\nBudget',
+            //   onTap: onCreateBudgetTap,
+            //   isDark: isDark,
+            // ),
             _ActionItem(
               icon: Icons.history_rounded,
               label: 'Transaction\nHistory',
@@ -58,12 +58,12 @@ class QuickActionsGrid extends StatelessWidget {
               onTap: onManageSavingsTap,
               isDark: isDark,
             ),
-            _ActionItem(
-              icon: Icons.stacked_line_chart_rounded,
-              label: 'Financial\nPulse',
-              onTap: onInsightsTap,
-              isDark: isDark,
-            ),
+            // _ActionItem(
+            //   icon: Icons.stacked_line_chart_rounded,
+            //   label: 'Financial\nPulse',
+            //   onTap: onInsightsTap,
+            //   isDark: isDark,
+            // ),
             _ActionItem(
               icon: Icons.calendar_month_rounded,
               label: 'Monthly\nBudget',

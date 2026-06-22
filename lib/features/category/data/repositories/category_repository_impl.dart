@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:spend_io_app/features/category/data/datasources/category_local_data_source.dart';
 import 'package:spend_io_app/features/category/data/datasources/category_remote_data_source.dart';
 import 'package:spend_io_app/features/category/data/models/category_model.dart';
@@ -65,7 +66,13 @@ class CategoryRepositoryImpl implements CategoryRepository {
 
     // Cloud Guard: Only sync to firestore if online and it's a custom category (userId != 0)
     if (remoteUid.isNotEmpty && category.userId != 0) {
-      await remoteDataSource.saveCustomCategory(remoteUid, model);
+      try {
+        await remoteDataSource
+            .saveCustomCategory(remoteUid, model)
+            .timeout(const Duration(seconds: 4));
+      } catch (e) {
+        debugPrint('[Category Repo]: Cloud sync category backup delayed ($e).');
+      }
     }
   }
 
@@ -76,7 +83,13 @@ class CategoryRepositoryImpl implements CategoryRepository {
 
     // If local deletion succeeds, remove from the cloud storage safely
     if (remoteUid.isNotEmpty) {
-      await remoteDataSource.removeCustomCategory(remoteUid, categoryId);
+      try {
+        await remoteDataSource
+            .removeCustomCategory(remoteUid, categoryId)
+            .timeout(const Duration(seconds: 4));
+      } catch (e) {
+        debugPrint('[Category Repo]: Cloud remove category backup delayed ($e).');
+      }
     }
   }
 }

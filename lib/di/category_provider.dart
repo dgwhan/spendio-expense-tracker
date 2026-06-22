@@ -2,6 +2,7 @@ import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:spend_io_app/features/category/data/datasources/category_local_data_source.dart';
 import 'package:spend_io_app/features/category/data/datasources/category_remote_data_source.dart';
 import 'package:spend_io_app/features/category/data/repositories/category_repository_impl.dart';
@@ -41,16 +42,26 @@ class CategoryModuleProvider {
         // =========================================================
         // 4. PRESENTATION LAYER
         // =========================================================
-        ChangeNotifierProxyProvider<CategoryRepository, CategoryViewModel>(
+        ChangeNotifierProxyProvider2<CategoryRepository, AuthProvider, CategoryViewModel>(
           create: (context) => CategoryViewModel(
             repository: context.read<CategoryRepository>(),
           ),
-          update: (_, repo, previous) {
-            if (previous == null) {
-              return CategoryViewModel(repository: repo);
+          update: (context, repo, authProvider, previous) {
+            final activeVm = previous ?? CategoryViewModel(repository: repo);
+            activeVm.updateRepository(repo);
+
+            final userEntity = authProvider.currentUser?.toEntity();
+            if (userEntity != null) {
+              final localId = userEntity.id ?? 0;
+              if (localId > 0 && userEntity.onboardingCompleted == true) {
+                if (activeVm.lastLoadedUserId != localId) {
+                  activeVm.loadCategories(localId);
+                }
+              }
+            } else {
+              activeVm.clearCategories();
             }
-            previous.updateRepository(repo);
-            return previous;
+            return activeVm;
           },
         ),
       ];

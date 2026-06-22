@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
+import 'package:spend_io_app/core/utils/localization.dart';
 import 'package:spend_io_app/core/widgets/common/app_screen_title.dart';
 import 'package:spend_io_app/features/splash/presentation/screens/splash_screen.dart';
 import '../viewmodels/profile_viewmodel.dart';
@@ -72,6 +73,156 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  void _showEditProfileSheet(BuildContext context, ProfileViewModel viewModel) {
+    final isDark = viewModel.isDarkMode;
+    final surfaceColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+    final textPrimary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final textMuted = isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
+    final borderBoxColor = isDark ? AppColors.borderDark : AppColors.borderLight;
+
+    final nameController = TextEditingController(text: viewModel.user?.displayName ?? '');
+    final occupationController = TextEditingController(text: viewModel.user?.occupation ?? '');
+    final goalController = TextEditingController(text: viewModel.user?.financialGoal ?? '');
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: surfaceColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            top: 24,
+            left: 24,
+            right: 24,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                AppLocalizations.translate('edit_profile_title'),
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: textPrimary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              TextField(
+                controller: nameController,
+                style: TextStyle(color: textPrimary),
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.translate('full_name'),
+                  labelStyle: TextStyle(color: textMuted),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: borderBoxColor),
+                  ),
+                  focusedBorder: const UnderlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.primary),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: occupationController,
+                style: TextStyle(color: textPrimary),
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.translate('profile_occupation_label'),
+                  labelStyle: TextStyle(color: textMuted),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: borderBoxColor),
+                  ),
+                  focusedBorder: const UnderlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.primary),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: goalController,
+                style: TextStyle(color: textPrimary),
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.translate('profile_goal_label'),
+                  labelStyle: TextStyle(color: textMuted),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: borderBoxColor),
+                  ),
+                  focusedBorder: const UnderlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.primary),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: BorderSide(color: borderBoxColor),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: Text(
+                        AppLocalizations.translate('cancel'),
+                        style: TextStyle(color: textMuted),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final success = await viewModel.updateUserProfile(
+                          displayName: nameController.text.trim(),
+                          occupation: occupationController.text.trim(),
+                          financialGoal: goalController.text.trim(),
+                        );
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                success
+                                    ? AppLocalizations.translate('update_success_msg')
+                                    : AppLocalizations.translate('update_fail_msg'),
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
+                              backgroundColor: success ? AppColors.success : AppColors.error,
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: Text(
+                        AppLocalizations.translate('save'),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<ProfileViewModel>();
@@ -110,27 +261,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: Stack(
         children: [
           SafeArea(
-            top: true, // Chặn chuẩn kích thước tai thỏ đồng bộ với Wallet
+            top: true,
             child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
-                // ================= APP BAR GHIM TIÊU ĐỀ PROFILE =================
                 SliverAppBar(
-                  pinned: true, // Ghim tiêu đề khi cuộn lên
+                  pinned: true,
                   floating: false,
                   elevation: 0,
                   centerTitle: true,
                   backgroundColor: backgroundColor,
-                  toolbarHeight:
-                      48, // Đồng bộ chiều cao Toolbar gọn gàng với Wallet
-                  title: const AppScreenTitle(
-                    title: 'Profile',
-                    isCenter:
-                        true, // Ép ra chính giữa màn hình và màu đậm theo file core
+                  toolbarHeight: 48,
+                  title: AppScreenTitle(
+                    title: AppLocalizations.translate('profile'),
+                    isCenter: true,
                   ),
                 ),
-
-                // ================= TOÀN BỘ KHỐI NỘI DUNG DƯỚI DẠNG SLIVER =================
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
@@ -184,9 +330,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 icon: Icons.flag_rounded,
                                 iconColor: creditCardColor,
                                 iconBgColor: creditCardBg,
-                                title: 'Financial Goal',
-                                value:
-                                    viewModel.user?.financialGoal ?? 'Not set',
+                                title: AppLocalizations.translate('financial_goal'),
+                                value: viewModel.user?.financialGoal ??
+                                    AppLocalizations.translate('not_set'),
                                 textPrimaryColor: textPrimary,
                                 textSecondaryColor: textSecondary,
                               ),
@@ -199,7 +345,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 icon: Icons.currency_exchange_rounded,
                                 iconColor: cashColor,
                                 iconBgColor: cashBg,
-                                title: 'Currency',
+                                title: AppLocalizations.translate('currency'),
                                 value: viewModel.user?.currency ?? 'USD',
                                 textPrimaryColor: textPrimary,
                                 textSecondaryColor: textSecondary,
@@ -213,8 +359,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 icon: Icons.work_rounded,
                                 iconColor: bankColor,
                                 iconBgColor: bankBg,
-                                title: 'Occupation',
-                                value: viewModel.user?.occupation ?? 'Unknown',
+                                title: AppLocalizations.translate('occupation'),
+                                value: viewModel.user?.occupation ??
+                                    AppLocalizations.translate('unknown'),
                                 textPrimaryColor: textPrimary,
                                 textSecondaryColor: textSecondary,
                               ),
@@ -225,7 +372,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            'General Settings',
+                            AppLocalizations.translate('general_settings'),
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
@@ -245,20 +392,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ListTile(
                                 leading: Icon(Icons.person_outline_rounded,
                                     color: textPrimary),
-                                title: Text('Edit Profile',
+                                title: Text(AppLocalizations.translate('edit_profile'),
                                     style: TextStyle(
                                         fontWeight: FontWeight.w500,
                                         color: textPrimary)),
                                 trailing: Icon(Icons.chevron_right_rounded,
                                     color: textSecondary),
-                                onTap: () {},
+                                onTap: () => _showEditProfileSheet(context, viewModel),
                               ),
                               Divider(
                                   color: dividerColor, height: 1, indent: 56),
                               ListTile(
                                 leading: Icon(Icons.translate_rounded,
                                     color: textPrimary),
-                                title: Text('Language',
+                                title: Text(AppLocalizations.translate('language'),
                                     style: TextStyle(
                                         fontWeight: FontWeight.w500,
                                         color: textPrimary)),
@@ -282,7 +429,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ListTile(
                                 leading: Icon(Icons.dark_mode_outlined,
                                     color: textPrimary),
-                                title: Text('Dark Mode',
+                                title: Text(AppLocalizations.translate('dark_mode'),
                                     style: TextStyle(
                                         fontWeight: FontWeight.w500,
                                         color: textPrimary)),
@@ -332,9 +479,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     }
                                   },
                             icon: const Icon(Icons.logout_rounded, size: 20),
-                            label: const Text(
-                              'Sign Out',
-                              style: TextStyle(
+                            label: Text(
+                              AppLocalizations.translate('sign_out'),
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
                               ),

@@ -21,7 +21,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
-
   @override
   void initState() {
     super.initState();
@@ -88,7 +87,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 style: TextStyles.heading1(color: AppColors.textPrimaryLight),
               ),
               const SizedBox(height: 32),
-
               LoginFields(
                 loginVM: loginVM,
                 emailController: emailController,
@@ -97,8 +95,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 20),
               _buildForgotPasswordButton(),
               const SizedBox(height: 32),
-
-              PrimaryButton(
+              AppButton(
                 title: authProvider.isLoading ? 'Processing...' : 'Sign In',
                 onPressed: (!loginVM.isFormValid || authProvider.isLoading)
                     ? null

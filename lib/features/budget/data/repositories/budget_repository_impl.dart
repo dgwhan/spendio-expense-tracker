@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:spend_io_app/features/budget/data/datasources/budget_local_data_source.dart';
 import 'package:spend_io_app/features/budget/data/datasources/budget_remote_data_source.dart';
 import 'package:spend_io_app/features/budget/data/models/budget_category_model.dart';
@@ -30,7 +31,13 @@ class BudgetRepositoryImpl implements BudgetRepository {
     final model = BudgetModel.fromEntity(budget);
 
     await localDataSource.createBudget(model);
-    await remoteDataSource.syncBudget(model);
+    try {
+      await remoteDataSource
+          .syncBudget(model)
+          .timeout(const Duration(seconds: 4));
+    } catch (e) {
+      debugPrint('[Budget Repo]: Cloud sync budget delayed ($e).');
+    }
   }
 
   @override
@@ -38,7 +45,13 @@ class BudgetRepositoryImpl implements BudgetRepository {
     final model = BudgetModel.fromEntity(budget);
 
     await localDataSource.updateBudget(model);
-    await remoteDataSource.syncBudget(model);
+    try {
+      await remoteDataSource
+          .syncBudget(model)
+          .timeout(const Duration(seconds: 4));
+    } catch (e) {
+      debugPrint('[Budget Repo]: Cloud sync budget delayed ($e).');
+    }
   }
 
   // =========================================================
@@ -54,10 +67,13 @@ class BudgetRepositoryImpl implements BudgetRepository {
     await localDataSource.deleteBudget(budgetId);
 
     // 2. sync remote using explicit identity
-    await remoteDataSource.deleteBudget(
-      budgetId,
-      userId,
-    );
+    try {
+      await remoteDataSource
+          .deleteBudget(budgetId, userId)
+          .timeout(const Duration(seconds: 4));
+    } catch (e) {
+      debugPrint('[Budget Repo]: Cloud delete budget delayed ($e).');
+    }
   }
 
   // =========================================================
@@ -75,7 +91,13 @@ class BudgetRepositoryImpl implements BudgetRepository {
     final model = BudgetCategoryModel.fromEntity(category);
 
     await localDataSource.createBudgetCategory(model);
-    await remoteDataSource.syncBudgetCategory(model);
+    try {
+      await remoteDataSource
+          .syncBudgetCategory(model)
+          .timeout(const Duration(seconds: 4));
+    } catch (e) {
+      debugPrint('[Budget Category Repo]: Cloud sync category budget delayed ($e).');
+    }
   }
 
   @override
@@ -83,7 +105,13 @@ class BudgetRepositoryImpl implements BudgetRepository {
     final model = BudgetCategoryModel.fromEntity(category);
 
     await localDataSource.updateBudgetCategory(model);
-    await remoteDataSource.syncBudgetCategory(model);
+    try {
+      await remoteDataSource
+          .syncBudgetCategory(model)
+          .timeout(const Duration(seconds: 4));
+    } catch (e) {
+      debugPrint('[Budget Category Repo]: Cloud sync category budget delayed ($e).');
+    }
   }
 
   @override

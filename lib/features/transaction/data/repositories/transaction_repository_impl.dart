@@ -45,9 +45,11 @@ class TransactionRepositoryImpl implements TransactionRepository {
 
     if (remoteUid.isNotEmpty) {
       try {
-        await remoteDataSource.saveTransaction(remoteUid, model);
+        await remoteDataSource
+            .saveTransaction(remoteUid, model)
+            .timeout(const Duration(seconds: 4));
       } catch (e) {
-        debugPrint('[TransactionRepo] Remote save failed: $e');
+        debugPrint('[TransactionRepo] Remote save failed or timed out: $e');
       }
     }
     await _applyTransactionBalance(transaction);
@@ -66,9 +68,11 @@ class TransactionRepositoryImpl implements TransactionRepository {
 
     if (remoteUid.isNotEmpty) {
       try {
-        await remoteDataSource.saveTransaction(remoteUid, model);
+        await remoteDataSource
+            .saveTransaction(remoteUid, model)
+            .timeout(const Duration(seconds: 4));
       } catch (e) {
-        debugPrint('[TransactionRepo] Remote update failed: $e');
+        debugPrint('[TransactionRepo] Remote update failed or timed out: $e');
       }
     }
 
@@ -83,9 +87,11 @@ class TransactionRepositoryImpl implements TransactionRepository {
 
     if (remoteUid.isNotEmpty) {
       try {
-        await remoteDataSource.removeTransaction(remoteUid, transaction.id);
+        await remoteDataSource
+            .removeTransaction(remoteUid, transaction.id)
+            .timeout(const Duration(seconds: 4));
       } catch (e) {
-        debugPrint('[TransactionRepo] Remote delete failed: $e');
+        debugPrint('[TransactionRepo] Remote delete failed or timed out: $e');
       }
     }
     await _rollbackTransactionBalance(transaction);

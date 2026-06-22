@@ -163,7 +163,11 @@ class SavingGoalRepositoryImpl implements SavingGoalRepository {
 
     await local.deleteGoal(goalId);
 
-    await remote.deleteGoal(goalId);
+    try {
+      await remote.deleteGoal(goalId).timeout(const Duration(seconds: 4));
+    } catch (e) {
+      debugPrint('[Saving Goal Repo]: Cloud delete goal delayed ($e).');
+    }
 
     await db.transaction((txn) async {
       await txn.update(

@@ -2,183 +2,240 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
-import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
-import 'package:spend_io_app/features/account/presentation/screen/utils/account_actions.dart';
-import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart'; // 🔥 ĐÃ ĐỔI: Sử dụng AccountViewModel chuyên biệt
-import 'package:spend_io_app/features/account/presentation/screen/account_details_screen.dart';
-import 'package:spend_io_app/features/account/presentation/widgets/account_item_card.dart';
-import 'package:spend_io_app/features/account/presentation/widgets/add_account_bottom_sheet.dart';
-import 'package:spend_io_app/shared/widgets/buttons/app_text_button.dart';
+import 'package:spend_io_app/core/constants/app_text_styles.dart';
+import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:spend_io_app/core/widgets/app_header.dart';
 import 'package:spend_io_app/core/widgets/common/app_empty_state.dart';
+import 'package:spend_io_app/core/widgets/input/app_search_bar.dart';
+import 'package:spend_io_app/core/widgets/primary_button.dart';
+import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
+import 'package:spend_io_app/features/account/presentation/screen/account_details_screen.dart';
+import 'package:spend_io_app/features/account/presentation/screen/add_account_screen.dart';
+import 'package:spend_io_app/features/account/presentation/screen/utils/account_actions.dart';
+import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
+import 'package:spend_io_app/features/account/presentation/widgets/card/account_item_card.dart';
+import 'package:spend_io_app/features/account/presentation/widgets/filter/account_list_subheader.dart';
 
-/// [App Location] Navigation Stack -> My Accounts Screen (List view).
-/// [Core Function] Displays all active user bank accounts/wallets in a sliver-optimized list, managing empty states and navigation results (edit/delete callbacks).
-class AccountListScreen extends StatelessWidget {
+class AccountListScreen extends StatefulWidget {
   const AccountListScreen({super.key});
 
-  /// Đã tối ưu luồng thêm ví mới: Nhận AccountViewModel để mở form chính xác kiểu dữ liệu
+  @override
+  State<AccountListScreen> createState() => _AccountListScreenState();
+}
+
+class _AccountListScreenState extends State<AccountListScreen> {
+  AccountSortOption _currentSort = AccountSortOption.newest;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
   void _openAddAccount(BuildContext context, AccountViewModel viewModel) async {
-    final result = await showModalBottomSheet<bool>(
-      context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => AddAccountBottomSheet(viewModel: viewModel),
-    );
-
-    if (!context.mounted || result != true) return;
-
-    // Hiển thị thông báo khi thêm ví mới thành công
-    _showStatusSnackBar(
+    final result = await Navigator.push<bool>(
       context,
-      'New account created successfully!',
-      Colors.green,
+      MaterialPageRoute(builder: (_) => AddAccountScreen(viewModel: viewModel)),
     );
+    if (!context.mounted || result != true) return;
+    _showStatusSnackBar(
+        context, 'New account created successfully!', AppColors.success);
   }
 
-  /// Hiển thị SnackBar thông báo trạng thái an toàn
   void _showStatusSnackBar(
       BuildContext context, String message, Color backgroundColor) {
-    ScaffoldMessenger.of(context).removeCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    scaffoldMessenger.removeCurrentSnackBar();
+    final headerHeight = kToolbarHeight + MediaQuery.of(context).padding.top;
+    scaffoldMessenger.showSnackBar(
       SnackBar(
-        content:
-            Text(message, style: const TextStyle(fontWeight: FontWeight.w600)),
+        content: Text(message,
+            style: AppTextStyles.bodyNormal
+                .copyWith(fontWeight: FontWeight.w600, color: AppColors.white)),
         backgroundColor: backgroundColor,
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating, // Hiển thị dạng nổi hiện đại hơn
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.only(
+            bottom: MediaQuery.of(context).size.height - (headerHeight + 130),
+            left: AppSizes.md,
+            right: AppSizes.md),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
 
-  /// Xử lý điều hướng khi nhấn vào xem chi tiết tài khoản
   void _handleAccountTap(BuildContext context, AccountViewModel viewModel,
       AccountEntity account) async {
-    final result = await Navigator.push<AccountDetailsAction>(
+    final Object? result = await Navigator.push<Object?>(
       context,
-      MaterialPageRoute(
-        builder: (_) => AccountDetailsScreen(account: account),
-      ),
+      MaterialPageRoute(builder: (_) => AccountDetailsScreen(account: account)),
     );
-
     if (!context.mounted || result == null) return;
-
-    // Phản hồi SnackBar tương ứng dựa trên kết quả trả về từ màn hình chi tiết
-    if (result == AccountDetailsAction.deleted) {
+    if (result == AccountDetailsAction.deleted || result == true) {
       _showStatusSnackBar(
-          context, 'Account deleted successfully!', Colors.redAccent);
+          context, 'Account deleted successfully!', AppColors.error);
     } else if (result == AccountDetailsAction.updated) {
       _showStatusSnackBar(
-          context, 'Account updated successfully!', Colors.green);
+          context, 'Account updated successfully!', AppColors.success);
     }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final titleColor =
-        isDark ? AppColors.textPrimaryDark : const Color(0xFF0F172A);
+    final backgroundColor =
+        isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
+    final surfaceColor =
+        isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+    final primaryTextColor =
+        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final mutedTextColor =
+        isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color:
-                isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'My Accounts',
-          style: TextStyle(
-            color: titleColor,
-            fontWeight: FontWeight.bold,
-            fontSize: 28,
-          ),
-        ),
-        centerTitle: false,
-        titleSpacing: 0,
-        actions: [
-          // 🔥 ĐÃ FIX: Chuyển sang Consumer lắng nghe AccountViewModel
-          Consumer<AccountViewModel>(
-            builder: (context, viewModel, _) {
-              return Padding(
-                padding: const EdgeInsets.only(right: AppSizes.md),
-                child: Center(
-                  child: AppTextButton(
-                    text: 'Add',
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                    onTap: () => _openAddAccount(context, viewModel),
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-      // 🔥 ĐÃ FIX: Chuyển trục thân nội dung sang Consumer của AccountViewModel
+      backgroundColor: backgroundColor,
+      appBar: AppHeader(
+          title: 'My Accounts',
+          showBack: true,
+          onBack: () => Navigator.pop(context)),
       body: Consumer<AccountViewModel>(
         builder: (context, viewModel, _) {
-          final activeAccounts = viewModel.accounts;
+          final sortedAccounts = List.from(viewModel.accounts.where((a) =>
+              a.name.toLowerCase().contains(_searchQuery.toLowerCase())));
 
-          if (activeAccounts.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSizes.lg),
-                child: AppEmptyState(
-                  title: 'No Accounts Yet',
-                  subtitle: 'Add your first account\nto start tracking money.',
-                  icon: Icons.account_balance_wallet_outlined,
-                  actionLabel: 'Add Your First Account',
-                  onActionTap: () => _openAddAccount(context, viewModel),
-                ),
-              ),
-            );
+          switch (_currentSort) {
+            case AccountSortOption.nameAZ:
+              sortedAccounts.sort((a, b) =>
+                  a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+              break;
+            case AccountSortOption.newest:
+              sortedAccounts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+              break;
+            case AccountSortOption.oldest:
+              sortedAccounts.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+              break;
           }
+
+          final double totalNetWorth =
+              sortedAccounts.fold(0, (sum, acc) => sum + acc.balance);
 
           return SafeArea(
             child: CustomScrollView(
               physics: const BouncingScrollPhysics(),
               slivers: [
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.md,
-                    vertical: AppSizes.md,
-                  ),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final account = activeAccounts[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: AppSizes.md),
-                          child: AccountItemCard(
-                            account: account,
-                            onTap: () =>
-                                _handleAccountTap(context, viewModel, account),
-                            onEdit: () {
-                              _showStatusSnackBar(
-                                  context,
-                                  'Account updated successfully!',
-                                  Colors.green);
-                            },
-                            onDelete: () {
-                              _showStatusSnackBar(
-                                  context,
-                                  'Account deleted successfully!',
-                                  Colors.redAccent);
-                            },
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSizes.md),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Net worth card
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: surfaceColor,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.02),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4))
+                            ],
                           ),
-                        );
-                      },
-                      childCount: activeAccounts.length,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Total Assets',
+                                        style: AppTextStyles.caption
+                                            .copyWith(color: mutedTextColor)),
+                                    Text(
+                                        CurrencyFormatter.format(totalNetWorth),
+                                        style: AppTextStyles.largeAmount
+                                            .copyWith(
+                                                color: totalNetWorth < 0
+                                                    ? AppColors.error
+                                                    : primaryTextColor)),
+                                  ],
+                                ),
+                              ),
+                              AppButton(
+                                  title: 'Add',
+                                  onPressed: () =>
+                                      _openAddAccount(context, viewModel)),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: AppSizes.md),
+
+                        // Hàng 1: Tiêu đề danh sách
+                        Text('Accounts List',
+                            style: AppTextStyles.sectionTitle.copyWith(
+                                color: primaryTextColor, fontSize: 15)),
+
+                        const SizedBox(height: AppSizes.sm),
+
+                        // Hàng 2: Search Bar + Filter
+                        Row(
+                          children: [
+                            Expanded(
+                              child: AppSearchBar(
+                                controller: _searchController,
+                                hintText: 'Search...',
+                                onChanged: (v) =>
+                                    setState(() => _searchQuery = v),
+                                onClear: () =>
+                                    setState(() => _searchQuery = ''),
+                              ),
+                            ),
+                            const SizedBox(width: AppSizes.sm),
+                            AccountListSubheader(
+                              currentSort: _currentSort,
+                              onSortSelected: (option) =>
+                                  setState(() => _currentSort = option),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 ),
+                if (sortedAccounts.isEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: AppEmptyState(
+                      title: 'No Accounts Yet',
+                      subtitle:
+                          'Add your first account\nto start tracking money.',
+                      icon: Icons.account_balance_wallet_outlined,
+                      actionLabel: 'Add Your First Account',
+                      onActionTap: () => _openAddAccount(context, viewModel),
+                    ),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                        AppSizes.md, 0, AppSizes.md, AppSizes.md),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) => Padding(
+                          padding: const EdgeInsets.only(bottom: AppSizes.md),
+                          child: AccountItemCard(
+                            account: sortedAccounts[index],
+                            onTap: () => _handleAccountTap(
+                                context, viewModel, sortedAccounts[index]),
+                          ),
+                        ),
+                        childCount: sortedAccounts.length,
+                      ),
+                    ),
+                  ),
               ],
             ),
           );

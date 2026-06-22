@@ -128,7 +128,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 32),
 
-                PrimaryButton(
+                AppButton(
                   title: authProvider.isLoading ? 'Processing...' : 'Sign Up',
                   onPressed: (!formVM.isFormValid || authProvider.isLoading)
                       ? null

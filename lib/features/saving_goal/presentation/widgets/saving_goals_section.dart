@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
+import 'package:spend_io_app/core/constants/app_text_styles.dart';
 import 'package:spend_io_app/core/widgets/common/app_empty_state.dart';
+import 'package:spend_io_app/core/widgets/common/app_circle_add_button.dart';
 import 'package:spend_io_app/features/saving_goal/domain/entities/saving_goal_entity.dart';
 import 'package:spend_io_app/features/saving_goal/presentation/widgets/saving_goals_card.dart';
 
@@ -24,6 +26,8 @@ class GoalsSection extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryTextColor =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final textMuted =
+        isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
 
     final displayLimit = goals.length > 2 ? 2 : goals.length;
     final displayGoals = goals.take(displayLimit).toList();
@@ -35,48 +39,45 @@ class GoalsSection extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Savings Goals',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: primaryTextColor,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: onAddGoal,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.primary.withValues(alpha: 0.1),
+            Expanded(
+              child: InkWell(
+                onTap: onViewAll,
+                highlightColor: Colors.transparent,
+                splashColor: Colors.transparent,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Savings Goals',
+                      style: AppTextStyles.sectionTitle
+                          .copyWith(color: primaryTextColor),
                     ),
-                    child: Icon(
-                      Icons.add_rounded,
-                      size: 16,
-                      color: AppColors.primary,
+                    const SizedBox(width: AppSizes.sm),
+                    AppCircleAddButton(
+                      onTap: onAddGoal,
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
-            IconButton(
-              onPressed: onViewAll,
-              icon: Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.primary,
-                size: 22,
               ),
-              constraints: const BoxConstraints(),
-              padding: EdgeInsets.zero,
+            ),
+            InkWell(
+              onTap: onViewAll,
+              highlightColor: Colors.transparent,
+              splashColor: Colors.transparent,
+              child: Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Icon(
+                  Icons.chevron_right_rounded,
+                  color: textMuted,
+                  size: 18,
+                ),
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSizes.sm),
+
+        // --- BODY SECTION ---
         if (goals.isEmpty)
           AppEmptyState(
             title: 'No Saving Goals',
@@ -84,7 +85,7 @@ class GoalsSection extends StatelessWidget {
             icon: Icons.flag_rounded,
             actionLabel: 'Create Goal',
             onActionTap: onAddGoal,
-            isBordered: true,
+            // Đã loại bỏ hoàn toàn thuộc tính isBordered để đồng bộ nút co dãn theo chữ
           )
         else ...[
           ...displayGoals.asMap().entries.map(
@@ -94,7 +95,7 @@ class GoalsSection extends StatelessWidget {
               final isLast = index == displayGoals.length - 1 && remaining <= 0;
 
               return Padding(
-                padding: EdgeInsets.only(bottom: isLast ? 0 : AppSizes.md),
+                padding: EdgeInsets.only(bottom: isLast ? 0 : 10),
                 child: SavingGoalsCard(
                   goal: goal,
                   onTap: () => onGoalTap?.call(goal),
@@ -104,7 +105,7 @@ class GoalsSection extends StatelessWidget {
           ),
           if (remaining > 0)
             Padding(
-              padding: const EdgeInsets.only(top: AppSizes.xs),
+              padding: const EdgeInsets.only(top: 4),
               child: InkWell(
                 onTap: onViewAll,
                 borderRadius: BorderRadius.circular(12),
@@ -118,7 +119,8 @@ class GoalsSection extends StatelessWidget {
                         style: const TextStyle(
                           color: AppColors.primary,
                           fontWeight: FontWeight.w600,
-                          fontSize: 13,
+                          fontSize:
+                              14, // Đồng bộ nhãn xem thêm 14px với AccountsSection
                         ),
                       ),
                       const SizedBox(width: 4),

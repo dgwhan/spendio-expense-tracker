@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
 import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:spend_io_app/features/home/presentation/screens/home_screen.dart';
+import 'package:spend_io_app/features/insight/presentation/screens/insights_screen.dart';
 import 'package:spend_io_app/features/navigation/presentation/providers/navigation_provider.dart';
 import 'package:spend_io_app/features/navigation/presentation/widgets/bottom_navigation_bar.dart';
 import 'package:spend_io_app/features/navigation/presentation/widgets/center_action_button.dart';
@@ -85,7 +86,7 @@ class _NavigationShellState extends State<NavigationShell> {
                 rootPage: const WalletScreen()),
             _buildTabWorkspace(
                 navigatorKey: _navigatorKeys[2],
-                rootPage: const Center(child: Text('Insights Workspace'))),
+                rootPage: const InsightsScreen()),
             _buildTabWorkspace(
                 navigatorKey: _navigatorKeys[3],
                 rootPage: const ProfileScreen()),

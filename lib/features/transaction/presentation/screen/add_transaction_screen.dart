@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
+import 'package:spend_io_app/core/widgets/app_header.dart';
 import 'package:spend_io_app/features/transaction/domain/entities/transaction_entity.dart';
 import 'package:spend_io_app/features/transaction/domain/entities/transaction_type.dart';
 import 'package:spend_io_app/features/transaction/presentation/viewmodels/transaction_viewmodel.dart';
@@ -124,14 +125,18 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
   Future<void> _submitData() async {
     if (!_formKey.currentState!.validate()) return;
-    final double? amount = double.tryParse(_amountController.text);
+
+    // ĐÃ SỬA LỖI TẠI ĐÂY: Loại bỏ toàn bộ dấu chấm (.) phân cách hàng nghìn trước khi đem đi parse sang double
+    final String cleanAmountText = _amountController.text.replaceAll('.', '');
+    final double? amount = double.tryParse(cleanAmountText);
+
     if (amount == null || amount <= 0) return;
 
     if (_selectedAccount == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please select a source wallet/account to continue.'),
-          backgroundColor: Colors.orange,
+          backgroundColor: AppColors.warning,
         ),
       );
       return;
@@ -139,11 +144,14 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
     if (_selectedCategory == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a category')),
+        const SnackBar(
+          content: Text('Please select a category'),
+          backgroundColor: AppColors.error,
+        ),
       );
       return;
     }
-    //ẩn phím ảo
+
     FocusScope.of(context).unfocus();
 
     final String nativeUniqueId =
@@ -186,14 +194,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         '====================================================================================================');
 
     final navigator = Navigator.of(context);
-
     final walletVM = context.read<WalletViewModel>();
 
     try {
-      //Lưu giao dịch xuống cơ sở dữ liệu local và đẩy lên Firebase
       await widget.transactionVM.addTransaction(newTx);
-
-      //Ép WalletViewModel tính toán lại tiền Spent tổng tháng realtime
       await walletVM.refreshBudgetProgress();
 
       if (mounted) {
@@ -211,78 +215,71 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final activeAccounts = context.watch<AccountViewModel>().accounts;
 
+    final backgroundColor =
+        isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
+    final surfaceColor = isDark
+        ? AppColors.surfaceSecondaryDark
+        : AppColors.surfaceSecondaryLight;
+
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor: backgroundColor,
+      appBar: AppHeader(
+        title: 'New Transaction',
+        showBack: true,
+        onBack: () => Navigator.pop(context),
+      ),
       body: SafeArea(
         child: Form(
           key: _formKey,
           child: CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
-              SliverAppBar(
-                floating: true,
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                leading: IconButton(
-                  icon: Icon(Icons.arrow_back_ios_new_rounded,
-                      color: isDark ? Colors.white : Colors.black),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                title: Text('New Transaction',
-                    style: TextStyle(
-                        color: isDark ? Colors.white : Colors.black,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18)),
-                centerTitle: true,
-              ),
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
+                padding: const EdgeInsets.fromLTRB(
+                    AppSizes.md, AppSizes.md, AppSizes.md, AppSizes.md),
                 sliver: SliverToBoxAdapter(
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: ChoiceChip(
-                          label: const Center(child: Text('Expense')),
-                          selected: _selectedType == TransactionType.expense,
-                          selectedColor: AppColors.error.withValues(alpha: 0.2),
-                          labelStyle: TextStyle(
-                              color: _selectedType == TransactionType.expense
-                                  ? AppColors.error
-                                  : Colors.grey,
-                              fontWeight: FontWeight.bold),
-                          onSelected: (val) => setState(() {
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: surfaceColor,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      children: [
+                        _buildTypeSegment(
+                          label: 'Expense',
+                          isSelected: _selectedType == TransactionType.expense,
+                          activeColor: AppColors.expense,
+                          isDark: isDark,
+                          onTap: () => setState(() {
                             _selectedType = TransactionType.expense;
                             _selectedCategory = null;
                           }),
                         ),
-                      ),
-                      const SizedBox(width: AppSizes.sm),
-                      Expanded(
-                        child: ChoiceChip(
-                          label: const Center(child: Text('Income')),
-                          selected: _selectedType == TransactionType.income,
-                          selectedColor: Colors.green.withValues(alpha: 0.2),
-                          labelStyle: TextStyle(
-                              color: _selectedType == TransactionType.income
-                                  ? Colors.green
-                                  : Colors.grey,
-                              fontWeight: FontWeight.bold),
-                          onSelected: (val) => setState(() {
+                        _buildTypeSegment(
+                          label: 'Income',
+                          isSelected: _selectedType == TransactionType.income,
+                          activeColor: AppColors.income,
+                          isDark: isDark,
+                          onTap: () => setState(() {
                             _selectedType = TransactionType.income;
                             _selectedCategory = null;
                           }),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
+
+              // Ô nhập số tiền (Fintech Component)
               FintechAmountInput(
                 controller: _amountController,
                 selectedType: _selectedType,
                 autofocus: activeAccounts.isNotEmpty,
               ),
+
+              // Các trường Metadata (Ví, Danh mục, Ngày, Ghi chú)
               TransactionMetadataFields(
                 activeAccounts: activeAccounts,
                 selectedAccount: _selectedAccount,
@@ -293,33 +290,102 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 onCategoryTap: _showCategoryPicker,
                 onDateTap: _pickDate,
               ),
+
+              // Nút bấm lưu giao dịch
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
+                padding: const EdgeInsets.all(AppSizes.md),
                 sliver: SliverToBoxAdapter(
-                  child: ElevatedButton(
-                    onPressed: _submitData,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _selectedAccount == null
-                          ? Colors.blue
-                          : (_selectedType == TransactionType.expense
-                              ? AppColors.error
-                              : Colors.green),
-                      foregroundColor: Colors.white,
-                      padding:
-                          const EdgeInsets.symmetric(vertical: AppSizes.md),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppSizes.md)),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      gradient: _selectedAccount == null
+                          ? null
+                          : const LinearGradient(
+                              colors: [
+                                AppColors.gradientStart,
+                                AppColors.gradientEnd
+                              ],
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                            ),
+                      color:
+                          _selectedAccount == null ? AppColors.disabled : null,
+                      boxShadow: _selectedAccount == null
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: AppColors.primary.withValues(alpha: 0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              )
+                            ],
                     ),
-                    child: Text(
+                    child: ElevatedButton(
+                      onPressed: _submitData,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                      ),
+                      child: Text(
                         _selectedAccount == null
                             ? 'Continue to Create Wallet'
                             : 'Save Transaction',
                         style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold)),
+                          color: AppColors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTypeSegment({
+    required String label,
+    required bool isSelected,
+    required Color activeColor,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? (isDark
+                    ? activeColor.withValues(alpha: 0.2)
+                    : activeColor.withValues(alpha: 0.12))
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: isSelected
+                    ? activeColor
+                    : (isDark
+                        ? AppColors.textMutedDark
+                        : AppColors.textMutedLight),
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                fontSize: 15,
+              ),
+            ),
           ),
         ),
       ),

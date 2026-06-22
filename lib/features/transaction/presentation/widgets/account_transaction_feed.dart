@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart'; // 🔥 Đã thêm để dùng context.read lấy ViewModel
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
+import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
 import 'package:spend_io_app/features/category/domain/entities/category_entity.dart';
 import 'package:spend_io_app/features/transaction/domain/entities/transaction_entity.dart';
 import 'package:spend_io_app/features/transaction/presentation/screen/transaction_detail_screen.dart';
@@ -70,15 +71,14 @@ class AccountTransactionFeed extends StatelessWidget {
                 onTap: () {
                   debugPrint('Bấm vào giao dịch: ${currentTx.id}');
 
-                  // 🌟 LUỒNG CHUYỂN MÀN CHI TIẾT THẦN THÁNH Ở ĐÂY NÈ MÁ!
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => TransactionDetailScreen(
                         transaction: currentTx,
                         categories: categories,
-                        transactionVM: context.read<
-                            TransactionViewModel>(), // Truyền VM sang để xóa/sửa
+                        accounts: context.read<AccountViewModel>().accounts,
+                        transactionVM: context.read<TransactionViewModel>(),
                       ),
                     ),
                   );

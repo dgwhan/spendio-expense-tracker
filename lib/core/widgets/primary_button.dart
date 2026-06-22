@@ -1,43 +1,74 @@
 import 'package:flutter/material.dart';
+import 'package:spend_io_app/core/constants/app_colors.dart';
+import 'package:spend_io_app/core/constants/app_sizes.dart';
+import 'package:spend_io_app/core/constants/app_text_styles.dart';
 
-/// reusable primary button
-class PrimaryButton extends StatelessWidget {
+// variants enum
+enum AppButtonVariant { primary, cancel, delete }
+
+class AppButton extends StatelessWidget {
   final String title;
   final VoidCallback? onPressed;
+  final AppButtonVariant variant;
 
-  const PrimaryButton({
+  const AppButton({
     super.key,
     required this.title,
     required this.onPressed,
+    this.variant = AppButtonVariant.primary,
   });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: double.infinity,
-      height: 58,
+      height: 48,
+      child: (variant == AppButtonVariant.primary)
+          ? _buildPrimaryButton()
+          : _buildOutlinedButton(),
+    );
+  }
 
-      child: ElevatedButton(
-        onPressed: onPressed,
-
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF5B5FEF),
-          foregroundColor: Colors.white,
-          elevation: 0,
-
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
+  // primary button (insert, update, edit)
+  Widget _buildPrimaryButton() {
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.white,
+        elevation: 0,
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
         ),
+        padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
+      ),
+      child: Text(
+        title,
+        style: AppTextStyles.buttonLabel.copyWith(color: AppColors.white),
+      ),
+    );
+  }
 
-        child: Text(
-          title,
+  // outlined button (cancel, delete)
+  Widget _buildOutlinedButton() {
+    final isDelete = variant == AppButtonVariant.delete;
+    final color = isDelete ? AppColors.error : Colors.grey;
 
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+    return OutlinedButton(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        side: BorderSide(color: color, width: 1.2),
+        foregroundColor: color,
+        elevation: 0,
+        minimumSize: const Size.fromHeight(48),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
         ),
+      ),
+      child: Text(
+        title,
+        style: AppTextStyles.buttonLabel.copyWith(color: color),
       ),
     );
   }

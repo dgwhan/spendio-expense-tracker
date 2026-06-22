@@ -1,8 +1,7 @@
-//thanh điều hướng của 4 tab chính
-
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/theme/text_styles.dart';
+import 'package:spend_io_app/core/utils/localization.dart';
 
 class AppBottomNavigationBar extends StatelessWidget {
   final int currentIndex;
@@ -41,14 +40,14 @@ class AppBottomNavigationBar extends StatelessWidget {
           _buildNavItem(context,
               index: 0,
               icon: Icons.home_filled,
-              label: 'Home',
+              label: AppLocalizations.translate('home'),
               isDarkMode: isDarkMode),
 
           //tab Wallet
           _buildNavItem(context,
               index: 1,
               icon: Icons.credit_card_outlined,
-              label: 'Wallet',
+              label: AppLocalizations.translate('wallet'),
               isDarkMode: isDarkMode),
 
           const SizedBox(width: 48),
@@ -57,14 +56,14 @@ class AppBottomNavigationBar extends StatelessWidget {
           _buildNavItem(context,
               index: 2,
               icon: Icons.bar_chart_outlined,
-              label: 'Insights',
+              label: AppLocalizations.translate('insights'),
               isDarkMode: isDarkMode),
 
           //tab Profile
           _buildNavItem(context,
               index: 3,
               icon: Icons.person_outline,
-              label: 'Profile',
+              label: AppLocalizations.translate('profile'),
               isDarkMode: isDarkMode),
         ],
       ),

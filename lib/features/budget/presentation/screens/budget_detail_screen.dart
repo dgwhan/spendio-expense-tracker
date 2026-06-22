@@ -3,7 +3,11 @@ import 'package:provider/provider.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_radius.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
+import 'package:spend_io_app/core/constants/app_text_styles.dart';
+import 'package:spend_io_app/core/widgets/app_header.dart';
+import 'package:spend_io_app/core/widgets/common/app_empty_state.dart';
 import 'package:spend_io_app/core/widgets/input/app_search_bar.dart';
+import 'package:spend_io_app/features/account/presentation/widgets/filter/account_list_subheader.dart';
 import 'package:spend_io_app/features/budget/domain/usecase/monthly/delete_budget_usecase.dart';
 import 'package:spend_io_app/features/budget/domain/usecase/monthly/update_budget_usecase.dart';
 import 'package:spend_io_app/features/budget/presentation/screens/monthly/add_budget_screen.dart';
@@ -35,15 +39,16 @@ class BudgetDetailScreen extends StatefulWidget {
 class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  AccountSortOption _currentSort = AccountSortOption.newest;
+  bool _isInitialized = false;
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _handleRefreshData();
-      }
-    });
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isInitialized) {
+      _handleRefreshData();
+      _isInitialized = true;
+    }
   }
 
   @override
@@ -53,8 +58,7 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
   }
 
   Future<void> _handleRefreshData() async {
-    debugPrint(
-        '[PIPELINE REFRESH]: Triggering pull-to-refresh state updates for budget content.');
+    if (!mounted) return;
     await context.read<BudgetCategoryViewModel>().loadProgress(widget.userId);
     if (mounted) {
       await context.read<BudgetViewModel>().loadBudget(widget.userId);
@@ -71,15 +75,10 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
         ),
       ),
     );
-
-    if (!mounted) return;
-
-    debugPrint(
-        '[PIPELINE SYNC]: Returning from creation flow. Executing auto-refresh sequence.');
-    await _handleRefreshData();
-
-    if (!mounted) return;
-    await context.read<WalletViewModel>().refreshBudgetProgress();
+    if (mounted) {
+      await _handleRefreshData();
+      await context.read<WalletViewModel>().refreshBudgetProgress();
+    }
   }
 
   @override
@@ -87,8 +86,8 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryTextColor =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
-    final systemBottomPadding = MediaQuery.of(context).padding.bottom;
 
+    // Lắng nghe thay đổi từ ViewModel
     final budgetVM = context.watch<BudgetViewModel>();
     final budgetCategoryVM = context.watch<BudgetCategoryViewModel>();
 
@@ -100,69 +99,64 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
         hasBudget ? currentBudgetEntity.amount : widget.totalBudget;
     final displaySpent =
         hasBudget ? budgetVM.currentBudget!.spent : widget.totalSpent;
-    final displayDaysLeft = hasBudget ? widget.daysLeft : widget.daysLeft;
 
-    final allCategoryProgress = budgetCategoryVM.progressList;
-    final filteredCategories = allCategoryProgress.where((progress) {
-      final categoryName = progress.budgetCategory.name.toLowerCase();
-      final query = _searchQuery.toLowerCase();
-      return categoryName.contains(query);
-    }).toList();
+    final filteredCategories = budgetCategoryVM.progressList
+        .where((p) => p.budgetCategory.name
+            .toLowerCase()
+            .contains(_searchQuery.toLowerCase()))
+        .toList();
 
-    final remaining = displayBudget - displaySpent;
-    final percentage = displayBudget > 0
-        ? (displaySpent / displayBudget).clamp(0.0, 1.0)
-        : 0.0;
-    final isOverBudget = remaining < 0;
+    // Logic Sắp xếp
+    switch (_currentSort) {
+      case AccountSortOption.nameAZ:
+        filteredCategories.sort((a, b) => a.budgetCategory.name
+            .toLowerCase()
+            .compareTo(b.budgetCategory.name.toLowerCase()));
+        break;
+      case AccountSortOption.newest:
+        filteredCategories
+            .sort((a, b) => b.budgetCategory.id.compareTo(a.budgetCategory.id));
+        break;
+      case AccountSortOption.oldest:
+        filteredCategories
+            .sort((a, b) => a.budgetCategory.id.compareTo(b.budgetCategory.id));
+        break;
+    }
 
     return Scaffold(
       backgroundColor:
           isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leadingWidth: 56,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: AppSizes.sm),
-          child: IconButton(
-            icon: Icon(Icons.arrow_back_ios_new_rounded,
-                color: primaryTextColor, size: 18),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ),
-        title: Text(
-          'Budget Overview',
-          style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              color: primaryTextColor),
-        ),
-        centerTitle: false,
-      ),
+      appBar: AppHeader(
+          title: 'Budget Overview',
+          showBack: true,
+          onBack: () => Navigator.pop(context)),
       body: SafeArea(
         child: RefreshIndicator(
           color: AppColors.primary,
           onRefresh: _handleRefreshData,
-          child: budgetCategoryVM.isLoading && allCategoryProgress.isEmpty
+          child: budgetCategoryVM.isLoading &&
+                  budgetCategoryVM.progressList.isEmpty
               ? const Center(child: CircularProgressIndicator())
               : CustomScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   slivers: [
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: AppSizes.md, vertical: AppSizes.sm),
+                        padding: const EdgeInsets.all(AppSizes.md),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (hasBudget) ...[
+                            if (hasBudget)
                               ProgressIndicatorCard(
                                 totalSpent: displaySpent,
                                 totalBudget: displayBudget,
-                                percentage: percentage,
-                                isOverBudget: isOverBudget,
-                                daysLeft: displayDaysLeft,
+                                percentage: displayBudget > 0
+                                    ? (displaySpent / displayBudget)
+                                        .clamp(0.0, 1.0)
+                                    : 0.0,
+                                isOverBudget:
+                                    (displayBudget - displaySpent) < 0,
+                                daysLeft: widget.daysLeft,
                                 userId: widget.userId,
                                 budgetVM: budgetVM,
                                 walletVM: context.read<WalletViewModel>(),
@@ -170,25 +164,33 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
                                     context.read<UpdateBudgetUseCase>(),
                                 deleteBudgetUseCase:
                                     context.read<DeleteBudgetUseCase>(),
-                              ),
-                            ] else ...[
+                              )
+                            else
                               _buildEmptyBudgetCard(isDark, primaryTextColor),
-                            ],
                             const SizedBox(height: AppSizes.xl),
-                            AppSearchBar(
-                              controller: _searchController,
-                              hintText: 'Search category budgets...',
-                              onChanged: (value) =>
-                                  setState(() => _searchQuery = value),
-                              onClear: () => setState(() => _searchQuery = ''),
-                            ),
-                            const SizedBox(height: AppSizes.xl),
-                            Text(
-                              'Category Budgets',
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: primaryTextColor),
+                            Text('Category Budgets',
+                                style: AppTextStyles.sectionTitle.copyWith(
+                                    color: primaryTextColor, fontSize: 18)),
+                            const SizedBox(height: AppSizes.sm),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: AppSearchBar(
+                                    controller: _searchController,
+                                    hintText: 'Search...',
+                                    onChanged: (v) =>
+                                        setState(() => _searchQuery = v),
+                                    onClear: () =>
+                                        setState(() => _searchQuery = ''),
+                                  ),
+                                ),
+                                const SizedBox(width: AppSizes.sm),
+                                AccountListSubheader(
+                                  currentSort: _currentSort,
+                                  onSortSelected: (option) =>
+                                      setState(() => _currentSort = option),
+                                ),
+                              ],
                             ),
                             const SizedBox(height: AppSizes.md),
                           ],
@@ -196,32 +198,32 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
                       ),
                     ),
                     if (filteredCategories.isEmpty)
-                      SliverToBoxAdapter(child: _buildEmptyState())
+                      SliverToBoxAdapter(
+                        child: AppEmptyState(
+                          title: 'No category budgets found',
+                          subtitle: 'No matching budgets found',
+                          icon: Icons.folder_off_outlined,
+                        ),
+                      )
                     else
                       SliverPadding(
                         padding:
                             const EdgeInsets.symmetric(horizontal: AppSizes.md),
                         sliver: SliverList(
                           delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                              final currentProgress = filteredCategories[index];
-                              return Padding(
-                                padding:
-                                    const EdgeInsets.only(bottom: AppSizes.md),
-                                child: BudgetCategoryCard(
-                                  progress: currentProgress,
-                                  userId: widget.userId,
-                                  cardType: BudgetCardType.horizontal,
-                                ),
-                              );
-                            },
+                            (context, index) => Padding(
+                              padding:
+                                  const EdgeInsets.only(bottom: AppSizes.md),
+                              child: BudgetCategoryCard(
+                                progress: filteredCategories[index],
+                                userId: widget.userId,
+                                cardType: BudgetCardType.horizontal,
+                              ),
+                            ),
                             childCount: filteredCategories.length,
                           ),
                         ),
                       ),
-                    SliverPadding(
-                        padding: EdgeInsets.only(
-                            bottom: systemBottomPadding + AppSizes.xl)),
                   ],
                 ),
         ),
@@ -230,87 +232,23 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
   }
 
   Widget _buildEmptyBudgetCard(bool isDark, Color textColor) {
-    final surfaceColor =
-        isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
-    final secondaryTextColor =
-        isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
-
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppSizes.xl),
+      padding: const EdgeInsets.all(AppSizes.lg),
       decoration: BoxDecoration(
-        color: surfaceColor,
+        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(AppRadius.cardRadiusLg),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.shadowNatural1,
-            blurRadius: 12,
-            offset: Offset(0, 4),
-          )
-        ],
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.add_chart_rounded,
-              size: 44, color: textColor.withValues(alpha: 0.3)),
+          Text('No Monthly Budget Set',
+              style: AppTextStyles.bodyNormal
+                  .copyWith(fontWeight: FontWeight.bold, color: textColor)),
           const SizedBox(height: AppSizes.md),
-          Text(
-            'No Monthly Budget Set',
-            style: TextStyle(
-                fontSize: 16, fontWeight: FontWeight.w700, color: textColor),
-          ),
-          const SizedBox(height: AppSizes.xs),
-          Text(
-            'Configure your total spending constraint to track limit overviews.',
-            textAlign: TextAlign.center,
-            style:
-                TextStyle(fontSize: 13, color: secondaryTextColor, height: 1.4),
-          ),
-          const SizedBox(height: AppSizes.lg),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-              ),
+          ElevatedButton(
               onPressed: _navigateToCreateBudget,
-              child: const Text(
-                'Add Budget Month',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ),
+              child: const Text('Add Budget Month')),
         ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSizes.xl * 2),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.folder_off_outlined,
-                size: 48, color: Colors.grey.withValues(alpha: 0.4)),
-            const SizedBox(height: AppSizes.sm),
-            Text(
-              _searchQuery.isEmpty
-                  ? 'No category budgets found'
-                  : 'No matching budgets found',
-              style: TextStyle(
-                  color: Colors.grey.withValues(alpha: 0.6), fontSize: 14),
-            ),
-          ],
-        ),
       ),
     );
   }

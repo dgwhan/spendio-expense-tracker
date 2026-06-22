@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/widgets/common/app_screen_title.dart';
+import 'package:spend_io_app/core/utils/localization.dart';
 
 class WalletHeader extends StatelessWidget {
   final DateTime? selectedMonth;
@@ -15,9 +16,10 @@ class WalletHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const AppScreenTitle(
-      title: 'Wallet',
+    return AppScreenTitle(
+      title: AppLocalizations.translate('wallet'),
       isCenter: true,
     );
   }
 }
+

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
+import 'package:spend_io_app/core/constants/app_text_styles.dart';
+import 'package:spend_io_app/core/widgets/primary_button.dart';
 
 class AppEmptyState extends StatelessWidget {
   final String title;
@@ -23,81 +25,68 @@ class AppEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    final titleColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
-    final subtitleColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
-    final iconColor = (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight).withValues(alpha: 0.35);
 
+    final titleColor =
+        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final subtitleColor =
+        isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final iconColor =
+        (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight)
+            .withValues(alpha: 0.35);
+
+    // bordered variant Look
     if (isBordered) {
-      final cardBgColor = isDark ? AppColors.surfaceSecondaryDark.withValues(alpha: 0.5) : AppColors.surfaceLight.withValues(alpha: 0.5);
-      final borderColor = isDark ? AppColors.borderDark.withValues(alpha: 0.5) : AppColors.borderLight.withValues(alpha: 0.5);
+      final cardBgColor = isDark
+          ? AppColors.surfaceSecondaryDark.withValues(alpha: 0.5)
+          : AppColors.surfaceLight.withValues(alpha: 0.5);
 
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: AppSizes.xl),
+        padding: const EdgeInsets.all(AppSizes.md),
         decoration: BoxDecoration(
           color: cardBgColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: borderColor,
-            width: 1,
-          ),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // state icon
             Icon(
               icon,
-              size: 40,
+              size: 28,
               color: iconColor,
             ),
-            const SizedBox(height: AppSizes.sm),
+            const SizedBox(height: AppSizes.xs),
+
+            // title
             Text(
               title,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: titleColor,
-              ),
+              style: AppTextStyles.cardTitle.copyWith(color: titleColor),
             ),
+
+            // subtitle
             if (subtitle != null) ...[
-              const SizedBox(height: AppSizes.xs),
+              const SizedBox(height: 2),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
+                padding: const EdgeInsets.symmetric(horizontal: AppSizes.sm),
                 child: Text(
                   subtitle!,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13,
+                  style: AppTextStyles.caption.copyWith(
                     color: subtitleColor,
-                    height: 1.3,
+                    height: 1.2,
                   ),
                 ),
               ),
             ],
+
+            // action button
             if (actionLabel != null && onActionTap != null) ...[
-              const SizedBox(height: AppSizes.md),
-              TextButton(
+              const SizedBox(height: AppSizes.sm),
+              AppButton(
+                title: actionLabel!,
                 onPressed: onActionTap,
-                style: TextButton.styleFrom(
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.md,
-                    vertical: AppSizes.sm,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: Text(
-                  actionLabel!,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
-                ),
               ),
             ],
           ],
@@ -105,54 +94,49 @@ class AppEmptyState extends StatelessWidget {
       );
     }
 
+    // default full screen view look
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(AppSizes.xl),
+        padding: const EdgeInsets.all(AppSizes.lg),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
+            // state icon
             Icon(
               icon,
-              size: 80,
+              size: 56,
               color: iconColor,
             ),
-            const SizedBox(height: AppSizes.lg),
+            const SizedBox(height: AppSizes.sm),
+
+            // title
             Text(
               title,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+              style: AppTextStyles.sectionTitle.copyWith(
                 color: titleColor,
               ),
             ),
+
+            // subtitle
             if (subtitle != null) ...[
-              const SizedBox(height: AppSizes.sm),
+              const SizedBox(height: AppSizes.xs),
               Text(
                 subtitle!,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
+                style: AppTextStyles.caption.copyWith(
                   color: subtitleColor,
-                  height: 1.4,
+                  height: 1.3,
                 ),
               ),
             ],
+
+            // action button
             if (actionLabel != null && onActionTap != null) ...[
               const SizedBox(height: AppSizes.lg),
-              ElevatedButton(
+              AppButton(
+                title: actionLabel!,
                 onPressed: onActionTap,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.xl,
-                    vertical: AppSizes.md,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text(actionLabel!),
               ),
             ],
           ],

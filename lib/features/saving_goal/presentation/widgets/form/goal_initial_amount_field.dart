@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:spend_io_app/core/constants/app_colors.dart';
+import 'package:spend_io_app/core/constants/app_text_styles.dart';
+import 'package:spend_io_app/core/widgets/common/app_input_decoration.dart';
 
 class GoalInitialAmountField extends StatefulWidget {
   final TextEditingController controller;
-
-  const GoalInitialAmountField({
-    super.key,
-    required this.controller,
-  });
+  const GoalInitialAmountField({super.key, required this.controller});
 
   @override
   State<GoalInitialAmountField> createState() => _GoalInitialAmountFieldState();
@@ -30,62 +29,50 @@ class _GoalInitialAmountFieldState extends State<GoalInitialAmountField> {
   }
 
   void _onFocusChange() {
-    if (_focusNode.hasFocus) {
-      // Nhấn vào ô: nếu đang là '0' thì xóa trống để nhập '123' chứ không bị '0123'
-      if (widget.controller.text == '0') {
-        widget.controller.clear();
-      }
-    } else {
-      // Thoát ra ngoài: nếu bỏ trống hoàn toàn thì tự trả về '0' cho đẹp dữ liệu
-      if (widget.controller.text.trim().isEmpty) {
-        widget.controller.text = '0';
-      }
+    if (_focusNode.hasFocus && widget.controller.text == '0') {
+      widget.controller.clear();
+    } else if (!_focusNode.hasFocus && widget.controller.text.trim().isEmpty) {
+      widget.controller.text = '0';
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return TextFormField(
-      controller: widget.controller,
-      focusNode: _focusNode,
-      keyboardType: const TextInputType.numberWithOptions(
-        decimal: true,
-      ),
-      textInputAction: TextInputAction.done,
-      inputFormatters: [
-        // FIX: Ngăn chặn không cho gõ số 0 ở đầu nếu đằng sau có số khác (Ví dụ: 0123 -> 123)
-        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
-        TextInputFormatter.withFunction((oldValue, newValue) {
-          final text = newValue.text;
-          // Nếu người dùng cố tình gõ số dạng '01', '02'... hệ thống tự động xóa số 0 đầu đi
-          if (text.startsWith('0') &&
-              text.length > 1 &&
-              !text.startsWith('0.')) {
-            return TextEditingValue(
-              text: text.substring(1),
-              selection: TextSelection.collapsed(offset: text.length - 1),
-            );
-          }
-          return newValue;
-        }),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final mutedTextColor =
+        isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Text('Initial Amount',
+              style:
+                  AppTextStyles.sectionTitle.copyWith(color: mutedTextColor)),
+        ),
+        TextFormField(
+          controller: widget.controller,
+          focusNode: _focusNode,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          textInputAction: TextInputAction.done,
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))
+          ],
+          decoration: AppInputDecoration.getFieldDecoration(
+            context: context,
+            labelText: '',
+            hintText: '0',
+          ),
+          validator: (value) {
+            if (value != null && value.isNotEmpty) {
+              final amount = double.tryParse(value);
+              if (amount == null || amount < 0) return 'Invalid amount';
+            }
+            return null;
+          },
+        ),
       ],
-      decoration: const InputDecoration(
-        labelText: 'Initial Amount',
-        hintText: '0',
-      ),
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return null;
-        }
-
-        final amount = double.tryParse(value);
-
-        if (amount == null || amount < 0) {
-          return 'Invalid amount';
-        }
-
-        return null;
-      },
     );
   }
 }

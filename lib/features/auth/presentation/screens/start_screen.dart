@@ -39,7 +39,7 @@ class StartScreen extends StatelessWidget {
               const Spacer(flex: 2),
               const _PageIndicator(),
               const Spacer(flex: 2),
-              PrimaryButton(
+              AppButton(
                 title: 'Register',
                 onPressed: () {
                   Navigator.push(

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:spend_io_app/features/onboarding/data/models/currency_item.dart';
 import 'package:spend_io_app/features/onboarding/presentation/screens/phases/currency_search_bottom_sheet.dart';
 import 'package:spend_io_app/features/onboarding/presentation/screens/phases/currency_selector_tile.dart';
+import 'package:spend_io_app/features/profile/presentation/viewmodels/profile_viewmodel.dart';
 import '../../viewmodels/onboarding_viewmodel.dart';
 
 class CurrencyPhaseScreen extends StatefulWidget {
@@ -36,14 +37,6 @@ class _CurrencyPhaseScreenState extends State<CurrencyPhaseScreen> {
       if (deviceLocale.contains('VN')) {
         defaultCoreCurrency =
             supportedCurrencies.firstWhere((c) => c.code == 'VND');
-      } else if (deviceLocale.contains('JP')) {
-        defaultCoreCurrency =
-            supportedCurrencies.firstWhere((c) => c.code == 'JPY');
-      } else if (deviceLocale.contains('EU') ||
-          deviceLocale.contains('DE') ||
-          deviceLocale.contains('FR')) {
-        defaultCoreCurrency =
-            supportedCurrencies.firstWhere((c) => c.code == 'EUR');
       } else {
         defaultCoreCurrency =
             supportedCurrencies.firstWhere((c) => c.code == 'USD');
@@ -58,6 +51,8 @@ class _CurrencyPhaseScreenState extends State<CurrencyPhaseScreen> {
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         viewModel.updateCurrency(_selectedCurrency.code);
+        final profileVM = context.read<ProfileViewModel>();
+        profileVM.changeLanguage(_selectedCurrency.code == 'VND' ? 'vi' : 'en');
       });
     }
   }
@@ -78,6 +73,9 @@ class _CurrencyPhaseScreenState extends State<CurrencyPhaseScreen> {
             _selectedCurrency = newCurrency;
           });
           viewModel.updateCurrency(newCurrency.code);
+          final profileVM = context.read<ProfileViewModel>();
+          profileVM.changeLanguage(newCurrency.code == 'VND' ? 'vi' : 'en');
+
           // Log khi người dùng chủ động thay đổi cờ
           debugPrint(
               '[User Selected Currency]: User Change flag: ${newCurrency.flag} [${newCurrency.code}]');

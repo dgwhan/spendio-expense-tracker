@@ -4,13 +4,14 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
-import 'package:spend_io_app/core/widgets/dialogs/app_confirmation_dialog.dart';
+import 'package:spend_io_app/core/dialogs/app_dialogs.dart';
 import 'package:spend_io_app/core/widgets/input/app_search_bar.dart';
 import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
+import 'package:spend_io_app/features/account/presentation/screen/edit_account_screen.dart';
+import 'package:spend_io_app/features/account/presentation/widgets/account_details_header.dart';
+import 'package:spend_io_app/features/account/presentation/widgets/account_metrics_section.dart';
+import 'package:spend_io_app/features/transaction/presentation/widgets/components/account_transaction_sort_button.dart';
 import 'package:spend_io_app/shared/widgets/date_picker/app_custome_date_picker_sheet.dart';
-import 'package:spend_io_app/features/account/presentation/widgets/filter/account_detail_filter_capsule.dart';
-import 'package:spend_io_app/features/account/presentation/widgets/hero/account_detail_hero_card.dart';
-import 'package:spend_io_app/features/account/presentation/widgets/transaction/account_detail_summary_pills.dart';
 import 'package:spend_io_app/features/category/presentation/viewmodels/category_viewmodel.dart';
 import 'package:spend_io_app/features/transaction/domain/entities/transaction_entity.dart';
 import 'package:spend_io_app/features/transaction/domain/entities/transaction_type.dart';
@@ -18,8 +19,8 @@ import 'package:spend_io_app/features/transaction/presentation/widgets/account_t
 import 'package:spend_io_app/features/account/presentation/viewmodels/account_details_viewmodel.dart';
 import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
 import 'package:spend_io_app/features/account/presentation/screen/utils/account_actions.dart';
-import 'package:spend_io_app/features/account/presentation/widgets/edit_account_bottom_sheet.dart';
 import 'package:spend_io_app/features/transaction/presentation/viewmodels/transaction_viewmodel.dart';
+import 'package:spend_io_app/features/account/presentation/widgets/filter/account_list_subheader.dart';
 
 class AccountDetailsScreen extends StatelessWidget {
   final AccountEntity account;
@@ -52,6 +53,7 @@ class _AccountDetailsScreenBody extends StatefulWidget {
 class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
   bool _hasBeenUpdated = false;
   late final TextEditingController _searchController;
+  AccountSortOption _transactionSort = AccountSortOption.newest;
 
   @override
   void initState() {
@@ -60,9 +62,20 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
+        final String remoteUid = FirebaseAuth.instance.currentUser?.uid ?? '';
+
         context
             .read<TransactionViewModel>()
             .loadByAccount(widget.targetAccountId);
+        context
+            .read<AccountViewModel>()
+            .loadAccounts(widget.initialAccount.userId, remoteUid);
+
+        final allTransactions =
+            context.read<TransactionViewModel>().state.transactions;
+        context
+            .read<AccountDetailsViewModel>()
+            .initialize(widget.initialAccount, allTransactions);
       }
     });
   }
@@ -73,37 +86,81 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
     super.dispose();
   }
 
-  void _showDeleteConfirmation(
-      BuildContext context, AccountViewModel accountVM, AccountEntity account) {
-    showDialog(
-      context: context,
-      useRootNavigator: false,
-      builder: (dialogCtx) => AppConfirmationDialog(
-        title: 'Delete Account',
-        content:
-            'Are you sure you want to delete this account? This action cannot be undone.',
-        confirmLabel: 'Delete',
-        cancelLabel: 'Cancel',
-        isDestructive: true,
-        onConfirm: () {
-          final localId = account.userId;
-          final currentUser = FirebaseAuth.instance.currentUser;
-          final String remoteUid = currentUser?.uid ?? '';
+  // handle delete account safely
+  void _showDeleteConfirmation(BuildContext context, AccountViewModel accountVM,
+      AccountEntity account) async {
+    final navigator = Navigator.of(context);
 
-          accountVM
-              .deleteAccount(
-            localId,
-            remoteUid,
-            account.id,
-          )
-              .then((_) {
-            if (context.mounted && Navigator.canPop(context)) {
-              Navigator.pop(context, AccountDetailsAction.deleted);
-            }
-          });
-        },
+    final confirm = await AppDialogs.showDelete(
+      context: context,
+      title: 'Delete Account',
+      content:
+          'Are you sure you want to delete this account? This action cannot be undone.',
+    );
+
+    if (confirm == true && mounted) {
+      final localId = account.userId;
+      final String remoteUid = FirebaseAuth.instance.currentUser?.uid ?? '';
+      await accountVM.deleteAccount(localId, remoteUid, account.id);
+
+      if (mounted) {
+        Future.microtask(() {
+          navigator.pop(AccountDetailsAction.deleted);
+        });
+      }
+    }
+  }
+
+  // handle edit account view call
+  void _triggerEdit(BuildContext context, AccountViewModel accountVM,
+      AccountEntity account) async {
+    final detailsVM = context.read<AccountDetailsViewModel>();
+    final txVM = context.read<TransactionViewModel>();
+
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            EditAccountScreen(viewModel: accountVM, account: account),
       ),
     );
+
+    if (result == true && mounted) {
+      setState(() => _hasBeenUpdated = true);
+      final freshTx = txVM.state.transactions;
+      detailsVM.initialize(account, freshTx);
+    }
+  }
+
+  // handle show range calendarpicker safely
+  void _openCustomRangePicker(BuildContext context) async {
+    final detailsVM = context.read<AccountDetailsViewModel>();
+
+    final DateTimeRange? range = await showModalBottomSheet<DateTimeRange>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) => AppCustomeDatePickerSheet(
+        initialRange: detailsVM.filterState.customDateRange,
+      ),
+    );
+
+    if (range != null && mounted) {
+      detailsVM.setFilter('Custom Range...', customRange: range);
+    }
+  }
+
+  // handle back context navigation safely
+  void _navigateBack(BuildContext context) {
+    if (Navigator.canPop(context)) {
+      Future.microtask(() {
+        Navigator.pop(
+            context,
+            _hasBeenUpdated
+                ? AccountDetailsAction.updated
+                : AccountDetailsAction.none);
+      });
+    }
   }
 
   @override
@@ -114,7 +171,6 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
     final backgroundColor =
         isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
 
-    // Lắng nghe danh sách ví sống liên tục từ Provider để update HeroCard tại trận
     final accountVM = context.watch<AccountViewModel>();
     final matches =
         accountVM.accounts.where((acc) => acc.id == widget.targetAccountId);
@@ -122,41 +178,28 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
     if (matches.isEmpty && _hasBeenUpdated) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
+
     final account = matches.isNotEmpty ? matches.first : widget.initialAccount;
 
-    // 🌟 1. Đọc danh sách giao dịch sống từ Provider (Trigger re-build khi DB biến động)
-    final allTransactions =
-        context.watch<TransactionViewModel>().state.transactions;
-
-    // 🌟 2. Đồng bộ luồng ví & khởi tạo bộ lọc phẳng ngầm ở frame kế tiếp
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        final currentUser = FirebaseAuth.instance.currentUser;
-        final String remoteUid = currentUser?.uid ?? '';
-
-        context
-            .read<AccountViewModel>()
-            .loadAccounts(account.userId, remoteUid);
-        context
-            .read<AccountDetailsViewModel>()
-            .initialize(account, allTransactions);
-      }
-    });
-
-    // Lắng nghe state bộ lọc của AccountDetailsViewModel
     final detailsVM = context.watch<AccountDetailsViewModel>();
     final filterState = detailsVM.filterState;
     final ledgerState = detailsVM.ledgerState;
 
-    // Bọc mảng an toàn để UI tự tính toán Thu/Chi không bị delay nhịp render
-    final List<TransactionEntity> liveFiltered =
+    final List<TransactionEntity> liveFiltered = List.from(
         (ledgerState?.filteredTransactions != null)
             ? ledgerState!.filteredTransactions
-            : [];
+            : []);
+
+    if (_transactionSort == AccountSortOption.newest) {
+      liveFiltered
+          .sort((a, b) => b.transactionDate.compareTo(a.transactionDate));
+    } else if (_transactionSort == AccountSortOption.oldest) {
+      liveFiltered
+          .sort((a, b) => a.transactionDate.compareTo(b.transactionDate));
+    }
 
     double liveTotalReceived = 0;
     double liveTotalSpent = 0;
-
     for (final tx in liveFiltered) {
       if (tx.type == TransactionType.expense) {
         liveTotalSpent += tx.amount;
@@ -177,13 +220,7 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        if (Navigator.canPop(context)) {
-          Navigator.pop(
-              context,
-              _hasBeenUpdated
-                  ? AccountDetailsAction.updated
-                  : AccountDetailsAction.none);
-        }
+        _navigateBack(context);
       },
       child: Scaffold(
         backgroundColor: backgroundColor,
@@ -191,176 +228,65 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
           top: false,
           child: RefreshIndicator(
             color: AppColors.primary,
-            // 🌟 CHỨC NĂNG KÉO ĐỂ REFRESH TOÀN TRANG (SẠCH LỖI ASYNC GAPS)
             onRefresh: () async {
-              final currentUser = FirebaseAuth.instance.currentUser;
-              final String remoteUid = currentUser?.uid ?? '';
-
-              // 1. Kéo dữ liệu ví mới nhất từ SQLite
-              await context.read<AccountViewModel>().loadAccounts(
-                    account.userId,
-                    remoteUid,
-                    forceRefresh: true,
-                  );
-
-              // 🔥 KHIÊN PHÒNG VỆ: Nếu trong lúc đang await mà user lỡ bấm thoát màn hình -> Dừng luồng luôn
+              final String remoteUid =
+                  FirebaseAuth.instance.currentUser?.uid ?? '';
+              await context
+                  .read<AccountViewModel>()
+                  .loadAccounts(account.userId, remoteUid, forceRefresh: true);
               if (!context.mounted) return;
-
-              // 2. Kéo dữ liệu giao dịch mới nhất của ví hiện tại lên RAM
               await context
                   .read<TransactionViewModel>()
                   .loadByAccount(widget.targetAccountId);
             },
             child: CustomScrollView(
-              // Physics bắt buộc để cơ chế kéo RefreshIndicator hoạt động ngon lành trên CustomScrollView
               physics: const AlwaysScrollableScrollPhysics(
-                parent: BouncingScrollPhysics(),
-              ),
+                  parent: BouncingScrollPhysics()),
               slivers: [
-                // 1. APP BAR
-                SliverAppBar(
-                  pinned: true,
-                  backgroundColor: backgroundColor,
-                  elevation: 0,
-                  leading: IconButton(
-                    icon: Icon(Icons.arrow_back_ios_new_rounded,
-                        color: primaryTextColor),
-                    onPressed: () {
-                      if (Navigator.canPop(context)) {
-                        Navigator.pop(
-                            context,
-                            _hasBeenUpdated
-                                ? AccountDetailsAction.updated
-                                : AccountDetailsAction.none);
-                      }
-                    },
-                  ),
-                  title: Text(
-                    account.name,
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold, color: primaryTextColor),
-                  ),
-                  actions: [
-                    PopupMenuButton<String>(
-                      icon: Icon(Icons.more_vert, color: primaryTextColor),
-                      onSelected: (value) async {
-                        if (value == 'edit') {
-                          final result = await showModalBottomSheet(
-                            context: context,
-                            useRootNavigator: true,
-                            isScrollControlled: true,
-                            backgroundColor: Colors.transparent,
-                            builder: (_) => EditAccountBottomSheet(
-                                viewModel: accountVM, account: account),
-                          );
-                          if (result != null) {
-                            setState(() => _hasBeenUpdated = true);
-
-                            if (!context.mounted) return;
-                            final freshTx = context
-                                .read<TransactionViewModel>()
-                                .state
-                                .transactions;
-                            context
-                                .read<AccountDetailsViewModel>()
-                                .initialize(account, freshTx);
-                          }
-                        } else if (value == 'delete') {
-                          _showDeleteConfirmation(context, accountVM, account);
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(
-                          value: 'edit',
-                          child: Row(
-                            children: [
-                              Icon(Icons.edit_outlined, size: 18),
-                              SizedBox(width: 10),
-                              Text('Edit Account'),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuItem(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              Icon(Icons.delete_outline_rounded,
-                                  size: 18, color: AppColors.error),
-                              SizedBox(width: 10),
-                              Text('Delete Account',
-                                  style: TextStyle(color: AppColors.error)),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                AccountDetailsHeader(
+                  accountName: account.name,
+                  balance: account.balance,
+                  primaryTextColor: primaryTextColor,
+                  onBackTap: () => _navigateBack(context),
+                  onEditTap: () => _triggerEdit(context, accountVM, account),
+                  onDeleteTap: () =>
+                      _showDeleteConfirmation(context, accountVM, account),
                 ),
-
-                // 2. HERO CARD & SUMMARY PILLS
+                AccountMetricsSection(
+                  account: account,
+                  activeRangeDisplay: activeRangeDisplay,
+                  totalReceived: liveTotalReceived,
+                  totalSpent: liveTotalSpent,
+                  onPresetSelected: (label) =>
+                      context.read<AccountDetailsViewModel>().setFilter(label),
+                  onCustomRangeTap: () => _openCustomRangePicker(context),
+                ),
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: AppSizes.md),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSizes.md, vertical: 4),
+                    child: Row(
                       children: [
-                        // Thẻ Hero Card bốc số dư khả dụng real-time từ ví sống
-                        AccountDetailHeroCard(account: account),
-                        const SizedBox(height: AppSizes.md),
-                        AccountDetailFilterCapsule(
-                          activeRangeDisplay: activeRangeDisplay,
-                          onPresetSelected: (label) => context
-                              .read<AccountDetailsViewModel>()
-                              .setFilter(label),
-                          onCustomRangeTap: () async {
-                            final DateTimeRange? range =
-                                await showModalBottomSheet<DateTimeRange>(
-                              context: context,
-                              isScrollControlled: true,
-                              backgroundColor: Colors.transparent,
-                              builder: (sheetCtx) => AppCustomeDatePickerSheet(
-                                initialRange: context
-                                    .read<AccountDetailsViewModel>()
-                                    .filterState
-                                    .customDateRange,
-                              ),
-                            );
-                            if (range != null) {
-                              if (!context.mounted) return;
-                              context.read<AccountDetailsViewModel>().setFilter(
-                                  'Custom Range...',
-                                  customRange: range);
-                            }
-                          },
+                        Expanded(
+                          child: AppSearchBar(
+                            controller: _searchController,
+                            hintText: 'Search transactions...',
+                            onChanged: (value) => context
+                                .read<AccountDetailsViewModel>()
+                                .setSearchQuery(value),
+                          ),
                         ),
-                        const SizedBox(height: AppSizes.md),
-                        // Ô tổng Thu/Chi nạp dữ liệu sống tính toán trực tiếp
-                        AccountDetailSummaryPills(
-                          totalReceived: liveTotalReceived,
-                          totalSpent: liveTotalSpent,
+                        const SizedBox(width: AppSizes.md),
+                        AccountTransactionSortButton(
+                          currentSort: _transactionSort,
+                          onSortSelected: (option) =>
+                              setState(() => _transactionSort = option),
                         ),
-                        const SizedBox(height: AppSizes.lg),
                       ],
                     ),
                   ),
                 ),
-
-                // 3. SEARCH BAR
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
-                  sliver: SliverToBoxAdapter(
-                    child: AppSearchBar(
-                      controller: _searchController,
-                      hintText: 'Search transactions...',
-                      onChanged: (value) => context
-                          .read<AccountDetailsViewModel>()
-                          .setSearchQuery(value),
-                    ),
-                  ),
-                ),
-
-                // 4. TRANSACTION FEED
+                const SliverToBoxAdapter(child: SizedBox(height: AppSizes.sm)),
                 AccountTransactionFeed(
                   transactions: liveFiltered,
                   categories:

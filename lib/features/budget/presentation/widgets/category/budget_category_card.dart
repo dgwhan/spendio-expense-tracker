@@ -3,8 +3,11 @@ import 'package:provider/provider.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_radius.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
-import 'package:spend_io_app/features/budget/domain/entities/category/budget_category_progress_entity.dart';
+import 'package:spend_io_app/core/constants/app_text_styles.dart';
+import 'package:spend_io_app/core/dialogs/app_dialogs.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:spend_io_app/core/widgets/common/app_more_menu_button.dart';
+import 'package:spend_io_app/features/budget/domain/entities/category/budget_category_progress_entity.dart';
 import 'package:spend_io_app/features/budget/presentation/screens/category/budget_category_detail_screen.dart';
 import 'package:spend_io_app/features/budget/presentation/screens/category/edit_category_budget_screen.dart';
 import 'package:spend_io_app/features/budget/presentation/viewmodels/category/budget_category_form_viewmodel.dart';
@@ -28,24 +31,11 @@ class BudgetCategoryCard extends StatelessWidget {
   });
 
   void _handleDelete(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await AppDialogs.showDelete(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Limit'),
-        content: Text(
-            'Are you sure you want to delete the budget limit for ${progress.budgetCategory.name}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child:
-                const Text('Delete', style: TextStyle(color: AppColors.error)),
-          ),
-        ],
-      ),
+      title: 'Delete Limit',
+      content:
+          'Are you sure you want to delete the budget limit for ${progress.budgetCategory.name}?',
     );
 
     if (confirmed == true && context.mounted) {
@@ -82,46 +72,15 @@ class BudgetCategoryCard extends StatelessWidget {
     });
   }
 
-  Widget _buildPopupMenu(
-      BuildContext context, Color iconColor, CategoryEntity currentDetails) {
-    return PopupMenuButton<String>(
-      icon: Icon(Icons.more_vert_rounded, color: iconColor, size: 18),
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(),
-      style: IconButton.styleFrom(
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+  void _navigateToDetail(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BudgetCategoryDetailScreen(
+          progress: progress,
+          userId: userId,
+        ),
       ),
-      onSelected: (value) {
-        if (value == 'edit') {
-          _navigateToEdit(context, currentDetails);
-        } else if (value == 'delete') {
-          _handleDelete(context);
-        }
-      },
-      itemBuilder: (context) => [
-        const PopupMenuItem(
-          value: 'edit',
-          child: Row(
-            children: [
-              Icon(Icons.edit_outlined, size: 16),
-              SizedBox(width: 8),
-              Text('Edit Limit', style: TextStyle(fontSize: 13)),
-            ],
-          ),
-        ),
-        const PopupMenuItem(
-          value: 'delete',
-          child: Row(
-            children: [
-              Icon(Icons.delete_outline_rounded,
-                  size: 16, color: AppColors.error),
-              SizedBox(width: 8),
-              Text('Delete',
-                  style: TextStyle(color: AppColors.error, fontSize: 13)),
-            ],
-          ),
-        ),
-      ],
     );
   }
 
@@ -161,112 +120,100 @@ class BudgetCategoryCard extends StatelessWidget {
     final associatedCategory = hasCategoryMatch
         ? rootCategories.firstWhere((e) => e.id == category.categoryId)
         : fallbackCategory;
-
     final categoryColor = Color(associatedCategory.colorValue);
     final displayPercent = progress.percentage.toStringAsFixed(0);
+    final coreCategoryEntity = CategoryEntity(
+        id: associatedCategory.id,
+        userId: userId,
+        name: associatedCategory.name,
+        type: associatedCategory.type,
+        groupName: associatedCategory.groupName,
+        iconCodePoint: associatedCategory.iconCodePoint,
+        iconFontFamily: associatedCategory.iconFontFamily,
+        colorValue: associatedCategory.colorValue);
 
-    final CategoryEntity coreCategoryEntity = CategoryEntity(
-      id: associatedCategory.id,
-      userId: userId,
-      name: associatedCategory.name,
-      type: associatedCategory.type,
-      groupName: associatedCategory.groupName,
-      iconCodePoint: associatedCategory.iconCodePoint,
-      iconFontFamily: associatedCategory.iconFontFamily,
-      colorValue: associatedCategory.colorValue,
+    final moreMenu = AppMoreMenuButton(
+      iconColor: secondaryTextColor,
+      actions: [
+        AppMenuAction(
+            label: 'Edit Limit',
+            value: 'edit',
+            icon: Icons.edit_outlined,
+            onTap: () => _navigateToEdit(context, coreCategoryEntity)),
+        AppMenuAction(
+            label: 'Delete',
+            value: 'delete',
+            icon: Icons.delete_outline_rounded,
+            isDestructive: true,
+            onTap: () => _handleDelete(context)),
+      ],
     );
 
     if (cardType == BudgetCardType.horizontal) {
       return Container(
         decoration: BoxDecoration(
-          color: surfaceColor,
-          borderRadius: BorderRadius.circular(AppRadius.cardRadiusLg),
-          boxShadow: const [
-            BoxShadow(
-                color: AppColors.shadowNatural1,
-                blurRadius: 12,
-                offset: Offset(0, 4))
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => _navigateToDetail(context),
-            borderRadius: BorderRadius.circular(AppRadius.cardRadiusLg),
-            child: Padding(
-              padding: const EdgeInsets.all(AppSizes.md),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
+            color: surfaceColor,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.02),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4))
+            ]),
+        child: InkWell(
+          onTap: () => _navigateToDetail(context),
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(14.0),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
                           color: categoryColor.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
+                          borderRadius: BorderRadius.circular(10)),
+                      child: Icon(
                           IconData(associatedCategory.iconCodePoint,
                               fontFamily: associatedCategory.iconFontFamily ??
                                   'MaterialIcons'),
-                          size: 24,
-                          color: categoryColor,
-                        ),
-                      ),
-                      const SizedBox(width: AppSizes.md),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              displayName,
-                              style: TextStyle(
-                                  fontSize: 16,
+                          size: 20,
+                          color: categoryColor),
+                    ),
+                    const SizedBox(width: AppSizes.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(displayName,
+                              style: AppTextStyles.bodyNormal.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: primaryTextColor),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
+                              overflow: TextOverflow.ellipsis),
+                          Text(
                               '${formatCurrency(progress.spent)} of ${formatCurrency(category.amount)} spent',
-                              style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: secondaryTextColor),
-                            ),
-                          ],
-                        ),
+                              style: AppTextStyles.caption
+                                  .copyWith(color: secondaryTextColor)),
+                        ],
                       ),
-                      const SizedBox(width: AppSizes.sm),
-                      Text(
-                        '$displayPercent%',
-                        style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: primaryTextColor),
-                      ),
-                      const SizedBox(width: 4),
-                      _buildPopupMenu(
-                          context, secondaryTextColor, coreCategoryEntity),
-                    ],
-                  ),
-                  const SizedBox(height: AppSizes.md),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                    child: LinearProgressIndicator(
-                      value: percentage,
-                      minHeight: 6,
-                      backgroundColor: isDark
-                          ? AppColors.surfaceSecondaryDark
-                          : AppColors.surfaceSecondaryLight,
-                      valueColor: AlwaysStoppedAnimation<Color>(categoryColor),
                     ),
-                  ),
-                ],
-              ),
+                    Text('$displayPercent%',
+                        style: AppTextStyles.bodyNormal.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: primaryTextColor)),
+                    moreMenu,
+                  ],
+                ),
+                const SizedBox(height: 12),
+                LinearProgressIndicator(
+                    value: percentage,
+                    minHeight: 5,
+                    backgroundColor: isDark
+                        ? AppColors.surfaceSecondaryDark
+                        : AppColors.surfaceSecondaryLight,
+                    valueColor: AlwaysStoppedAnimation<Color>(categoryColor)),
+              ],
             ),
           ),
         ),
@@ -275,129 +222,63 @@ class BudgetCategoryCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: surfaceColor,
-        borderRadius: BorderRadius.circular(AppRadius.cardRadiusLg),
-        boxShadow: const [
-          BoxShadow(
-              color: AppColors.shadowNatural1,
-              blurRadius: 12,
-              offset: Offset(0, 4))
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _navigateToDetail(context),
+          color: surfaceColor,
           borderRadius: BorderRadius.circular(AppRadius.cardRadiusLg),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: categoryColor.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                      ),
-                      child: Icon(
-                        IconData(associatedCategory.iconCodePoint,
-                            fontFamily: associatedCategory.iconFontFamily ??
-                                'MaterialIcons'),
-                        size: 18,
-                        color: categoryColor,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        displayName,
-                        style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: primaryTextColor,
-                            height: 1.2),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 2,
-                      ),
-                    ),
-                    _buildPopupMenu(
-                        context, secondaryTextColor, coreCategoryEntity),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Flexible(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Row(
-                      textBaseline: TextBaseline.alphabetic,
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      children: [
-                        Text(
-                          formatCurrency(progress.spent),
-                          style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
+          boxShadow: const [
+            BoxShadow(
+                color: AppColors.shadowNatural1,
+                blurRadius: 12,
+                offset: Offset(0, 4))
+          ]),
+      child: InkWell(
+        onTap: () => _navigateToDetail(context),
+        borderRadius: BorderRadius.circular(AppRadius.cardRadiusLg),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                      IconData(associatedCategory.iconCodePoint,
+                          fontFamily: associatedCategory.iconFontFamily ??
+                              'MaterialIcons'),
+                      size: 16,
+                      color: categoryColor),
+                  const SizedBox(width: 6),
+                  Expanded(
+                      child: Text(displayName,
+                          style: AppTextStyles.caption.copyWith(
+                              fontWeight: FontWeight.bold,
                               color: primaryTextColor),
-                        ),
-                        Text(
-                          ' / ${formatCurrency(category.amount)}',
-                          style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
-                              color: mutedTextColor),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                      child: LinearProgressIndicator(
-                        value: percentage,
-                        minHeight: 4,
-                        backgroundColor: isDark
-                            ? AppColors.surfaceSecondaryDark
-                            : AppColors.surfaceSecondaryLight,
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(categoryColor),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '$displayPercent% Spent',
-                      style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          color: categoryColor),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                          overflow: TextOverflow.ellipsis)),
+                  moreMenu,
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(formatCurrency(progress.spent),
+                  style: AppTextStyles.bodyNormal.copyWith(
+                      fontWeight: FontWeight.w800, color: primaryTextColor)),
+              Text('of ${formatCurrency(category.amount)}',
+                  style: AppTextStyles.caption
+                      .copyWith(fontSize: 10, color: mutedTextColor)),
+              const SizedBox(height: 8),
+              LinearProgressIndicator(
+                  value: percentage,
+                  minHeight: 4,
+                  backgroundColor: isDark
+                      ? AppColors.surfaceSecondaryDark
+                      : AppColors.surfaceSecondaryLight,
+                  valueColor: AlwaysStoppedAnimation<Color>(categoryColor)),
+              const SizedBox(height: 4),
+              Text('$displayPercent% Spent',
+                  style: AppTextStyles.caption.copyWith(
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      color: categoryColor)),
+            ],
           ),
-        ),
-      ),
-    );
-  }
-
-  void _navigateToDetail(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => BudgetCategoryDetailScreen(
-          progress: progress,
-          userId: userId,
         ),
       ),
     );

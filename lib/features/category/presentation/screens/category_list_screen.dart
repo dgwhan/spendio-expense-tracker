@@ -139,6 +139,7 @@ class _CategoryListScreenState extends State<CategoryListScreen>
                   final baseColor = Color(category.colorValue);
 
                   return ListTile(
+                    onTap: () => _showCategoryDetails(context, category),
                     leading: CircleAvatar(
                       backgroundColor: baseColor.withValues(alpha: 0.15),
                       child: Icon(
@@ -204,6 +205,29 @@ class _CategoryListScreenState extends State<CategoryListScreen>
               fontSize: 18),
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.add_rounded,
+                color: isDark ? Colors.white : Colors.black),
+            tooltip: 'New Category',
+            onPressed: () async {
+              final categoryVM = context.read<CategoryViewModel>();
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => CreateCategoryScreen(
+                    userId: widget.userId,
+                    remoteUid: widget.remoteUid,
+                  ),
+                ),
+              );
+
+              if (result == true && context.mounted) {
+                categoryVM.loadCategories(widget.userId);
+              }
+            },
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           labelColor: AppColors.primary,
@@ -253,6 +277,217 @@ class _CategoryListScreenState extends State<CategoryListScreen>
         icon: const Icon(Icons.add_rounded),
         label: const Text('Add Custom'),
       ),
+    );
+  }
+
+  void _showCategoryDetails(BuildContext context, CategoryEntity category) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor = Color(category.colorValue);
+    final isCustom = category.userId != 0;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? AppColors.surfaceSecondaryDark : AppColors.surfaceSecondaryLight,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            16,
+            20,
+            MediaQuery.of(sheetContext).padding.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.grey[700] : Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Category Details',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Center(
+                child: Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: baseColor.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: baseColor.withValues(alpha: 0.3), width: 2),
+                  ),
+                  child: Icon(
+                    IconData(
+                      category.iconCodePoint,
+                      fontFamily: category.iconFontFamily ?? 'MaterialIcons',
+                    ),
+                    color: baseColor,
+                    size: 36,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                category.name,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+              ),
+              const SizedBox(height: 24),
+              _buildDetailRow(
+                context,
+                label: 'Section Group',
+                value: category.groupName,
+                icon: Icons.layers_outlined,
+              ),
+              const Divider(height: 16),
+              _buildDetailRow(
+                context,
+                label: 'Flow Type',
+                value: category.type == 'expense' ? 'Expense' : 'Income',
+                icon: category.type == 'expense'
+                    ? Icons.arrow_outward_rounded
+                    : Icons.call_received_rounded,
+                valueColor: category.type == 'expense'
+                    ? AppColors.error
+                    : AppColors.success,
+              ),
+              const Divider(height: 16),
+              _buildDetailRow(
+                context,
+                label: 'Scope Type',
+                value: isCustom ? 'Custom Category' : 'Default System Category',
+                icon: isCustom ? Icons.person_outline_rounded : Icons.verified_user_outlined,
+                valueColor: isCustom ? AppColors.primary : Colors.grey,
+              ),
+              const SizedBox(height: 32),
+              if (isCustom) ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          Navigator.pop(sheetContext);
+                          
+                          final categoryVM = context.read<CategoryViewModel>();
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => CreateCategoryScreen(
+                                userId: widget.userId,
+                                remoteUid: widget.remoteUid,
+                                category: category,
+                              ),
+                            ),
+                          );
+
+                          if (result == true && context.mounted) {
+                            categoryVM.loadCategories(widget.userId);
+                          }
+                        },
+                        icon: const Icon(Icons.edit_outlined),
+                        label: const Text('Edit'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          side: const BorderSide(color: AppColors.primary),
+                          foregroundColor: AppColors.primary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(sheetContext);
+                          _handleDeleteCategory(category);
+                        },
+                        icon: const Icon(Icons.delete_outline_rounded),
+                        label: const Text('Delete'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.error,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ] else ...[
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(sheetContext),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isDark ? Colors.grey[800] : Colors.grey[200],
+                    foregroundColor: isDark ? Colors.white : Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text('Close'),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDetailRow(
+    BuildContext context, {
+    required String label,
+    required String value,
+    required IconData icon,
+    Color? valueColor,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: Colors.grey),
+        const SizedBox(width: 12),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 14, color: Colors.grey),
+        ),
+        const Spacer(),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: valueColor ?? (isDark ? Colors.white : Colors.black),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -49,25 +49,20 @@ class AccountViewModel extends ChangeNotifier {
     if (activeAccounts.isNotEmpty) {
       return activeAccounts.first.currencyCode;
     }
-    // Returns the runtime cached currency from profile initialization if no wallets exist yet
     return _fallbackProfileCurrency;
   }
 
-  /// Explicitly seed the fallback currency from the app initiation or onboarding context
   void setFallbackCurrency(String currencyCode) {
     if (currencyCode.trim().isEmpty) return;
     _fallbackProfileCurrency = currencyCode;
     notifyListeners();
   }
 
-  /// Loads accounts linked strictly to the active authenticated local identity
   Future<void> loadAccounts(
     int localId,
     String remoteUid, {
     bool forceRefresh = false,
   }) async {
-    // ─── CRITICAL GUARD CLAUSE ───
-    // Averts Foreign Key Constraint failures downstream if the user identity loop drops to zero
     if (localId <= 0) {
       debugPrint(
           '[Account VM]: Load operation aborted. Invalid user session handle (localId: $localId).');
@@ -86,7 +81,6 @@ class AccountViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Stripped of unnecessary cross-boundary parameter leakage
       _rawAccounts = await getAccountsUseCase(localId, remoteUid);
     } catch (e) {
       debugPrint('[Account VM] Failed to resolve account data records: $e');
@@ -96,7 +90,6 @@ class AccountViewModel extends ChangeNotifier {
     }
   }
 
-  /// Completely flushes user data matrices from active RAM state upon logging out
   void clearAccounts() {
     _rawAccounts = [];
     _lastLoadedUserId = null;
@@ -104,14 +97,13 @@ class AccountViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Appends a new financial vehicle record inside local and cloud storage clusters
   Future<bool> createAccount(
       int localId, String remoteUid, AccountEntity account) async {
     if (localId <= 0 || account.userId <= 0) {
       _createAccountError =
           "Critical Session Error: Cannot commit records using an unauthenticated ID (ID = 0).";
       debugPrint(
-          '🚨 [Account VM]: Intercepted write action block. Forbidden anonymous foreign user key rejected.');
+          '[Account VM]: Intercepted write action block. Forbidden anonymous foreign user key rejected.');
       notifyListeners();
       return false;
     }
@@ -120,14 +112,29 @@ class AccountViewModel extends ChangeNotifier {
     _createAccountError = null;
     notifyListeners();
 
+    debugPrint('==================================================');
+    debugPrint('[Account VM] STARTING ACCOUNT CREATION PROCESS');
+    debugPrint('[Account VM] User Local ID: $localId');
+    debugPrint('[Account VM] Account Payload Details:');
+    debugPrint('   - Name: ${account.name}');
+    debugPrint('   - Type: ${account.type}');
+    debugPrint('   - Initial Balance: ${account.balance}');
+    debugPrint('   - Currency: ${account.currencyCode}');
+    debugPrint('==================================================');
+
     try {
       await createAccountUseCase(localId, remoteUid, account);
       await loadAccounts(localId, remoteUid, forceRefresh: true);
+
+      debugPrint(
+          '[Account VM] SUCCESS: Account "${account.name}" was successfully committed and reloaded.');
       return true;
     } catch (e) {
       _createAccountError = e.toString();
+
       debugPrint(
-          '[Account VM] Execution failure during account creation call: $e');
+          '[Account VM] FAILURE: Execution error during account creation call.');
+      debugPrint('[Account VM] Error Details: $e');
       return false;
     } finally {
       _isCreatingAccount = false;
@@ -135,7 +142,6 @@ class AccountViewModel extends ChangeNotifier {
     }
   }
 
-  /// Commits updated static metadata parameters down to storage drivers
   Future<bool> updateAccount(
       int localId, String remoteUid, AccountEntity account) async {
     if (localId <= 0 || account.userId <= 0) {
@@ -164,7 +170,6 @@ class AccountViewModel extends ChangeNotifier {
     }
   }
 
-  /// Registers a soft-deletion marker state locally and propagates mutations outward
   Future<void> deleteAccount(
       int localId, String remoteUid, String accountId) async {
     if (localId <= 0 || accountId.trim().isEmpty) {

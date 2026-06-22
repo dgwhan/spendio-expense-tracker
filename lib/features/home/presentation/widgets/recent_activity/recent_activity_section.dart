@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
+import 'package:spend_io_app/core/utils/localization.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/shared/dashboard_section_container.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/recent_activity/transaction_tile.dart';
 import 'package:spend_io_app/features/home/data/models/recent_transaction_model.dart';
@@ -42,7 +43,7 @@ class _RecentActivitySectionState extends State<RecentActivitySection> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Recent Activity',
+                AppLocalizations.translate('recent_transactions'),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimaryLight,
@@ -55,9 +56,9 @@ class _RecentActivitySectionState extends State<RecentActivitySection> {
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: const Text(
-                  'View All',
-                  style: TextStyle(
+                child: Text(
+                  AppLocalizations.translate('view_all'),
+                  style: const TextStyle(
                     color: AppColors.primary,
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
@@ -94,7 +95,9 @@ class _RecentActivitySectionState extends State<RecentActivitySection> {
                     padding: const EdgeInsets.symmetric(vertical: 4.0),
                     child: Center(
                       child: AppTextButton(
-                        text: _isExpanded ? 'See Less' : 'See More',
+                        text: _isExpanded 
+                            ? AppLocalizations.translate('see_less')
+                            : AppLocalizations.translate('see_more'),
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
                         onTap: () {
@@ -114,3 +117,4 @@ class _RecentActivitySectionState extends State<RecentActivitySection> {
     );
   }
 }
+

@@ -14,6 +14,7 @@ import 'package:spend_io_app/di/transaction_provider.dart';
 import 'package:spend_io_app/di/budget_provider.dart';
 import 'package:spend_io_app/di/wallet_provider.dart';
 import 'package:spend_io_app/di/profile_provider.dart';
+import 'package:spend_io_app/di/insight_provider.dart';
 
 import 'package:spend_io_app/features/auth/domain/usecases/get_current_user_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/check_wallet_initialization_usecase.dart';
@@ -38,6 +39,7 @@ class AppProviders {
       ...BudgetModuleProvider.providers,
       ...WalletModuleProvider.providers,
       ...ProfileModuleProvider.providers,
+      ...InsightModuleProvider.providers,
 
       ProxyProvider2<AuthProvider, CheckWalletInitializationUseCase,
           StartupCoordinator>(

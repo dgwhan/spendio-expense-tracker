@@ -4,9 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:spend_io_app/features/auth/domain/usecases/get_current_user_usecase.dart';
 import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
+import 'package:spend_io_app/features/category/domain/repositories/category_repository.dart';
+import 'package:spend_io_app/features/category/presentation/viewmodels/category_viewmodel.dart';
+import 'package:spend_io_app/features/transaction/domain/usecases/initialize_transaction_categories_usecase.dart';
 import 'package:spend_io_app/features/wallet/domain/usecases/check_wallet_initialization_usecase.dart';
 import 'package:spend_io_app/features/transaction/presentation/viewmodels/transaction_viewmodel.dart';
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
+import 'package:spend_io_app/features/profile/presentation/viewmodels/profile_viewmodel.dart';
 import 'startup_result.dart';
 
 class StartupCoordinator {
@@ -23,13 +27,24 @@ class StartupCoordinator {
   Future<StartupResult> resolve(BuildContext context) async {
     debugPrint("[STARTUP DIAGNOSTIC] === BẮT ĐẦU TIẾN TRÌNH KHỞI ĐỘNG APP ===");
     try {
+      // ------------------------------------------------------------
+      // HÀM KHỞI TẠO DANH MỤC MẶC ĐỊNH (OFFLINE)
+      // ------------------------------------------------------------
+      debugPrint("[STARTUP DIAGNOSTIC] Bước 0: Khởi tạo danh mục mặc định...");
+      try {
+        final categoryRepository = context.read<CategoryRepository>();
+        final initCategoriesUseCase = InitializeTransactionCategoriesUseCase(categoryRepository);
+        await initCategoriesUseCase.call();
+      } catch (e) {
+        debugPrint("[STARTUP DIAGNOSTIC] Lỗi khởi tạo danh mục mặc định: $e");
+      }
       debugPrint(
-          "[STARTUP DIAGNOSTIC] Bước 1: Đang gọi getCurrentUserUseCase()...");
+          "[STARTUP DIAGNOSTIC] Đang gọi getCurrentUserUseCase()...");
       final user = await getCurrentUserUseCase().timeout(
         const Duration(seconds: 3),
         onTimeout: () {
           debugPrint(
-              "⏳ [STARTUP WORKER] Timeout: getCurrentUserUseCase bị treo -> Hướng về Login");
+              "[STARTUP WORKER] Timeout: getCurrentUserUseCase bị treo -> Hướng về Login");
           return null;
         },
       );
@@ -79,7 +94,13 @@ class StartupCoordinator {
               "[STARTUP DIAGNOSTIC] Bước 4: Đồng bộ duy nhất qua AuthProvider...");
           authProvider.setCurrentUser(user);
 
+          final profileVM = context.read<ProfileViewModel>();
+          await profileVM.loadCurrentUser();
+
           final walletVM = context.read<WalletViewModel>();
+          final categoryVM = context.read<CategoryViewModel>();
+          final transactionVM = context.read<TransactionViewModel>();
+
           debugPrint(
               "[STARTUP DIAGNOSTIC] Chờ luồng Ví nạp xong cấu trúc cơ sở ngầm...");
           await walletVM.initialize().timeout(
@@ -91,11 +112,18 @@ class StartupCoordinator {
           );
 
           debugPrint(
-              "[STARTUP DIAGNOSTIC] Bước 5: Đang nạp lịch sử giao dịch qua transactionViewModel...");
-          await context
-              .read<TransactionViewModel>()
-              .loadAllTransactions()
-              .timeout(
+              "[STARTUP DIAGNOSTIC] Bước 5: Đang nạp danh mục qua categoryViewModel...");
+          await categoryVM.loadCategories(nonNullUserId).timeout(
+            const Duration(seconds: 4),
+            onTimeout: () {
+              debugPrint(
+                  "⏳ [STARTUP WARNING]: Khởi tạo Danh mục mất quá nhiều thời gian, bỏ qua.");
+            },
+          );
+
+          debugPrint(
+              "[STARTUP DIAGNOSTIC] Bước 6: Đang nạp lịch sử giao dịch qua transactionViewModel...");
+          await transactionVM.loadAllTransactions().timeout(
             const Duration(seconds: 4),
             onTimeout: () {
               debugPrint(
@@ -115,7 +143,7 @@ class StartupCoordinator {
       return StartupResult.onboarding;
     } catch (e, stack) {
       debugPrint(
-          "[STARTUP CRASH REPORT] BẮT ĐƯỢC THỦ PHẠM KHIẾN APP ĐỨNG IM: $e");
+          "[STARTUP CRASH REPORT] Lỗi hệ thống: $e");
       debugPrintStack(stackTrace: stack);
       authProvider.setCurrentUser(null);
       return StartupResult.login;

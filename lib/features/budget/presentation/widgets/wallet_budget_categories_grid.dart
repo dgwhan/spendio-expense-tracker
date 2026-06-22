@@ -9,6 +9,7 @@ import 'package:spend_io_app/features/budget/presentation/viewmodels/monthly/bud
 import 'package:spend_io_app/features/budget/presentation/screens/monthly/add_budget_screen.dart';
 import 'package:spend_io_app/features/budget/presentation/screens/budget_detail_screen.dart';
 import 'package:spend_io_app/features/budget/presentation/widgets/section/budget_section.dart';
+import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
 
 class WalletBudgetCategoriesGrid extends StatefulWidget {
   final int userId;
@@ -34,8 +35,17 @@ class _WalletBudgetCategoriesGridState
     });
   }
 
-  void _navigateToCreateBudget() {
-    Navigator.push(
+  void _refreshBudgetAndWalletData() {
+    if (mounted) {
+      context.read<BudgetViewModel>().loadBudget(widget.userId);
+      context.read<BudgetCategoryViewModel>().loadCategories(widget.userId);
+      context.read<BudgetCategoryViewModel>().loadProgress(widget.userId);
+      context.read<WalletViewModel>().refreshBudgetProgress();
+    }
+  }
+
+  void _navigateToCreateBudget() async {
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => ChangeNotifierProvider<BudgetFormViewModel>(
@@ -44,10 +54,11 @@ class _WalletBudgetCategoriesGridState
         ),
       ),
     );
+    _refreshBudgetAndWalletData();
   }
 
-  void _navigateToCreateCategoryBudget() {
-    Navigator.push(
+  void _navigateToCreateCategoryBudget() async {
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => ChangeNotifierProvider<BudgetCategoryFormViewModel>(
@@ -56,11 +67,12 @@ class _WalletBudgetCategoriesGridState
         ),
       ),
     );
+    _refreshBudgetAndWalletData();
   }
 
   void _navigateToDetailBudget(
-      double totalSpent, double totalBudget, int daysLeft) {
-    Navigator.push(
+      double totalSpent, double totalBudget, int daysLeft) async {
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => BudgetDetailScreen(
@@ -71,6 +83,7 @@ class _WalletBudgetCategoriesGridState
         ),
       ),
     );
+    _refreshBudgetAndWalletData();
   }
 
   @override

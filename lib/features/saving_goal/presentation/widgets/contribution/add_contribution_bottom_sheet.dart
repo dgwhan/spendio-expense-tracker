@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
+import 'package:spend_io_app/core/constants/app_text_styles.dart';
+import 'package:spend_io_app/core/utils/currency_input_formatter.dart';
 import 'package:spend_io_app/core/widgets/bottom_sheets/app_bottom_sheet_header.dart';
+import 'package:spend_io_app/core/widgets/common/app_dual_action_buttons.dart';
+import 'package:spend_io_app/core/widgets/common/app_input_decoration.dart';
+import 'package:spend_io_app/core/widgets/primary_button.dart';
 import 'package:spend_io_app/features/saving_goal/domain/entities/saving_goal_contribution_entity.dart';
 
 class AddContributionBottomSheet extends StatefulWidget {
@@ -26,7 +32,9 @@ class _AddContributionBottomSheetState
   final TextEditingController _amountController = TextEditingController();
 
   void _submit() {
-    final amount = double.tryParse(_amountController.text.trim());
+    // Loại bỏ dấu chấm trước khi parse
+    final rawValue = _amountController.text.replaceAll('.', '');
+    final amount = double.tryParse(rawValue);
 
     if (amount == null || amount <= 0) return;
 
@@ -38,11 +46,26 @@ class _AddContributionBottomSheetState
       createdAt: DateTime.now(),
     );
 
-    debugPrint('Submit contribution: $amount');
-
     widget.onSubmit(contribution);
-
     Navigator.pop(context);
+  }
+
+  Widget _buildFieldTitle(String title) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: RichText(
+        text: TextSpan(
+          text: title,
+          style: AppTextStyles.sectionTitle.copyWith(
+            color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
+          ),
+          children: const [
+            TextSpan(text: ' *', style: TextStyle(color: AppColors.error)),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -64,41 +87,29 @@ class _AddContributionBottomSheetState
               subtitle: 'Enter the amount you want to add to this goal.',
             ),
             const SizedBox(height: AppSizes.xl),
-            TextField(
+            _buildFieldTitle('Amount'),
+            TextFormField(
               controller: _amountController,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(
-                labelText: 'Amount',
-                prefixText: '\$ ',
-                border: const OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(12)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: const BorderRadius.all(Radius.circular(12)),
-                  borderSide: BorderSide(color: AppColors.primary, width: 2),
-                ),
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                CurrencyInputFormatter(),
+              ],
+              decoration: AppInputDecoration.getFieldDecoration(
+                context: context,
+                labelText: '',
+                hintText: '0',
               ),
             ),
             const SizedBox(height: AppSizes.lg),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: _submit,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Add',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),  
+            AppDualActionButtons(
+              primaryLabel: 'Cancel',
+              secondaryLabel: 'Add',
+              onPrimaryPressed: () => Navigator.pop(context),
+              onSecondaryPressed: _submit,
+              primaryVariant: AppButtonVariant.cancel,
+              secondaryVariant: AppButtonVariant.primary,
+            ),
             const SizedBox(height: AppSizes.md),
           ],
         ),
