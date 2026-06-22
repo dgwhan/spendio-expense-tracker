@@ -61,8 +61,7 @@ class _SplashScreenState extends State<SplashScreen> {
           context,
           MaterialPageRoute(
             builder: (_) => OnboardingFlowScreen(
-              userEmail:
-                  coordinator.authProvider.currentUser?.email ?? '',
+              userEmail: coordinator.authProvider.currentUser?.email ?? '',
             ),
           ),
         );
