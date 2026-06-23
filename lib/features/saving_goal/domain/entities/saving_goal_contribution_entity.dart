@@ -6,6 +6,7 @@ class SavingGoalContributionEntity {
   final double amount;
 
   final DateTime createdAt;
+  final String currencyCode;
 
   const SavingGoalContributionEntity({
     required this.id,
@@ -13,5 +14,6 @@ class SavingGoalContributionEntity {
     required this.userId,
     required this.amount,
     required this.createdAt,
+    this.currencyCode = 'USD',
   });
 }

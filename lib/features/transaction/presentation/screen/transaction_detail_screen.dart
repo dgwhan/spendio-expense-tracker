@@ -4,6 +4,8 @@ import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/core/constants/app_text_styles.dart';
 import 'package:spend_io_app/core/widgets/app_header.dart';
+import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 import 'package:spend_io_app/core/widgets/common/app_dual_action_buttons.dart'; // core action buttons dùng chung
 import 'package:spend_io_app/core/widgets/primary_button.dart';
 import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
@@ -125,9 +127,11 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     final account = _findAccount(widget.transaction.accountId);
     final accountLabel = account?.name ?? 'Unknown Wallet';
 
-    final formatter = NumberFormat('#,###', 'vi_VN');
-    final amountText =
-        '$amountPrefix${formatter.format(widget.transaction.amount.abs())} đ';
+    final amountText = '$amountPrefix${formatCurrency(
+      widget.transaction.amount.abs(),
+      currencyCode: widget.transaction.currencyCode,
+      locale: context.currencyContext.locale,
+    )}';
     final timeDetail = DateFormat('HH:mm - dd MMMM yyyy')
         .format(widget.transaction.transactionDate);
 

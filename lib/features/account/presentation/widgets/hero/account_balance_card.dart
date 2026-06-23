@@ -3,6 +3,7 @@ import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_radius.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/core/utils/account_type_ext.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
 import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
 
@@ -78,7 +79,11 @@ class AccountBalanceCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            CurrencyFormatter.format(account.balance),
+            formatCurrency(
+              account.balance,
+              currencyCode: account.currencyCode,
+              locale: context.currencyContext.locale,
+            ),
             style: const TextStyle(
               color: AppColors.white,
               fontSize: 28,

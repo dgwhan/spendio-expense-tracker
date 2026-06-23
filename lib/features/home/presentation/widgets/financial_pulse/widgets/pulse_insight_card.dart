@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
 
 class PulseInsightCard extends StatelessWidget {
@@ -18,7 +19,11 @@ class PulseInsightCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final amountStr = CurrencyFormatter.format(highestAmount);
+    final amountStr = formatCurrency(
+      highestAmount,
+      currencyCode: context.currencyContext.preferredCurrencyCode,
+      locale: context.currencyContext.locale,
+    );
 
     return Container(
       width: double.infinity,

@@ -4,6 +4,9 @@ import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/core/constants/app_text_styles.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
+import 'package:spend_io_app/core/currency/convert_currency_use_case.dart';
+import 'package:spend_io_app/core/currency/exchange_rate_provider.dart';
 import 'package:spend_io_app/core/widgets/app_header.dart';
 import 'package:spend_io_app/core/widgets/common/app_empty_state.dart';
 import 'package:spend_io_app/core/widgets/input/app_search_bar.dart';
@@ -117,8 +120,14 @@ class _AccountListScreenState extends State<AccountListScreen> {
               break;
           }
 
-          final double totalNetWorth =
-              sortedAccounts.fold(0, (sum, acc) => sum + acc.balance);
+          final double totalNetWorth = sortedAccounts.fold(0.0, (sum, acc) {
+            final double converted = const ConvertCurrencyUseCase(LocalExchangeRateProvider()).execute(
+              amount: acc.balance,
+              from: acc.currencyCode,
+              to: context.currencyContext.preferredCurrencyCode,
+            );
+            return sum + converted;
+          });
 
           return SafeArea(
             child: CustomScrollView(
@@ -155,7 +164,11 @@ class _AccountListScreenState extends State<AccountListScreen> {
                                         style: AppTextStyles.caption
                                             .copyWith(color: mutedTextColor)),
                                     Text(
-                                        CurrencyFormatter.format(totalNetWorth),
+                                        formatCurrency(
+                                          totalNetWorth,
+                                          currencyCode: context.currencyContext.preferredCurrencyCode,
+                                          locale: context.currencyContext.locale,
+                                        ),
                                         style: AppTextStyles.largeAmount
                                             .copyWith(
                                                 color: totalNetWorth < 0

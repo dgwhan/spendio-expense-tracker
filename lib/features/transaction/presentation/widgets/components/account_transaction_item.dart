@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/features/category/domain/entities/category_entity.dart';
+import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 import 'package:spend_io_app/features/transaction/domain/entities/transaction_entity.dart';
 import 'package:spend_io_app/features/transaction/domain/entities/transaction_type.dart';
 
@@ -34,8 +36,11 @@ class AccountTransactionItem extends StatelessWidget {
     final timeLabel = DateFormat('HH:mm').format(tx.transactionDate);
     final categoryLabel = category?.name ?? tx.categoryId;
 
-    final formatter = NumberFormat('#,###', 'vi_VN');
-    final amountText = '$amountPrefix${formatter.format(tx.amount.abs())} đ';
+    final amountText = '$amountPrefix${formatCurrency(
+      tx.amount.abs(),
+      currencyCode: tx.currencyCode,
+      locale: context.currencyContext.locale,
+    )}';
 
     return InkWell(
       onTap: onTap,

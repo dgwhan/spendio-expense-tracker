@@ -3,6 +3,7 @@ import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_radius.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 
 class GoalPreviewCard extends StatelessWidget {
   final String title;
@@ -10,6 +11,7 @@ class GoalPreviewCard extends StatelessWidget {
   final double initialAmount;
   final int colorValue;
   final int iconCodePoint;
+  final String currencyCode;
 
   const GoalPreviewCard({
     super.key,
@@ -18,6 +20,7 @@ class GoalPreviewCard extends StatelessWidget {
     required this.initialAmount,
     required this.colorValue,
     required this.iconCodePoint,
+    required this.currencyCode,
   });
 
   @override
@@ -75,13 +78,13 @@ class GoalPreviewCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                formatCurrency(initialAmount),
+                formatCurrency(initialAmount, currencyCode: currencyCode, locale: context.currencyContext.locale),
                 style: const TextStyle(
                   fontWeight: FontWeight.w600,
                 ),
               ),
               Text(
-                formatCurrency(targetAmount),
+                formatCurrency(targetAmount, currencyCode: currencyCode, locale: context.currencyContext.locale),
                 style: const TextStyle(
                   fontWeight: FontWeight.w600,
                 ),

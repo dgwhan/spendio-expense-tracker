@@ -6,6 +6,7 @@ import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/core/constants/app_text_styles.dart';
 import 'package:spend_io_app/core/utils/currency_input_formatter.dart';
+import 'package:spend_io_app/core/utils/currency_formatter.dart';
 import 'package:spend_io_app/core/widgets/app_header.dart';
 import 'package:spend_io_app/core/widgets/common/app_dual_action_buttons.dart';
 import 'package:spend_io_app/core/widgets/common/app_input_decoration.dart';
@@ -30,9 +31,8 @@ class _EditSavingGoalScreenState extends State<EditSavingGoalScreen> {
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.goal.title);
-    // Định dạng số ban đầu khi load edit
-    final targetStr =
-        NumberFormat.decimalPattern('vi_VN').format(widget.goal.targetAmount);
+    final formatter = NumberFormat.decimalPattern('vi_VN');
+    final targetStr = formatter.format(widget.goal.targetAmount.round());
     _targetController = TextEditingController(text: targetStr);
   }
 
@@ -47,9 +47,10 @@ class _EditSavingGoalScreenState extends State<EditSavingGoalScreen> {
     if (!_formKey.currentState!.validate()) return;
     final vm = context.read<SavingGoalDetailViewModel>();
 
-    // Làm sạch chuỗi trước khi lưu vào DB
-    final rawValue = _targetController.text.replaceAll('.', '');
-    final targetAmount = double.tryParse(rawValue) ?? widget.goal.targetAmount;
+    final targetAmount = CurrencyFormatter.parse(
+      _targetController.text,
+      currencyCode: widget.goal.currencyCode,
+    ) ?? widget.goal.targetAmount;
 
     final progress = targetAmount <= 0
         ? 0.0
@@ -118,7 +119,7 @@ class _EditSavingGoalScreenState extends State<EditSavingGoalScreen> {
                   keyboardType: TextInputType.number,
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly,
-                    CurrencyInputFormatter(),
+                    CurrencyInputFormatter(currencyCode: widget.goal.currencyCode),
                   ],
                   decoration: AppInputDecoration.getFieldDecoration(
                     context: context,
@@ -126,11 +127,13 @@ class _EditSavingGoalScreenState extends State<EditSavingGoalScreen> {
                     hintText: '0',
                   ),
                   validator: (v) {
-                    final cleanValue = v?.replaceAll('.', '') ?? '';
-                    final amount = double.tryParse(cleanValue);
-                    return (amount == null || amount <= 0)
-                        ? 'Invalid amount'
-                        : null;
+                    if (v == null || v.trim().isEmpty) return 'Invalid amount';
+                    final amount = CurrencyFormatter.parse(v, currencyCode: widget.goal.currencyCode);
+                    if (amount == null || amount <= 0) return 'Invalid amount';
+                    if (amount > 999999999) {
+                      return 'Amount cannot exceed 999.999.999';
+                    }
+                    return null;
                   },
                 ),
                 const SizedBox(height: AppSizes.xl),

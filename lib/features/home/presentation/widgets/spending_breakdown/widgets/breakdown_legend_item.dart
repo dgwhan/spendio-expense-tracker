@@ -3,6 +3,7 @@ import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
 import 'package:spend_io_app/features/home/data/models/spending_breakdown_model.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/spending_breakdown/helpers/breakdown_color_helper.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 
 class BreakdownLegendItem extends StatelessWidget {
   final SpendingItemModel item;
@@ -47,7 +48,11 @@ class BreakdownLegendItem extends StatelessWidget {
 
           // Số tiền định dạng compact
           Text(
-            CurrencyFormatter.compact(item.amount),
+            CurrencyFormatter.format(
+              item.amount,
+              currencyCode: context.currencyContext.preferredCurrencyCode,
+              locale: context.currencyContext.locale,
+            ),
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   fontSize: 12, // Giảm 2px để đồng bộ không gian hàng dọc
                   color: AppColors.textSecondaryLight,

@@ -4,6 +4,7 @@ import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_radius.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 import 'package:spend_io_app/features/budget/domain/usecase/monthly/delete_budget_usecase.dart';
 import 'package:spend_io_app/features/budget/domain/usecase/monthly/update_budget_usecase.dart';
 import 'package:spend_io_app/features/budget/presentation/screens/budget_detail_screen.dart';
@@ -135,7 +136,7 @@ class MonthlyBudgetCard extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSizes.xs),
                 Text(
-                  formatCurrency(remaining),
+                  formatCurrency(remaining, currencyCode: context.currencyContext.preferredCurrencyCode, locale: context.currencyContext.locale),
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w700,
@@ -146,7 +147,7 @@ class MonthlyBudgetCard extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(top: AppSizes.xs),
                     child: Text(
-                      'You are over budget by ${formatCurrency(remaining.abs())}',
+                      'You are over budget by ${formatCurrency(remaining.abs(), currencyCode: context.currencyContext.preferredCurrencyCode, locale: context.currencyContext.locale)}',
                       style: const TextStyle(
                           fontSize: 12,
                           color: AppColors.error,
@@ -177,7 +178,7 @@ class MonthlyBudgetCard extends StatelessWidget {
                                 TextStyle(fontSize: 12, color: mutedTextColor)),
                         const SizedBox(height: 2),
                         Text(
-                          formatCurrency(totalSpent),
+                          formatCurrency(totalSpent, currencyCode: context.currencyContext.preferredCurrencyCode, locale: context.currencyContext.locale),
                           style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
@@ -193,7 +194,7 @@ class MonthlyBudgetCard extends StatelessWidget {
                                 TextStyle(fontSize: 12, color: mutedTextColor)),
                         const SizedBox(height: 2),
                         Text(
-                          formatCurrency(totalBudget),
+                          formatCurrency(totalBudget, currencyCode: context.currencyContext.preferredCurrencyCode, locale: context.currencyContext.locale),
                           style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,

@@ -8,12 +8,15 @@ import 'package:spend_io_app/core/constants/app_text_styles.dart';
 import 'package:spend_io_app/core/widgets/common/app_dual_action_buttons.dart';
 import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
 import 'package:spend_io_app/features/account/presentation/widgets/account_type_grid_selector.dart';
+import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:spend_io_app/core/utils/currency_input_formatter.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 
 class AccountForm extends StatefulWidget {
   final AccountEntity? account;
   final String title;
   final String actionLabel;
-  final Function(String name, AccountType type, double balance) onSubmit;
+  final Future<void> Function(String name, AccountType type, double balance, String currencyCode) onSubmit;
 
   const AccountForm({
     super.key,
@@ -32,21 +35,32 @@ class _AccountFormState extends State<AccountForm> {
   late final TextEditingController _nameController;
   late final TextEditingController _balanceController;
   late AccountType _selectedType;
+  late String _selectedCurrency;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.account?.name ?? '');
+    _selectedType = widget.account?.type ?? AccountType.cash;
+    _selectedCurrency = widget.account?.currencyCode ?? 'USD';
 
-    // Thêm định dạng phân tách hàng nghìn cho balance ban đầu nếu có sẵn dữ liệu edit
+    // Wait for frame to resolve context if widget.account is null, otherwise format right away
     if (widget.account != null) {
-      final String initialFormatted = NumberFormat('#,###', 'vi_VN')
-          .format(widget.account!.balance.toInt());
+      final formatter = NumberFormat.decimalPattern('vi_VN');
+      final String initialFormatted = formatter.format(widget.account!.balance.round());
       _balanceController = TextEditingController(text: initialFormatted);
     } else {
       _balanceController = TextEditingController(text: '');
     }
-    _selectedType = widget.account?.type ?? AccountType.cash;
+
+    if (widget.account == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          _selectedCurrency = context.currencyContext.preferredCurrencyCode;
+        });
+      });
+    }
   }
 
   @override
@@ -55,6 +69,8 @@ class _AccountFormState extends State<AccountForm> {
     _balanceController.dispose();
     super.dispose();
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -103,10 +119,12 @@ class _AccountFormState extends State<AccountForm> {
                 fillColor: inputFillColor,
               ),
               validator: (value) {
-                if (value == null || value.trim().isEmpty)
+                if (value == null || value.trim().isEmpty) {
                   return 'Account name is required';
-                if (value.trim().length < 2)
+                }
+                if (value.trim().length < 2) {
                   return 'Account name must be at least 2 characters';
+                }
                 return null;
               },
             ),
@@ -119,18 +137,7 @@ class _AccountFormState extends State<AccountForm> {
               style: AppTextStyles.bodyNormal.copyWith(color: primaryTextColor),
               inputFormatters: [
                 FilteringTextInputFormatter.digitsOnly,
-                TextInputFormatter.withFunction((oldValue, newValue) {
-                  if (newValue.text.isEmpty) return newValue;
-                  final int value =
-                      int.parse(newValue.text.replaceAll('.', ''));
-                  final String formatted =
-                      NumberFormat('#,###', 'vi_VN').format(value);
-                  return newValue.copyWith(
-                    text: formatted,
-                    selection:
-                        TextSelection.collapsed(offset: formatted.length),
-                  );
-                }),
+                CurrencyInputFormatter(currencyCode: _selectedCurrency),
               ],
               decoration: InputDecoration(
                 labelText: 'Balance',
@@ -150,12 +157,22 @@ class _AccountFormState extends State<AccountForm> {
                 fillColor: inputFillColor,
               ),
               validator: (value) {
-                if (value == null || value.trim().isEmpty)
+                if (value == null || value.trim().isEmpty) {
                   return 'Balance is required';
+                }
+                final amount = CurrencyFormatter.parse(value, currencyCode: _selectedCurrency);
+                if (amount == null) {
+                  return 'Invalid balance';
+                }
+                if (amount > 999999999) {
+                  return 'Amount cannot exceed 999.999.999';
+                }
                 return null;
               },
             ),
-            const SizedBox(height: AppSizes.lg),
+            const SizedBox(height: AppSizes.md),
+
+
 
             Text(
               'Account Type',
@@ -170,28 +187,46 @@ class _AccountFormState extends State<AccountForm> {
             ),
             const SizedBox(height: AppSizes.xl),
 
-            // Dual Action Buttons xử lý mượt bàn phím ảo và microtask điều hướng
-            AppDualActionButtons(
-              primaryLabel: widget.actionLabel,
-              secondaryLabel: 'Cancel',
-              onPrimaryPressed: () {
-                if (!_formKey.currentState!.validate()) return;
-                final name = _nameController.text.trim();
-                final rawBalance =
-                    _balanceController.text.replaceAll('.', '').trim();
-                final balance = double.tryParse(rawBalance) ?? 0.0;
-                widget.onSubmit(name, _selectedType, balance);
-              },
-              onSecondaryPressed: () {
-                FocusScope.of(context)
-                    .unfocus(); // Giải phóng tiêu điểm bàn phím ảo tránh lỗi layout
-                Future.microtask(() {
-                  if (Navigator.canPop(context)) {
-                    Navigator.pop(context);
-                  }
-                });
-              },
-            ),
+             // Dual Action Buttons xử lý mượt bàn phím ảo và microtask điều hướng
+             AppDualActionButtons(
+               primaryLabel: widget.actionLabel,
+               secondaryLabel: 'Cancel',
+               onPrimaryPressed: _isSubmitting
+                   ? null
+                   : () async {
+                       if (!_formKey.currentState!.validate()) return;
+                       setState(() {
+                         _isSubmitting = true;
+                       });
+                       final name = _nameController.text.trim();
+                       final balance = CurrencyFormatter.parse(_balanceController.text,
+                               currencyCode: _selectedCurrency) ??
+                           0.0;
+                       try {
+                         await widget.onSubmit(
+                             name, _selectedType, balance, _selectedCurrency);
+                       } finally {
+                         if (mounted) {
+                           setState(() {
+                             _isSubmitting = false;
+                           });
+                         }
+                       }
+                     },
+               onSecondaryPressed: _isSubmitting
+                   ? null
+                   : () {
+                       FocusScope.of(context).unfocus();
+
+                       if (Navigator.canPop(context)) {
+                         Future.microtask(() {
+                           if (!context.mounted) return;
+
+                           Navigator.pop(context);
+                         });
+                       }
+                     },
+             ),
           ],
         ),
       ),

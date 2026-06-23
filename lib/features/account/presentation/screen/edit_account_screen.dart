@@ -90,7 +90,7 @@ class EditAccountScreen extends StatelessWidget {
                 account: account,
                 title: 'Account Settings',
                 actionLabel: 'Update',
-                onSubmit: (name, type, balance) async {
+                onSubmit: (name, type, balance, currencyCode) async {
                   final icon = _getDefaultIcon(type);
 
                   final updatedAccount = AccountEntity(
@@ -99,7 +99,7 @@ class EditAccountScreen extends StatelessWidget {
                     name: name,
                     type: type,
                     balance: balance,
-                    currencyCode: account.currencyCode,
+                    currencyCode: currencyCode,
                     icon: icon,
                     createdAt: account.createdAt,
                     updatedAt: DateTime.now(),

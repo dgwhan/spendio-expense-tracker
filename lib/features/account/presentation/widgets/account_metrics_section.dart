@@ -42,6 +42,7 @@ class AccountMetricsSection extends StatelessWidget {
             AccountDetailSummaryPills(
               totalReceived: totalReceived,
               totalSpent: totalSpent,
+              currencyCode: account.currencyCode,
             ),
             const SizedBox(height: AppSizes.md),
           ],

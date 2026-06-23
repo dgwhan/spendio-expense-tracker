@@ -6,9 +6,14 @@ class BudgetCategoryEntity {
   final String categoryId;
   final String name;
   final double amount;
+
+  final String currencyCode;
+
   final BudgetPeriod periodType;
+
   final DateTime startDate;
   final DateTime endDate;
+
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -18,6 +23,7 @@ class BudgetCategoryEntity {
     required this.categoryId,
     required this.name,
     required this.amount,
+    required this.currencyCode,
     required this.periodType,
     required this.startDate,
     required this.endDate,
@@ -31,6 +37,7 @@ class BudgetCategoryEntity {
     String? categoryId,
     String? name,
     double? amount,
+    String? currencyCode,
     BudgetPeriod? periodType,
     DateTime? startDate,
     DateTime? endDate,
@@ -43,6 +50,7 @@ class BudgetCategoryEntity {
       categoryId: categoryId ?? this.categoryId,
       name: name ?? this.name,
       amount: amount ?? this.amount,
+      currencyCode: currencyCode ?? this.currencyCode,
       periodType: periodType ?? this.periodType,
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,

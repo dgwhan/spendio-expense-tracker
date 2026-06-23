@@ -28,7 +28,6 @@ class QuickActionsGrid extends StatelessWidget {
     return Theme(
       data: Theme.of(context).copyWith(
         cardColor: cardBgColor,
-        dialogBackgroundColor: cardBgColor,
       ),
       child: DashboardSectionContainer(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),

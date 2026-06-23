@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/extensions/string_extension.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 import 'package:spend_io_app/core/utils/localization.dart';
 import 'package:spend_io_app/features/home/data/models/dashboard_summary_model.dart';
 import 'package:spend_io_app/core/widgets/cards/app_info_card.dart';
@@ -21,8 +22,12 @@ class BalanceSummaryCard extends StatefulWidget {
 class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
   bool _isObscured = false;
 
-  String _formatCurrency(double amount) {
-    final currencyString = CurrencyFormatter.format(amount);
+  String _formatCurrency(BuildContext context, double amount) {
+    final currencyString = formatCurrency(
+      amount,
+      currencyCode: context.currencyContext.preferredCurrencyCode,
+      locale: context.currencyContext.locale,
+    );
     return _isObscured ? currencyString.obscure : currencyString;
   }
 
@@ -32,7 +37,7 @@ class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
 
     return AppInfoCard(
       title: AppLocalizations.translate('total_balance').toUpperCase(),
-      mainBalance: _formatCurrency(widget.summary.balance),
+      mainBalance: _formatCurrency(context, widget.summary.balance),
       trailingIcon: IconButton(
         padding: EdgeInsets.zero,
         constraints: const BoxConstraints(),
@@ -52,17 +57,17 @@ class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
       items: [
         AppInfoItem(
           label: '${AppLocalizations.translate('income')} ($thisMonthStr)',
-          value: _formatCurrency(widget.summary.income),
+          value: _formatCurrency(context, widget.summary.income),
           valueColor: AppColors.income,
         ),
         AppInfoItem(
           label: '${AppLocalizations.translate('expense')} ($thisMonthStr)',
-          value: _formatCurrency(widget.summary.expense),
+          value: _formatCurrency(context, widget.summary.expense),
           valueColor: AppColors.expense,
         ),
         AppInfoItem(
           label: '${AppLocalizations.translate('savings').toUpperCase()} ($thisMonthStr)',
-          value: _formatCurrency(widget.summary.savings),
+          value: _formatCurrency(context, widget.summary.savings),
           valueColor: Colors.white.withValues(alpha: 0.9),
         ),
       ],

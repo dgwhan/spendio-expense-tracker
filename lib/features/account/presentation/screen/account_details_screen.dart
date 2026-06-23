@@ -83,6 +83,8 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
   @override
   void dispose() {
     _searchController.dispose();
+    // Restore all transactions for the Home screen and other general views
+    context.read<TransactionViewModel>().loadAllTransactions();
     super.dispose();
   }
 
@@ -152,13 +154,15 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
 
   // handle back context navigation safely
   void _navigateBack(BuildContext context) {
+    //kiểm tra có màn hình nào để return về k
     if (Navigator.canPop(context)) {
       Future.microtask(() {
-        Navigator.pop(
-            context,
-            _hasBeenUpdated
-                ? AccountDetailsAction.updated
-                : AccountDetailsAction.none);
+        if (!context.mounted) return;
+
+        final returnAction = _hasBeenUpdated
+            ? AccountDetailsAction.updated
+            : AccountDetailsAction.none;
+        Navigator.pop(context, returnAction);
       });
     }
   }
@@ -172,6 +176,7 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
         isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
 
     final accountVM = context.watch<AccountViewModel>();
+    final txState = context.watch<TransactionViewModel>().state;
     final matches =
         accountVM.accounts.where((acc) => acc.id == widget.targetAccountId);
 
@@ -180,6 +185,15 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
     }
 
     final account = matches.isNotEmpty ? matches.first : widget.initialAccount;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<AccountDetailsViewModel>().initialize(
+              account,
+              txState.transactions,
+            );
+      }
+    });
 
     final detailsVM = context.watch<AccountDetailsViewModel>();
     final filterState = detailsVM.filterState;

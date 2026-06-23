@@ -47,7 +47,7 @@ class CategoryPickerSheet extends StatelessWidget {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.grey.withOpacity(0.3),
+                      color: Colors.grey.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -85,7 +85,7 @@ class CategoryPickerSheet extends StatelessWidget {
                     duration: const Duration(milliseconds: 200),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? catColor.withOpacity(0.15)
+                          ? catColor.withValues(alpha: 0.15)
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(AppSizes.md),
                       border: Border.all(
@@ -97,7 +97,7 @@ class CategoryPickerSheet extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         CircleAvatar(
-                          backgroundColor: catColor.withOpacity(0.2),
+                          backgroundColor: catColor.withValues(alpha: 0.2),
                           child: Icon(
                             IconData(
                               cat.iconCodePoint ?? 57574,

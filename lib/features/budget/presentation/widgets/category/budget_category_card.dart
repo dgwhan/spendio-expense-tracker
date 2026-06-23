@@ -6,6 +6,7 @@ import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/core/constants/app_text_styles.dart';
 import 'package:spend_io_app/core/dialogs/app_dialogs.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 import 'package:spend_io_app/core/widgets/common/app_more_menu_button.dart';
 import 'package:spend_io_app/features/budget/domain/entities/category/budget_category_progress_entity.dart';
 import 'package:spend_io_app/features/budget/presentation/screens/category/budget_category_detail_screen.dart';
@@ -192,7 +193,7 @@ class BudgetCategoryCard extends StatelessWidget {
                                   color: primaryTextColor),
                               overflow: TextOverflow.ellipsis),
                           Text(
-                              '${formatCurrency(progress.spent)} of ${formatCurrency(category.amount)} spent',
+                              '${formatCurrency(progress.spent, currencyCode: category.currencyCode, locale: context.currencyContext.locale)} of ${formatCurrency(category.amount, currencyCode: category.currencyCode, locale: context.currencyContext.locale)} spent',
                               style: AppTextStyles.caption
                                   .copyWith(color: secondaryTextColor)),
                         ],
@@ -257,10 +258,10 @@ class BudgetCategoryCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
-              Text(formatCurrency(progress.spent),
+              Text(formatCurrency(progress.spent, currencyCode: category.currencyCode, locale: context.currencyContext.locale),
                   style: AppTextStyles.bodyNormal.copyWith(
                       fontWeight: FontWeight.w800, color: primaryTextColor)),
-              Text('of ${formatCurrency(category.amount)}',
+              Text('of ${formatCurrency(category.amount, currencyCode: category.currencyCode, locale: context.currencyContext.locale)}',
                   style: AppTextStyles.caption
                       .copyWith(fontSize: 10, color: mutedTextColor)),
               const SizedBox(height: 8),

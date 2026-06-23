@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 import 'package:spend_io_app/core/utils/localization.dart';
 import 'package:spend_io_app/features/category/presentation/viewmodels/category_viewmodel.dart';
 import 'package:spend_io_app/features/transaction/presentation/viewmodels/transaction_viewmodel.dart';
@@ -46,6 +47,7 @@ class InsightsScreen extends StatelessWidget {
 
     // Calculate state reactively from viewmodel using data sources
     final state = insightVM.getCalculatedState(
+      context,
       txVM.state.transactions,
       categoryVM.state.categories,
     );
@@ -122,7 +124,11 @@ class InsightsScreen extends StatelessWidget {
                                 ),
                               ),
                               Text(
-                                CurrencyFormatter.format(state.netBalance),
+                                formatCurrency(
+                                  state.netBalance,
+                                  currencyCode: context.currencyContext.preferredCurrencyCode,
+                                  locale: context.currencyContext.locale,
+                                ),
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -138,6 +144,7 @@ class InsightsScreen extends StatelessWidget {
                             children: [
                               Expanded(
                                 child: _buildFlowSummary(
+                                  context: context,
                                   title: AppLocalizations.translate('income'),
                                   amount: state.totalIncome,
                                   color: AppColors.success,
@@ -152,6 +159,7 @@ class InsightsScreen extends StatelessWidget {
                               ),
                               Expanded(
                                 child: _buildFlowSummary(
+                                  context: context,
                                   title: AppLocalizations.translate('expense'),
                                   amount: state.totalExpense,
                                   color: AppColors.error,
@@ -228,7 +236,11 @@ class InsightsScreen extends StatelessWidget {
                                             ),
                                             const SizedBox(height: 4),
                                             Text(
-                                              CurrencyFormatter.compact(state.totalExpense),
+                                              CurrencyFormatter.format(
+                                                state.totalExpense,
+                                                currencyCode: context.currencyContext.preferredCurrencyCode,
+                                                locale: context.currencyContext.locale,
+                                              ),
                                               style: TextStyle(
                                                 fontSize: 22,
                                                 fontWeight: FontWeight.w800,
@@ -309,7 +321,11 @@ class InsightsScreen extends StatelessWidget {
                                 ),
                               ),
                               trailing: Text(
-                                CurrencyFormatter.format(item.amount),
+                                formatCurrency(
+                                  item.amount,
+                                  currencyCode: context.currencyContext.preferredCurrencyCode,
+                                  locale: context.currencyContext.locale,
+                                ),
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
@@ -382,6 +398,7 @@ class InsightsScreen extends StatelessWidget {
   }
 
   Widget _buildFlowSummary({
+    required BuildContext context,
     required String title,
     required double amount,
     required Color color,
@@ -415,12 +432,16 @@ class InsightsScreen extends StatelessWidget {
               ),
             ),
             Text(
-              CurrencyFormatter.compact(amount),
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: primaryTextColor,
-              ),
+                                              CurrencyFormatter.format(
+                                                amount,
+                                                currencyCode: context.currencyContext.preferredCurrencyCode,
+                                                locale: context.currencyContext.locale,
+                                              ),
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                                color: primaryTextColor,
+                                              ),
             ),
           ],
         ),

@@ -19,6 +19,7 @@ class SavingGoalEntity {
 
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String currencyCode;
 
   const SavingGoalEntity({
     required this.id,
@@ -34,6 +35,7 @@ class SavingGoalEntity {
     required this.status,
     required this.createdAt,
     required this.updatedAt,
+    this.currencyCode = 'USD',
   });
 
   SavingGoalEntity copyWith({
@@ -50,6 +52,7 @@ class SavingGoalEntity {
     String? status,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? currencyCode,
   }) {
     return SavingGoalEntity(
       id: id ?? this.id,
@@ -65,6 +68,7 @@ class SavingGoalEntity {
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      currencyCode: currencyCode ?? this.currencyCode,
     );
   }
 }

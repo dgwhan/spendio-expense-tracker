@@ -4,6 +4,7 @@ import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_radius.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 import 'package:spend_io_app/features/transaction/domain/entities/transaction_entity.dart'; // Import Entity thay vì Model
 import 'package:spend_io_app/features/transaction/domain/entities/transaction_type.dart'; // Import Enum phân loại dòng tiền
 
@@ -21,7 +22,11 @@ class AccountDetailTransactionTile extends StatelessWidget {
     final mutedTextColor =
         isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
 
-    final formattedAmount = CurrencyFormatter.format(tx.amount);
+    final formattedAmount = formatCurrency(
+      tx.amount.abs(),
+      currencyCode: tx.currencyCode,
+      locale: context.currencyContext.locale,
+    );
     final timeStr = DateFormat('HH:mm').format(tx.transactionDate);
 
     // Phân loại trạng thái dựa trên Enum lõi hệ thống
@@ -39,7 +44,7 @@ class AccountDetailTransactionTile extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppSizes.sm),
             decoration: BoxDecoration(
-              color: flowColor.withOpacity(0.12),
+              color: flowColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Icon(

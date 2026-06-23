@@ -3,6 +3,7 @@ import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_radius.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 import 'package:spend_io_app/features/budget/domain/entities/category/budget_category_progress_entity.dart';
 
 class SpentStatusCard extends StatelessWidget {
@@ -47,7 +48,7 @@ class SpentStatusCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSizes.sm),
           Text(
-            formatCurrency(progress.spent),
+            formatCurrency(progress.spent, currencyCode: progress.budgetCategory.currencyCode, locale: context.currencyContext.locale),
             style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.bold,
@@ -55,7 +56,7 @@ class SpentStatusCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSizes.xs),
           Text(
-            'of ${formatCurrency(progress.budgetCategory.amount)} limit',
+            'of ${formatCurrency(progress.budgetCategory.amount, currencyCode: progress.budgetCategory.currencyCode, locale: context.currencyContext.locale)} limit',
             style: TextStyle(fontSize: 13, color: secondaryTextColor),
           ),
           const SizedBox(height: AppSizes.md),
@@ -81,8 +82,8 @@ class SpentStatusCard extends StatelessWidget {
               ),
               Text(
                 isOverBudget
-                    ? 'Over by ${formatCurrency(progress.remaining.abs())}'
-                    : '${formatCurrency(progress.remaining)} left',
+                    ? 'Over by ${formatCurrency(progress.remaining.abs(), currencyCode: progress.budgetCategory.currencyCode, locale: context.currencyContext.locale)}'
+                    : '${formatCurrency(progress.remaining, currencyCode: progress.budgetCategory.currencyCode, locale: context.currencyContext.locale)} left',
                 style:
                     TextStyle(fontWeight: FontWeight.w600, color: alertColor),
               ),

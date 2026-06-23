@@ -7,6 +7,7 @@ class GoalContributionModel extends SavingGoalContributionEntity {
     required super.userId,
     required super.amount,
     required super.createdAt,
+    required super.currencyCode,
   });
 
   factory GoalContributionModel.fromMap(Map<String, dynamic> map) {
@@ -16,6 +17,7 @@ class GoalContributionModel extends SavingGoalContributionEntity {
       userId: map['user_id'] as int,
       amount: (map['amount'] as num).toDouble(),
       createdAt: DateTime.parse(map['created_at']),
+      currencyCode: (map['currency_code'] as String?) ?? 'USD',
     );
   }
 
@@ -26,6 +28,7 @@ class GoalContributionModel extends SavingGoalContributionEntity {
       'user_id': userId,
       'amount': amount,
       'created_at': createdAt.toIso8601String(),
+      'currency_code': currencyCode,
     };
   }
 
@@ -38,6 +41,7 @@ class GoalContributionModel extends SavingGoalContributionEntity {
       userId: entity.userId,
       amount: entity.amount,
       createdAt: entity.createdAt,
+      currencyCode: entity.currencyCode,
     );
   }
 

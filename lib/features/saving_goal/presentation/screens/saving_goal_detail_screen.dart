@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/core/constants/app_text_styles.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 import 'package:spend_io_app/core/widgets/app_header.dart';
 import 'package:spend_io_app/core/widgets/primary_button.dart';
 import 'package:spend_io_app/features/saving_goal/domain/entities/saving_goal_entity.dart';
@@ -154,16 +155,16 @@ class _ProgressSection extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           _buildInfoRow(context, 'Saved amount',
-              formatCurrency(goal.cachedCurrentAmount)),
+              formatCurrency(goal.cachedCurrentAmount, currencyCode: goal.currencyCode, locale: context.currencyContext.locale)),
           const SizedBox(height: 16),
           _buildInfoRow(
-              context, 'Target goal', formatCurrency(goal.targetAmount)),
+              context, 'Target goal', formatCurrency(goal.targetAmount, currencyCode: goal.currencyCode, locale: context.currencyContext.locale)),
           const SizedBox(height: 16),
           _buildInfoRow(
               context,
               'Remaining',
               formatCurrency((goal.targetAmount - goal.cachedCurrentAmount)
-                  .clamp(0, double.infinity)),
+                  .clamp(0, double.infinity), currencyCode: goal.currencyCode, locale: context.currencyContext.locale),
               isHighlight: true),
         ],
       ),

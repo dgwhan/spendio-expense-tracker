@@ -13,14 +13,12 @@ abstract class CategoryLocalDataSource {
 }
 
 class CategoryLocalDataSourceImpl implements CategoryLocalDataSource {
-  // ✅ ĐÃ SỬA: Chuyển từ Future<Database> sang kiểu Database đồng bộ sạch
   final Database database;
 
   CategoryLocalDataSourceImpl({required this.database});
 
   @override
   Future<List<CategoryModel>> getAllCategories() async {
-    // ✅ ĐÃ TỐI ƯU: Gọi trực tiếp vào database vật lý, không cần tốn nhịp await lấy db nữa
     final List<Map<String, dynamic>> maps = await database.query(
       CategoriesTable.tableName,
     );

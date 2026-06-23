@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart'; // 🔥 Đã thêm để dùng context.read lấy ViewModel
+import 'package:provider/provider.dart'; 
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
@@ -9,6 +9,7 @@ import 'package:spend_io_app/features/transaction/domain/entities/transaction_en
 import 'package:spend_io_app/features/transaction/presentation/screen/transaction_detail_screen.dart';
 import 'package:spend_io_app/features/transaction/presentation/viewmodels/transaction_viewmodel.dart';
 import 'package:spend_io_app/features/transaction/presentation/widgets/components/account_transaction_item.dart';
+import 'package:spend_io_app/core/utils/localization.dart';
 
 class AccountTransactionFeed extends StatelessWidget {
   final List<TransactionEntity> transactions;
@@ -108,7 +109,7 @@ class AccountTransactionFeed extends StatelessWidget {
             ),
             const SizedBox(height: AppSizes.sm),
             Text(
-              'No transactions found',
+              AppLocalizations.translate('no_transactions_found'),
               style: TextStyle(
                 color: Colors.grey.withValues(alpha: 0.6),
                 fontSize: 14,

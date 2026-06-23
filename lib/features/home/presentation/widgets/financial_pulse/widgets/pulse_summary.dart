@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
 
 class PulseSummary extends StatelessWidget {
@@ -35,7 +36,11 @@ class PulseSummary extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              CurrencyFormatter.format(totalAmount),
+              formatCurrency(
+                totalAmount,
+                currencyCode: context.currencyContext.preferredCurrencyCode,
+                locale: context.currencyContext.locale,
+              ),
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimaryLight,

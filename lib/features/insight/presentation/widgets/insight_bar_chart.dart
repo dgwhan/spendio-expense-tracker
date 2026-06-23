@@ -3,6 +3,7 @@ import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
 import 'package:spend_io_app/core/utils/localization.dart';
 import 'package:spend_io_app/features/insight/presentation/viewmodels/insight_state.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 
 class InsightBarChart extends StatelessWidget {
   final List<BarChartItem> items;
@@ -70,7 +71,11 @@ class InsightBarChart extends StatelessWidget {
                           Padding(
                             padding: const EdgeInsets.only(bottom: 6.0),
                             child: Text(
-                              CurrencyFormatter.compact(item.value),
+                              CurrencyFormatter.format(
+                                item.value,
+                                currencyCode: context.currencyContext.preferredCurrencyCode,
+                                locale: context.currencyContext.locale,
+                              ),
                               style: TextStyle(
                                 fontSize: 9,
                                 fontWeight: FontWeight.bold,

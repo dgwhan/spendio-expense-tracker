@@ -21,6 +21,7 @@ import 'package:spend_io_app/shared/widgets/date_picker/app_date_picker_sheet.da
 
 // Import core formatter để hiển thị số tiền ban đầu có dấu chấm phân cách chuẩn xác
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 
 class EditTransactionScreen extends StatefulWidget {
   final TransactionEntity transaction;
@@ -47,6 +48,8 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
   CategoryEntity? _selectedCategory;
   late DateTime _selectedDate;
   AccountEntity? _selectedAccount;
+  String get _activeCurrencyCode =>
+      _selectedAccount?.currencyCode ?? widget.transaction.currencyCode;
 
   @override
   void initState() {
@@ -56,7 +59,12 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
 
     // ĐỔI MỚI: Dùng formatCurrency từ core và loại bỏ chữ 'đ' để hiển thị số tiền cũ dạng "1.000" thay vì số thô "1000"
     final String formattedInitialAmount =
-        formatCurrency(rawAmount).replaceAll('đ', '').trim();
+        formatCurrency(rawAmount, currencyCode: widget.transaction.currencyCode, locale: context.currencyContext.locale)
+            .replaceAll('đ', '')
+            .replaceAll('\$', '')
+            .replaceAll('VND', '')
+            .replaceAll('USD', '')
+            .trim();
 
     _amountController = TextEditingController(text: formattedInitialAmount);
     _noteController =
@@ -160,9 +168,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
   void _submitData() {
     if (!_formKey.currentState!.validate()) return;
 
-    // ĐỔI MỚI: Loại bỏ dấu chấm để parse ngược về int đẩy xuống Database lưu trữ chính xác
-    final String cleanAmountStr = _amountController.text.replaceAll('.', '');
-    final int? amount = int.tryParse(cleanAmountStr);
+    final double? amount = CurrencyFormatter.parse(_amountController.text, currencyCode: _activeCurrencyCode);
 
     if (amount == null || amount <= 0) return;
 
@@ -191,8 +197,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
       userId: widget.transaction.userId,
       accountId: _selectedAccount!.id,
       categoryId: _selectedCategory!.id,
-      amount: amount
-          .toDouble(), // Ép kiểu về double nếu trường entity hiện tại yêu cầu double
+      amount: amount,
       type: _selectedType,
       note: _noteController.text.trim().isEmpty
           ? null
@@ -200,6 +205,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
       transactionDate: _selectedDate,
       createdAt: widget.transaction.createdAt,
       updatedAt: DateTime.now(),
+      currencyCode: _activeCurrencyCode,
     );
 
     final Map<String, dynamic> txMapLog = {
@@ -308,6 +314,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                 controller: _amountController,
                 selectedType: _selectedType,
                 autofocus: false,
+                currencyCode: _activeCurrencyCode,
               ),
 
               // ĐỒNG BỘ: Grouped Card chứa Metadata Fields (Ví, Danh mục, Ngày, Note)
@@ -345,7 +352,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                           ? null
                           : [
                               BoxShadow(
-                                color: AppColors.primary.withOpacity(0.3),
+                                color: AppColors.primary.withValues(alpha: 0.3),
                                 blurRadius: 12,
                                 offset: const Offset(0, 4),
                               )
@@ -398,8 +405,8 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
           decoration: BoxDecoration(
             color: isSelected
                 ? (isDark
-                    ? activeColor.withOpacity(0.2)
-                    : activeColor.withOpacity(0.12))
+                    ? activeColor.withValues(alpha: 0.2)
+                    : activeColor.withValues(alpha: 0.12))
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),

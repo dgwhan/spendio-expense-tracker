@@ -5,8 +5,8 @@ import 'package:spend_io_app/core/utils/localization.dart';
 import 'package:spend_io_app/core/widgets/common/app_screen_title.dart';
 import 'package:spend_io_app/features/splash/presentation/screens/splash_screen.dart';
 import '../viewmodels/profile_viewmodel.dart';
-import '../widgets/profile_tile.dart';
 import '../widgets/profile_loading_overlay.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -73,156 +73,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _showEditProfileSheet(BuildContext context, ProfileViewModel viewModel) {
-    final isDark = viewModel.isDarkMode;
-    final surfaceColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
-    final textPrimary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
-    final textMuted = isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
-    final borderBoxColor = isDark ? AppColors.borderDark : AppColors.borderLight;
-
-    final nameController = TextEditingController(text: viewModel.user?.displayName ?? '');
-    final occupationController = TextEditingController(text: viewModel.user?.occupation ?? '');
-    final goalController = TextEditingController(text: viewModel.user?.financialGoal ?? '');
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: surfaceColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            top: 24,
-            left: 24,
-            right: 24,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                AppLocalizations.translate('edit_profile_title'),
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: textPrimary,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              TextField(
-                controller: nameController,
-                style: TextStyle(color: textPrimary),
-                decoration: InputDecoration(
-                  labelText: AppLocalizations.translate('full_name'),
-                  labelStyle: TextStyle(color: textMuted),
-                  enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: borderBoxColor),
-                  ),
-                  focusedBorder: const UnderlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.primary),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: occupationController,
-                style: TextStyle(color: textPrimary),
-                decoration: InputDecoration(
-                  labelText: AppLocalizations.translate('profile_occupation_label'),
-                  labelStyle: TextStyle(color: textMuted),
-                  enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: borderBoxColor),
-                  ),
-                  focusedBorder: const UnderlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.primary),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: goalController,
-                style: TextStyle(color: textPrimary),
-                decoration: InputDecoration(
-                  labelText: AppLocalizations.translate('profile_goal_label'),
-                  labelStyle: TextStyle(color: textMuted),
-                  enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: borderBoxColor),
-                  ),
-                  focusedBorder: const UnderlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.primary),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 32),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        side: BorderSide(color: borderBoxColor),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: Text(
-                        AppLocalizations.translate('cancel'),
-                        style: TextStyle(color: textMuted),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        final success = await viewModel.updateUserProfile(
-                          displayName: nameController.text.trim(),
-                          occupation: occupationController.text.trim(),
-                          financialGoal: goalController.text.trim(),
-                        );
-                        if (context.mounted) {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                success
-                                    ? AppLocalizations.translate('update_success_msg')
-                                    : AppLocalizations.translate('update_fail_msg'),
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                              ),
-                              backgroundColor: success ? AppColors.success : AppColors.error,
-                            ),
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: Text(
-                        AppLocalizations.translate('save'),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<ProfileViewModel>();
@@ -243,15 +93,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
     final textMuted =
         isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
-
-    final creditCardColor =
-        isDark ? AppColors.creditCardDark : AppColors.creditCardLight;
-    final creditCardBg =
-        isDark ? AppColors.creditCardBgDark : AppColors.creditCardBgLight;
-    final cashColor = isDark ? AppColors.cashDark : AppColors.cashLight;
-    final cashBg = isDark ? AppColors.cashBgDark : AppColors.cashBgLight;
-    final bankColor = isDark ? AppColors.bankDark : AppColors.bankLight;
-    final bankBg = isDark ? AppColors.bankBgDark : AppColors.bankBgLight;
 
     final displayLang =
         viewModel.currentLanguage == 'en' ? 'English' : 'Tiếng Việt';
@@ -316,70 +157,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 32),
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: surfaceColor,
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(color: borderBoxColor),
-                          ),
-                          child: Column(
-                            children: [
-                              ProfileTile(
-                                icon: Icons.flag_rounded,
-                                iconColor: creditCardColor,
-                                iconBgColor: creditCardBg,
-                                title: AppLocalizations.translate('financial_goal'),
-                                value: viewModel.user?.financialGoal ??
-                                    AppLocalizations.translate('not_set'),
-                                textPrimaryColor: textPrimary,
-                                textSecondaryColor: textSecondary,
-                              ),
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 8.0),
-                                child: Divider(color: dividerColor),
-                              ),
-                              ProfileTile(
-                                icon: Icons.currency_exchange_rounded,
-                                iconColor: cashColor,
-                                iconBgColor: cashBg,
-                                title: AppLocalizations.translate('currency'),
-                                value: viewModel.user?.currency ?? 'USD',
-                                textPrimaryColor: textPrimary,
-                                textSecondaryColor: textSecondary,
-                              ),
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 8.0),
-                                child: Divider(color: dividerColor),
-                              ),
-                              ProfileTile(
-                                icon: Icons.work_rounded,
-                                iconColor: bankColor,
-                                iconBgColor: bankBg,
-                                title: AppLocalizations.translate('occupation'),
-                                value: viewModel.user?.occupation ??
-                                    AppLocalizations.translate('unknown'),
-                                textPrimaryColor: textPrimary,
-                                textSecondaryColor: textSecondary,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 28),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            AppLocalizations.translate('general_settings'),
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: textMuted,
-                            ),
-                          ),
-                        ),
                         const SizedBox(height: 12),
                         Container(
                           decoration: BoxDecoration(
@@ -392,20 +169,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ListTile(
                                 leading: Icon(Icons.person_outline_rounded,
                                     color: textPrimary),
-                                title: Text(AppLocalizations.translate('edit_profile'),
+                                title: Text(
+                                    AppLocalizations.translate('edit_profile'),
                                     style: TextStyle(
                                         fontWeight: FontWeight.w500,
                                         color: textPrimary)),
                                 trailing: Icon(Icons.chevron_right_rounded,
                                     color: textSecondary),
-                                onTap: () => _showEditProfileSheet(context, viewModel),
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const EditProfileScreen(),
+                                    ),
+                                  );
+                                },
                               ),
                               Divider(
                                   color: dividerColor, height: 1, indent: 56),
                               ListTile(
                                 leading: Icon(Icons.translate_rounded,
                                     color: textPrimary),
-                                title: Text(AppLocalizations.translate('language'),
+                                title: Text(
+                                    AppLocalizations.translate('language'),
                                     style: TextStyle(
                                         fontWeight: FontWeight.w500,
                                         color: textPrimary)),
@@ -429,7 +216,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ListTile(
                                 leading: Icon(Icons.dark_mode_outlined,
                                     color: textPrimary),
-                                title: Text(AppLocalizations.translate('dark_mode'),
+                                title: Text(
+                                    AppLocalizations.translate('dark_mode'),
                                     style: TextStyle(
                                         fontWeight: FontWeight.w500,
                                         color: textPrimary)),

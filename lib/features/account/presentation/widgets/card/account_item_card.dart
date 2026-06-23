@@ -8,6 +8,7 @@ import 'package:spend_io_app/core/constants/app_text_styles.dart';
 import 'package:spend_io_app/core/dialogs/app_dialogs.dart';
 import 'package:spend_io_app/core/utils/account_type_ext.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
 import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
 import 'package:spend_io_app/features/account/presentation/widgets/account_item_menu.dart';
@@ -145,7 +146,11 @@ class AccountItemCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          CurrencyFormatter.format(account.balance),
+                          formatCurrency(
+                            account.balance,
+                            currencyCode: account.currencyCode,
+                            locale: context.currencyContext.locale,
+                          ),
                           style: AppTextStyles.largeAmount.copyWith(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,

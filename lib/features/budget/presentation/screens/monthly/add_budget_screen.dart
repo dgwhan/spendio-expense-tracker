@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/core/constants/app_radius.dart';
@@ -7,7 +8,7 @@ import 'package:spend_io_app/features/budget/domain/usecase/monthly/update_budge
 import 'package:spend_io_app/features/budget/presentation/viewmodels/monthly/budget_form_viewmodel.dart';
 import 'package:spend_io_app/features/budget/presentation/viewmodels/monthly/budget_viewmodel.dart';
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
-import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 
 class AddBudgetScreen extends StatefulWidget {
   final int userId;
@@ -46,7 +47,19 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
     }
 
     double parsedAmount = double.parse(cleanString);
-    String formatted = CurrencyFormatter.compact(parsedAmount);
+    if (parsedAmount > 999999999) {
+      final double oldAmount = double.tryParse(formVM.amount) ?? 0;
+      final formatter = NumberFormat.decimalPattern('vi_VN');
+      final String oldFormatted = formatter.format(oldAmount.round());
+      _amountController.value = TextEditingValue(
+        text: oldFormatted,
+        selection: TextSelection.collapsed(offset: oldFormatted.length),
+      );
+      return;
+    }
+
+    final formatter = NumberFormat.decimalPattern('vi_VN');
+    String formatted = formatter.format(parsedAmount.round());
 
     _amountController.value = TextEditingValue(
       text: formatted,
@@ -138,7 +151,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
                       ),
                       const SizedBox(height: AppSizes.xs),
                       Text(
-                        '₫ VND',
+                        context.currencyContext.preferredCurrencyCode == 'VND' ? '₫ VND' : '\$ USD',
                         style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
@@ -166,6 +179,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
                               budgetVM: budgetVM,
                               updateBudgetUseCase: updateBudgetUseCase,
                               userId: widget.userId,
+                              preferredCurrencyCode: context.currencyContext.preferredCurrencyCode,
                             );
 
                             if (success && context.mounted) {

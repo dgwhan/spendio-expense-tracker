@@ -55,7 +55,7 @@ class AddAccountScreen extends StatelessWidget {
               AccountForm(
                 title: 'Account Details',
                 actionLabel: 'Create',
-                onSubmit: (name, type, balance) async {
+                onSubmit: (name, type, balance, currencyCode) async {
                   final icon = _getDefaultIcon(type);
 
                   // cache context instances safely before async gap
@@ -80,22 +80,7 @@ class AddAccountScreen extends StatelessWidget {
                     return;
                   }
 
-                  // resolve wallet currency
-                  final String resolvedCurrency = viewModel.userCurrency ??
-                      currentUserEntity?.currencyCode ??
-                      'VND';
-
-                  if (resolvedCurrency.trim().isEmpty) {
-                    messenger.removeCurrentSnackBar();
-                    messenger.showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                            'Unable to detect active wallet currency. Please ensure your database sync is initialized.'),
-                        backgroundColor: AppColors.warning,
-                      ),
-                    );
-                    return;
-                  }
+                  final String resolvedCurrency = currencyCode;
 
                   final newAccount = AccountEntity(
                     id: 'acc_${DateTime.now().millisecondsSinceEpoch}',

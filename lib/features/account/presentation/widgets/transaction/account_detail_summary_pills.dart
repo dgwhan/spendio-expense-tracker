@@ -3,17 +3,20 @@ import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/core/constants/app_radius.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 
 /// [App Location] Account Details Screen: Below the main balance hero card.
 /// [Core Function] Displays a side-by-side quick summary of total income (Received) and total expenses (Spent) for the selected account and timeframe.
 class AccountDetailSummaryPills extends StatelessWidget {
   final double totalReceived;
   final double totalSpent;
+  final String currencyCode;
 
   const AccountDetailSummaryPills({
     super.key,
     required this.totalReceived,
     required this.totalSpent,
+    required this.currencyCode,
   });
 
   @override
@@ -58,7 +61,11 @@ class AccountDetailSummaryPills extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        CurrencyFormatter.format(totalReceived),
+                        formatCurrency(
+                          totalReceived,
+                          currencyCode: currencyCode,
+                          locale: context.currencyContext.locale,
+                        ),
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
@@ -111,7 +118,11 @@ class AccountDetailSummaryPills extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        CurrencyFormatter.format(totalSpent),
+                        formatCurrency(
+                          totalSpent,
+                          currencyCode: currencyCode,
+                          locale: context.currencyContext.locale,
+                        ),
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,

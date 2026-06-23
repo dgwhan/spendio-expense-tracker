@@ -32,12 +32,14 @@ abstract class TransactionRepository {
     required int userId,
     required DateTime startDate,
     required DateTime endDate,
+    String? targetCurrencyCode,
   });
 
   Future<double> getTotalSpentInPeriod({
     required int userId,
     required DateTime startDate,
     required DateTime endDate,
+    String? targetCurrencyCode,
   });
 
   Future<double> getTotalSpentByCategory({
@@ -45,5 +47,6 @@ abstract class TransactionRepository {
     required String categoryId,
     required DateTime startDate,
     required DateTime endDate,
+    String? targetCurrencyCode,
   });
 }

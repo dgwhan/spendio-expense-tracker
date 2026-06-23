@@ -8,12 +8,15 @@ import 'package:spend_io_app/features/transaction/domain/entities/transaction_en
 import 'package:spend_io_app/features/transaction/domain/entities/transaction_type.dart';
 import 'package:spend_io_app/features/transaction/domain/repositories/transaction_repository.dart';
 import 'package:spend_io_app/features/transaction/presentation/widgets/transaction_rules.dart';
+import 'package:spend_io_app/core/currency/convert_currency_use_case.dart';
+import 'package:spend_io_app/core/currency/exchange_rate_provider.dart';
 
 class TransactionRepositoryImpl implements TransactionRepository {
   final TransactionLocalDataSource localDataSource;
   final TransactionRemoteDataSource remoteDataSource;
   final AccountRepository accountRepository;
   final String remoteUid;
+  final ConvertCurrencyUseCase _convertCurrency = const ConvertCurrencyUseCase(LocalExchangeRateProvider());
 
   TransactionRepositoryImpl({
     required this.localDataSource,
@@ -109,13 +112,18 @@ class TransactionRepositoryImpl implements TransactionRepository {
   Future<void> _applyTransactionBalance(TransactionEntity transaction) async {
     final account =
         await _findAccount(transaction.userId, transaction.accountId);
+    final double amountInAccountCurrency = _convertCurrency.execute(
+      amount: transaction.amount,
+      from: transaction.currencyCode,
+      to: account.currencyCode,
+    );
     double newBalance = account.balance;
     switch (transaction.type) {
       case TransactionType.income:
-        newBalance += transaction.amount;
+        newBalance += amountInAccountCurrency;
         break;
       case TransactionType.expense:
-        newBalance -= transaction.amount;
+        newBalance -= amountInAccountCurrency;
         break;
     }
     final updatedAccount =
@@ -128,13 +136,18 @@ class TransactionRepositoryImpl implements TransactionRepository {
       TransactionEntity transaction) async {
     final account =
         await _findAccount(transaction.userId, transaction.accountId);
+    final double amountInAccountCurrency = _convertCurrency.execute(
+      amount: transaction.amount,
+      from: transaction.currencyCode,
+      to: account.currencyCode,
+    );
     double newBalance = account.balance;
     switch (transaction.type) {
       case TransactionType.income:
-        newBalance -= transaction.amount;
+        newBalance -= amountInAccountCurrency;
         break;
       case TransactionType.expense:
-        newBalance += transaction.amount;
+        newBalance += amountInAccountCurrency;
         break;
     }
     final updatedAccount =
@@ -148,12 +161,29 @@ class TransactionRepositoryImpl implements TransactionRepository {
     required int userId,
     required DateTime startDate,
     required DateTime endDate,
+    String? targetCurrencyCode,
   }) async {
-    return await localDataSource.getSpentGroupByCategory(
+    final transactions = await localDataSource.getTransactionsInPeriod(
       userId: userId,
       startDateIso: startDate.toIso8601String(),
       endDateIso: endDate.toIso8601String(),
     );
+
+    final Map<String, double> spentMap = {};
+    for (var tx in transactions) {
+      if (tx.type == 'expense') {
+        double amount = tx.amount;
+        if (targetCurrencyCode != null) {
+          amount = _convertCurrency.execute(
+            amount: amount,
+            from: tx.currencyCode,
+            to: targetCurrencyCode,
+          );
+        }
+        spentMap[tx.categoryId] = (spentMap[tx.categoryId] ?? 0.0) + amount;
+      }
+    }
+    return spentMap;
   }
 
   @override
@@ -161,12 +191,29 @@ class TransactionRepositoryImpl implements TransactionRepository {
     required int userId,
     required DateTime startDate,
     required DateTime endDate,
+    String? targetCurrencyCode,
   }) async {
-    return await localDataSource.getTotalSpentInPeriod(
+    final transactions = await localDataSource.getTransactionsInPeriod(
       userId: userId,
       startDateIso: startDate.toIso8601String(),
       endDateIso: endDate.toIso8601String(),
     );
+
+    double total = 0.0;
+    for (var tx in transactions) {
+      if (tx.type == 'expense') {
+        double amount = tx.amount;
+        if (targetCurrencyCode != null) {
+          amount = _convertCurrency.execute(
+            amount: amount,
+            from: tx.currencyCode,
+            to: targetCurrencyCode,
+          );
+        }
+        total += amount;
+      }
+    }
+    return total;
   }
 
   @override
@@ -175,12 +222,28 @@ class TransactionRepositoryImpl implements TransactionRepository {
     required String categoryId,
     required DateTime startDate,
     required DateTime endDate,
+    String? targetCurrencyCode,
   }) async {
-    return await localDataSource.getTotalSpentByCategory(
+    final transactions = await localDataSource.getTransactionsInPeriod(
       userId: userId,
-      categoryId: categoryId,
       startDateIso: startDate.toIso8601String(),
       endDateIso: endDate.toIso8601String(),
     );
+
+    double total = 0.0;
+    for (var tx in transactions) {
+      if (tx.type == 'expense' && tx.categoryId == categoryId) {
+        double amount = tx.amount;
+        if (targetCurrencyCode != null) {
+          amount = _convertCurrency.execute(
+            amount: amount,
+            from: tx.currencyCode,
+            to: targetCurrencyCode,
+          );
+        }
+        total += amount;
+      }
+    }
+    return total;
   }
 }

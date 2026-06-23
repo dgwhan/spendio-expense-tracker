@@ -7,7 +7,8 @@ import 'package:spend_io_app/features/budget/presentation/viewmodels/category/bu
 import 'package:spend_io_app/features/budget/presentation/viewmodels/category/budget_category_viewmodel.dart';
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
 import 'package:spend_io_app/features/category/presentation/widgets/category_selection_sheet.dart';
-import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:intl/intl.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 
 class EditCategoryBudgetScreen extends StatefulWidget {
   final int userId;
@@ -34,8 +35,10 @@ class _EditCategoryBudgetScreenState extends State<EditCategoryBudgetScreen> {
     final cleanAmountStr = rawAmountStr.replaceAll(RegExp(r'[^\d]'), '');
     final parsedAmount = double.tryParse(cleanAmountStr) ?? 0.0;
 
-    final initialText =
-        parsedAmount > 0 ? CurrencyFormatter.compact(parsedAmount) : '0';
+    final formatter = NumberFormat.decimalPattern('vi_VN');
+    final initialText = parsedAmount > 0
+        ? formatter.format(parsedAmount.round())
+        : '0';
 
     _amountController = TextEditingController(text: initialText);
   }
@@ -56,7 +59,19 @@ class _EditCategoryBudgetScreenState extends State<EditCategoryBudgetScreen> {
     }
 
     double parsedAmount = double.parse(cleanString);
-    String formatted = CurrencyFormatter.compact(parsedAmount);
+    if (parsedAmount > 999999999) {
+      final double oldAmount = double.tryParse(formVM.amount) ?? 0;
+      final formatter = NumberFormat.decimalPattern('vi_VN');
+      final String oldFormatted = formatter.format(oldAmount.round());
+      _amountController.value = TextEditingValue(
+        text: oldFormatted,
+        selection: TextSelection.collapsed(offset: oldFormatted.length),
+      );
+      return;
+    }
+
+    final formatter = NumberFormat.decimalPattern('vi_VN');
+    String formatted = formatter.format(parsedAmount.round());
 
     _amountController.value = TextEditingValue(
       text: formatted,
@@ -215,7 +230,9 @@ class _EditCategoryBudgetScreenState extends State<EditCategoryBudgetScreen> {
                       ),
                       const SizedBox(height: AppSizes.xs),
                       Text(
-                        '₫ VND',
+                        formVM.isEditMode
+                            ? ((formVM.editingCategoryBudget?.currencyCode ?? 'USD') == 'VND' ? '₫ VND' : '\$ USD')
+                            : (context.currencyContext.preferredCurrencyCode == 'VND' ? '₫ VND' : '\$ USD'),
                         style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
@@ -271,10 +288,14 @@ class _EditCategoryBudgetScreenState extends State<EditCategoryBudgetScreen> {
                                   formVM.selectedCategory == null
                               ? null
                               : () async {
+                                  final currencyCode = formVM.isEditMode
+                                      ? formVM.editingCategoryBudget?.currencyCode ?? context.currencyContext.preferredCurrencyCode
+                                      : context.currencyContext.preferredCurrencyCode;
                                   final success =
                                       await formVM.submitCategoryBudget(
                                     categoryVM: categoryVM,
                                     userId: widget.userId,
+                                    currencyCode: currencyCode,
                                   );
 
                                   if (success && context.mounted) {

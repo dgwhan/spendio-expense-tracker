@@ -17,6 +17,7 @@ class BudgetFormViewModel extends ChangeNotifier {
 
   bool get isSubmitting => _isSubmitting;
   bool get isEditMode => _editingBudget != null;
+  String get amount => _amount;
 
   void setAmount(String value) {
     _amount = value.replaceAll(RegExp(r'[^\d]'), '');
@@ -39,6 +40,9 @@ class BudgetFormViewModel extends ChangeNotifier {
     if (numValue == null || numValue <= 0) {
       return 'Please enter a valid amount greater than 0';
     }
+    if (numValue > 999999999) {
+      return 'Amount cannot exceed 999.999.999';
+    }
     return null;
   }
 
@@ -56,6 +60,7 @@ class BudgetFormViewModel extends ChangeNotifier {
     required BudgetViewModel budgetVM,
     required UpdateBudgetUseCase updateBudgetUseCase,
     required int userId,
+    required String preferredCurrencyCode,
   }) async {
     if (!_formKey.currentState!.validate()) {
       return false;
@@ -98,6 +103,7 @@ class BudgetFormViewModel extends ChangeNotifier {
           endDate: endDate,
           createdAt: now,
           updatedAt: now,
+          currencyCode: preferredCurrencyCode,
         );
 
         debugPrint(

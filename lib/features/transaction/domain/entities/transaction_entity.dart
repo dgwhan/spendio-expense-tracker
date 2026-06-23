@@ -11,6 +11,7 @@ class TransactionEntity {
   final DateTime transactionDate;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String currencyCode;
 
   const TransactionEntity({
     required this.id,
@@ -23,6 +24,7 @@ class TransactionEntity {
     required this.transactionDate,
     required this.createdAt,
     required this.updatedAt,
+    this.currencyCode = 'USD',
   });
 
   TransactionEntity copyWith({
@@ -36,6 +38,7 @@ class TransactionEntity {
     DateTime? transactionDate,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? currencyCode,
   }) {
     return TransactionEntity(
       id: id ?? this.id,
@@ -48,6 +51,7 @@ class TransactionEntity {
       transactionDate: transactionDate ?? this.transactionDate,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      currencyCode: currencyCode ?? this.currencyCode,
     );
   }
 }

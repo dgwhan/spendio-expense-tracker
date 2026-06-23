@@ -16,6 +16,7 @@ class BudgetCategoryFormViewModel extends ChangeNotifier {
   bool get isSubmitting => _isSubmitting;
   CategoryEntity? get selectedCategory => _selectedCategory;
   bool get isEditMode => _editingCategoryBudget != null;
+  BudgetCategoryEntity? get editingCategoryBudget => _editingCategoryBudget;
 
   // ✅ CẬP NHẬT: Thêm getter để UI lấy chuỗi số tiền thô đang lưu trữ
   String get amount => _amount;
@@ -52,6 +53,9 @@ class BudgetCategoryFormViewModel extends ChangeNotifier {
     if (numValue == null || numValue <= 0) {
       return 'Please enter a valid amount greater than 0';
     }
+    if (numValue > 999999999) {
+      return 'Amount cannot exceed 999.999.999';
+    }
     return null;
   }
 
@@ -66,6 +70,7 @@ class BudgetCategoryFormViewModel extends ChangeNotifier {
   Future<bool> submitCategoryBudget({
     required BudgetCategoryViewModel categoryVM,
     required int userId,
+    required String currencyCode,
   }) async {
     if (!_formKey.currentState!.validate() || _selectedCategory == null) {
       return false;
@@ -103,6 +108,7 @@ class BudgetCategoryFormViewModel extends ChangeNotifier {
           categoryId: _selectedCategory!.id,
           name: _selectedCategory!.name,
           amount: parsedAmount,
+          currencyCode: currencyCode,
           periodType: BudgetPeriod.monthly,
           startDate: startDate,
           endDate: endDate,

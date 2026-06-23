@@ -11,6 +11,12 @@ abstract class TransactionLocalDataSource {
   Future<void> update(TransactionModel model);
   Future<void> delete(String id);
 
+  Future<List<TransactionModel>> getTransactionsInPeriod({
+    required int userId,
+    required String startDateIso,
+    required String endDateIso,
+  });
+
   Future<Map<String, double>> getSpentGroupByCategory({
     required int userId,
     required String startDateIso,
@@ -102,6 +108,22 @@ class TransactionLocalDataSourceImpl implements TransactionLocalDataSource {
       where: 'id = ?',
       whereArgs: [id],
     );
+  }
+
+  @override
+  Future<List<TransactionModel>> getTransactionsInPeriod({
+    required int userId,
+    required String startDateIso,
+    required String endDateIso,
+  }) async {
+    final db = await _db;
+    final List<Map<String, dynamic>> result = await db.query(
+      TransactionsTable.tableName,
+      where: 'user_id = ? AND datetime(transaction_date) >= datetime(?) AND datetime(transaction_date) <= datetime(?)',
+      whereArgs: [userId, startDateIso, endDateIso],
+      orderBy: 'transaction_date DESC, created_at DESC',
+    );
+    return result.map(TransactionModel.fromMap).toList();
   }
 
   // So sanh thoi gian qua ham datetime() cua SQLite thay vi so sanh chuoi

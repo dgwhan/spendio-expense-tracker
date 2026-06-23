@@ -12,6 +12,7 @@ class BudgetModel extends BudgetEntity {
     required super.endDate,
     required super.createdAt,
     required super.updatedAt,
+    required super.currencyCode,
   });
 
   BudgetEntity toEntity() {
@@ -25,6 +26,7 @@ class BudgetModel extends BudgetEntity {
       endDate: endDate,
       createdAt: createdAt,
       updatedAt: updatedAt,
+      currencyCode: currencyCode,
     );
   }
 
@@ -42,6 +44,7 @@ class BudgetModel extends BudgetEntity {
       endDate: DateTime.parse(map['end_date'] as String),
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
+      currencyCode: (map['currency_code'] as String?) ?? 'USD',
     );
   }
 
@@ -56,6 +59,7 @@ class BudgetModel extends BudgetEntity {
       'end_date': endDate.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
+      'currency_code': currencyCode,
     };
   }
 
@@ -70,6 +74,7 @@ class BudgetModel extends BudgetEntity {
       endDate: entity.endDate,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
+      currencyCode: entity.currencyCode,
     );
   }
 }

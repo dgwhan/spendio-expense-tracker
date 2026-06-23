@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/core/constants/app_radius.dart';
@@ -7,6 +8,7 @@ import 'package:spend_io_app/features/budget/presentation/viewmodels/category/bu
 import 'package:spend_io_app/features/budget/presentation/viewmodels/category/budget_category_viewmodel.dart';
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 
 class SetCategoryBudgetAmountScreen extends StatefulWidget {
   final int userId;
@@ -38,7 +40,7 @@ class _SetCategoryBudgetAmountScreenState
     super.dispose();
   }
 
-  void _onAmountChanged(String value, BudgetCategoryFormViewModel formVM) {
+  void _onAmountChanged(BuildContext context, String value, BudgetCategoryFormViewModel formVM) {
     String cleanString = value.replaceAll(RegExp(r'[^\d]'), '');
 
     if (cleanString.isEmpty || cleanString == '0') {
@@ -49,7 +51,19 @@ class _SetCategoryBudgetAmountScreenState
     }
 
     double parsedAmount = double.parse(cleanString);
-    String formatted = CurrencyFormatter.compact(parsedAmount);
+    if (parsedAmount > 999999999) {
+      final double oldAmount = double.tryParse(formVM.amount) ?? 0;
+      final formatter = NumberFormat.decimalPattern('vi_VN');
+      final String oldFormatted = formatter.format(oldAmount.round());
+      _amountController.value = TextEditingValue(
+        text: oldFormatted,
+        selection: TextSelection.collapsed(offset: oldFormatted.length),
+      );
+      return;
+    }
+
+    final formatter = NumberFormat.decimalPattern('vi_VN');
+    String formatted = formatter.format(parsedAmount.round());
 
     _amountController.value = TextEditingValue(
       text: formatted,
@@ -80,7 +94,11 @@ class _SetCategoryBudgetAmountScreenState
         ? Color(targetCategory.colorValue)
         : AppColors.primary;
 
-    final currencyLabel = formatCurrency(0).replaceAll(RegExp(r'[\d\s.,]'), '');
+    final currencyLabel = formatCurrency(
+      0,
+      currencyCode: context.currencyContext.preferredCurrencyCode,
+      locale: context.currencyContext.locale,
+    ).replaceAll(RegExp(r'[\d\s.,]'), '');
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -175,7 +193,7 @@ class _SetCategoryBudgetAmountScreenState
                             ),
                           ),
                           validator: formVM.validateAmount,
-                          onChanged: (val) => _onAmountChanged(val, formVM),
+                          onChanged: (val) => _onAmountChanged(context, val, formVM),
                         ),
                       ),
                       const SizedBox(height: AppSizes.xs),
@@ -224,6 +242,7 @@ class _SetCategoryBudgetAmountScreenState
                             final success = await formVM.submitCategoryBudget(
                               categoryVM: budgetCategoryVM,
                               userId: widget.userId,
+                              currencyCode: context.currencyContext.preferredCurrencyCode,
                             );
 
                             if (success && context.mounted) {

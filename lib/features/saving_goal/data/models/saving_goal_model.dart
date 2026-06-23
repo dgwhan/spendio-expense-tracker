@@ -15,6 +15,7 @@ class SavingGoalModel extends SavingGoalEntity {
     required super.status,
     required super.createdAt,
     required super.updatedAt,
+    required super.currencyCode,
   });
 
   factory SavingGoalModel.fromMap(Map<String, dynamic> map) {
@@ -36,6 +37,7 @@ class SavingGoalModel extends SavingGoalEntity {
       updatedAt: DateTime.parse(
         map['updated_at'] as String,
       ),
+      currencyCode: (map['currency_code'] as String?) ?? 'USD',
     );
   }
 
@@ -54,6 +56,7 @@ class SavingGoalModel extends SavingGoalEntity {
       'status': status,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
+      'currency_code': currencyCode,
     };
   }
 
@@ -74,6 +77,7 @@ class SavingGoalModel extends SavingGoalEntity {
       status: entity.status,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
+      currencyCode: entity.currencyCode,
     );
   }
 

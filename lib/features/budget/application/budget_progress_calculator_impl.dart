@@ -24,6 +24,7 @@ class BudgetProgressCalculatorImpl implements BudgetProgressCalculator {
       userId: budget.userId,
       startDate: budget.startDate,
       endDate: budget.endDate,
+      targetCurrencyCode: budget.currencyCode,
     );
 
     return BudgetProgressEntity(
@@ -52,6 +53,7 @@ class BudgetProgressCalculatorImpl implements BudgetProgressCalculator {
         userId: userId,
         startDate: categoryBudget.startDate,
         endDate: categoryBudget.endDate,
+        targetCurrencyCode: categoryBudget.currencyCode,
       );
 
       final double spent = spentMap[categoryBudget.categoryId] ?? 0.0;

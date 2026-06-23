@@ -16,6 +16,8 @@ import 'package:spend_io_app/features/saving_goal/presentation/widgets/form/goal
 import 'package:spend_io_app/features/saving_goal/presentation/widgets/preview/goal_preview_card.dart';
 import 'package:spend_io_app/features/saving_goal/presentation/widgets/section/goal_color_picker_section.dart';
 import 'package:spend_io_app/features/saving_goal/presentation/widgets/section/goal_icon_picker_section.dart';
+import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 
 class CreateSavingGoalScreen extends StatefulWidget {
   const CreateSavingGoalScreen({super.key});
@@ -58,8 +60,9 @@ class _CreateSavingGoalScreenState extends State<CreateSavingGoalScreen> {
     final user = context.read<AuthProvider>().currentUser;
     if (user == null || user.id == null) return;
 
-    final targetAmount = double.tryParse(_targetController.text) ?? 0;
-    final initialAmount = double.tryParse(_initialController.text) ?? 0;
+    final preferredCurrency = context.currencyContext.preferredCurrencyCode;
+    final targetAmount = CurrencyFormatter.parse(_targetController.text, currencyCode: preferredCurrency) ?? 0;
+    final initialAmount = CurrencyFormatter.parse(_initialController.text, currencyCode: preferredCurrency) ?? 0;
     final progress = targetAmount <= 0
         ? 0.0
         : (initialAmount / targetAmount).clamp(0.0, 1.0).toDouble();
@@ -78,6 +81,7 @@ class _CreateSavingGoalScreenState extends State<CreateSavingGoalScreen> {
       status: 'active',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
+      currencyCode: context.currencyContext.preferredCurrencyCode,
     );
 
     await context.read<CreateSavingGoalViewModel>().createGoal(goal: goal);
@@ -88,8 +92,9 @@ class _CreateSavingGoalScreenState extends State<CreateSavingGoalScreen> {
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<CreateSavingGoalViewModel>();
-    final targetAmount = double.tryParse(_targetController.text) ?? 0;
-    final initialAmount = double.tryParse(_initialController.text) ?? 0;
+    final preferredCurrency = context.currencyContext.preferredCurrencyCode;
+    final targetAmount = CurrencyFormatter.parse(_targetController.text, currencyCode: preferredCurrency) ?? 0;
+    final initialAmount = CurrencyFormatter.parse(_initialController.text, currencyCode: preferredCurrency) ?? 0;
 
     return Scaffold(
       appBar: const AppHeader(title: 'Create Saving Goal', showBack: true),
@@ -107,13 +112,20 @@ class _CreateSavingGoalScreenState extends State<CreateSavingGoalScreen> {
                   initialAmount: initialAmount,
                   colorValue: _selectedColorValue,
                   iconCodePoint: _selectedIconCode,
+                  currencyCode: context.currencyContext.preferredCurrencyCode,
                 ),
                 const SizedBox(height: AppSizes.lg),
                 GoalNameField(controller: _nameController),
                 const SizedBox(height: AppSizes.md),
-                GoalTargetAmountField(controller: _targetController),
+                GoalTargetAmountField(
+                  controller: _targetController,
+                  currencyCode: context.currencyContext.preferredCurrencyCode,
+                ),
                 const SizedBox(height: AppSizes.md),
-                GoalInitialAmountField(controller: _initialController),
+                GoalInitialAmountField(
+                  controller: _initialController,
+                  currencyCode: context.currencyContext.preferredCurrencyCode,
+                ),
                 const SizedBox(height: AppSizes.lg),
                 GoalIconPickerSection(
                   selectedIcon: _selectedIconCode,

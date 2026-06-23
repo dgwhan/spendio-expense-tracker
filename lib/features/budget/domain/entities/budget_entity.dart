@@ -15,6 +15,7 @@ class BudgetEntity {
 
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String currencyCode;
 
   const BudgetEntity({
     required this.id,
@@ -26,6 +27,7 @@ class BudgetEntity {
     required this.endDate,
     required this.createdAt,
     required this.updatedAt,
+    this.currencyCode = 'USD',
   });
 
   BudgetEntity copyWith({
@@ -38,6 +40,7 @@ class BudgetEntity {
     DateTime? endDate,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? currencyCode,
   }) {
     return BudgetEntity(
       id: id ?? this.id,
@@ -49,6 +52,7 @@ class BudgetEntity {
       endDate: endDate ?? this.endDate,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      currencyCode: currencyCode ?? this.currencyCode,
     );
   }
 }

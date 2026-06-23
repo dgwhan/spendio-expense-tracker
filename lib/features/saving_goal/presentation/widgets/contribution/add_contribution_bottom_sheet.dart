@@ -4,6 +4,8 @@ import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/core/constants/app_text_styles.dart';
 import 'package:spend_io_app/core/utils/currency_input_formatter.dart';
+import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 import 'package:spend_io_app/core/widgets/bottom_sheets/app_bottom_sheet_header.dart';
 import 'package:spend_io_app/core/widgets/common/app_dual_action_buttons.dart';
 import 'package:spend_io_app/core/widgets/common/app_input_decoration.dart';
@@ -29,12 +31,16 @@ class AddContributionBottomSheet extends StatefulWidget {
 
 class _AddContributionBottomSheetState
     extends State<AddContributionBottomSheet> {
+  final _formKey = GlobalKey<FormState>();
   final TextEditingController _amountController = TextEditingController();
 
   void _submit() {
-    // Loại bỏ dấu chấm trước khi parse
-    final rawValue = _amountController.text.replaceAll('.', '');
-    final amount = double.tryParse(rawValue);
+    if (!_formKey.currentState!.validate()) return;
+
+    final amount = CurrencyFormatter.parse(
+      _amountController.text,
+      currencyCode: context.currencyContext.preferredCurrencyCode,
+    );
 
     if (amount == null || amount <= 0) return;
 
@@ -44,6 +50,7 @@ class _AddContributionBottomSheetState
       userId: widget.userId,
       amount: amount,
       createdAt: DateTime.now(),
+      currencyCode: context.currencyContext.preferredCurrencyCode,
     );
 
     widget.onSubmit(contribution);
@@ -78,40 +85,58 @@ class _AddContributionBottomSheetState
           top: AppSizes.md,
           bottom: MediaQuery.of(context).viewInsets.bottom + AppSizes.md,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppBottomSheetHeader(
-              title: 'Amount to Deposit',
-              subtitle: 'Enter the amount you want to add to this goal.',
-            ),
-            const SizedBox(height: AppSizes.xl),
-            _buildFieldTitle('Amount'),
-            TextFormField(
-              controller: _amountController,
-              keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                CurrencyInputFormatter(),
-              ],
-              decoration: AppInputDecoration.getFieldDecoration(
-                context: context,
-                labelText: '',
-                hintText: '0',
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppBottomSheetHeader(
+                title: 'Amount to Deposit',
+                subtitle: 'Enter the amount you want to add to this goal.',
               ),
-            ),
-            const SizedBox(height: AppSizes.lg),
-            AppDualActionButtons(
-              primaryLabel: 'Cancel',
-              secondaryLabel: 'Add',
-              onPrimaryPressed: () => Navigator.pop(context),
-              onSecondaryPressed: _submit,
-              primaryVariant: AppButtonVariant.cancel,
-              secondaryVariant: AppButtonVariant.primary,
-            ),
-            const SizedBox(height: AppSizes.md),
-          ],
+              const SizedBox(height: AppSizes.xl),
+              _buildFieldTitle('Amount'),
+              TextFormField(
+                controller: _amountController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  CurrencyInputFormatter(
+                    currencyCode: context.currencyContext.preferredCurrencyCode,
+                  ),
+                ],
+                decoration: AppInputDecoration.getFieldDecoration(
+                  context: context,
+                  labelText: '',
+                  hintText: '0',
+                ),
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) {
+                    return 'Please enter an amount';
+                  }
+                  final amount = CurrencyFormatter.parse(v, currencyCode: context.currencyContext.preferredCurrencyCode);
+                  if (amount == null || amount <= 0) {
+                    return 'Invalid amount';
+                  }
+                  if (amount > 999999999) {
+                    return 'Amount cannot exceed 999.999.999';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: AppSizes.lg),
+              AppDualActionButtons(
+                primaryLabel: 'Cancel',
+                secondaryLabel: 'Add',
+                onPrimaryPressed: () => Navigator.pop(context),
+                onSecondaryPressed: _submit,
+                primaryVariant: AppButtonVariant.cancel,
+                secondaryVariant: AppButtonVariant.primary,
+              ),
+              const SizedBox(height: AppSizes.md),
+            ],
+          ),
         ),
       ),
     );

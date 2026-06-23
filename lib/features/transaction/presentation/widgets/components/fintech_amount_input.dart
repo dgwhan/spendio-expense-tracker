@@ -3,19 +3,21 @@ import 'package:flutter/services.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/features/transaction/domain/entities/transaction_type.dart';
-
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 
 class FintechAmountInput extends StatelessWidget {
   final TextEditingController controller;
   final TransactionType selectedType;
   final bool autofocus;
+  final String currencyCode;
 
   const FintechAmountInput({
     super.key,
     required this.controller,
     required this.selectedType,
     required this.autofocus,
+    required this.currencyCode,
   });
 
   @override
@@ -65,16 +67,21 @@ class FintechAmountInput extends StatelessWidget {
               ),
               inputFormatters: [
                 FilteringTextInputFormatter.digitsOnly,
-                _CoreCurrencyWithoutSuffixFormatter(),
+                _CoreCurrencyWithoutSuffixFormatter(
+                  currencyCode: currencyCode,
+                  locale: context.currencyContext.locale,
+                ),
               ],
               validator: (val) {
                 if (val == null || val.isEmpty) {
                   return 'Please enter an amount';
                 }
-                final cleanVal = val.replaceAll('.', '');
-                final amount = int.tryParse(cleanVal);
+                final amount = CurrencyFormatter.parse(val, currencyCode: currencyCode);
                 if (amount == null || amount <= 0) {
                   return 'Invalid amount';
+                }
+                if (amount > 999999999) {
+                  return 'Amount cannot exceed 999.999.999';
                 }
                 return null;
               },
@@ -88,6 +95,14 @@ class FintechAmountInput extends StatelessWidget {
 }
 
 class _CoreCurrencyWithoutSuffixFormatter extends TextInputFormatter {
+  final String currencyCode;
+  final String locale;
+
+  _CoreCurrencyWithoutSuffixFormatter({
+    required this.currencyCode,
+    required this.locale,
+  });
+
   @override
   TextEditingValue formatEditUpdate(
     TextEditingValue oldValue,
@@ -102,11 +117,22 @@ class _CoreCurrencyWithoutSuffixFormatter extends TextInputFormatter {
       return const TextEditingValue(text: '');
     }
 
-    final double amount = double.parse(cleanText);
+    double amount = double.parse(cleanText);
+    if (amount > 999999999) return oldValue;
 
-    String formattedText = formatCurrency(amount);
+    String formattedText = formatCurrency(
+      amount,
+      currencyCode: currencyCode,
+      locale: locale,
+    );
 
-    formattedText = formattedText.replaceAll('đ', '').trim();
+    // Strip symbols
+    formattedText = formattedText
+        .replaceAll('đ', '')
+        .replaceAll('\$', '')
+        .replaceAll('VND', '')
+        .replaceAll('USD', '')
+        .trim();
 
     return TextEditingValue(
       text: formattedText,

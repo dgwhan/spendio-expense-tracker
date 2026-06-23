@@ -13,6 +13,7 @@ class TransactionModel {
   final String transactionDate;
   final String createdAt;
   final String updatedAt;
+  final String currencyCode;
 
   TransactionModel({
     required this.id,
@@ -25,6 +26,7 @@ class TransactionModel {
     required this.transactionDate,
     required this.createdAt,
     required this.updatedAt,
+    this.currencyCode = 'USD',
   });
 
   factory TransactionModel.fromMap(Map<String, dynamic> map) {
@@ -39,6 +41,7 @@ class TransactionModel {
       transactionDate: map['transaction_date'] as String,
       createdAt: map['created_at'] as String,
       updatedAt: map['updated_at'] as String,
+      currencyCode: (map['currency_code'] as String?) ?? 'USD',
     );
   }
 
@@ -54,6 +57,7 @@ class TransactionModel {
       'transaction_date': transactionDate,
       'created_at': createdAt,
       'updated_at': updatedAt,
+      'currency_code': currencyCode,
     };
   }
 
@@ -69,6 +73,7 @@ class TransactionModel {
       transactionDate: DateTime.parse(transactionDate),
       createdAt: DateTime.parse(createdAt),
       updatedAt: DateTime.parse(updatedAt),
+      currencyCode: currencyCode,
     );
   }
 
@@ -84,6 +89,7 @@ class TransactionModel {
       transactionDate: entity.transactionDate.toIso8601String(),
       createdAt: entity.createdAt.toIso8601String(),
       updatedAt: entity.updatedAt.toIso8601String(),
+      currencyCode: entity.currencyCode,
     );
   }
 }

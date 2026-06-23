@@ -4,8 +4,12 @@ import 'package:spend_io_app/features/transaction/domain/entities/transaction_en
 import 'package:spend_io_app/features/transaction/domain/entities/transaction_type.dart';
 import 'package:spend_io_app/features/insight/data/models/insight_spending_item.dart';
 import 'package:spend_io_app/features/insight/presentation/viewmodels/insight_state.dart';
+import 'package:spend_io_app/core/currency/convert_currency_use_case.dart';
+import 'package:spend_io_app/core/currency/exchange_rate_provider.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 
 class InsightViewModel extends ChangeNotifier {
+  final ConvertCurrencyUseCase _convertCurrency = const ConvertCurrencyUseCase(LocalExchangeRateProvider());
   String _activeFilter = 'Month';
   DateTimeRange? _customRange;
   
@@ -22,7 +26,8 @@ class InsightViewModel extends ChangeNotifier {
 
   // Pure logic mapping to compute the dynamic state to be consumed by the view
   InsightState getCalculatedState(
-      List<TransactionEntity> transactions, List<CategoryEntity> categories) {
+      BuildContext context, List<TransactionEntity> transactions, List<CategoryEntity> categories) {
+    final preferredCurrencyCode = context.currencyContext.preferredCurrencyCode;
     final now = DateTime.now();
     DateTime start;
     DateTime end;
@@ -55,19 +60,30 @@ class InsightViewModel extends ChangeNotifier {
     double totalIncome = 0;
     double totalExpense = 0;
     for (final tx in filteredTxs) {
+      final double convertedAmount = _convertCurrency.execute(
+        amount: tx.amount,
+        from: tx.currencyCode,
+        to: preferredCurrencyCode,
+      );
       if (tx.type == TransactionType.income) {
-        totalIncome += tx.amount;
+        totalIncome += convertedAmount;
       } else if (tx.type == TransactionType.expense) {
-        totalExpense += tx.amount;
+        totalExpense += convertedAmount;
       }
     }
 
     final expenses = filteredTxs.where((t) => t.type == TransactionType.expense).toList();
-    final totalExpenseAmount = expenses.fold<double>(0, (s, e) => s + e.amount);
-
+    
+    double totalExpenseAmount = 0.0;
     final Map<String, double> grouped = {};
     for (final t in expenses) {
-      grouped[t.categoryId] = (grouped[t.categoryId] ?? 0) + t.amount;
+      final double convertedAmount = _convertCurrency.execute(
+        amount: t.amount,
+        from: t.currencyCode,
+        to: preferredCurrencyCode,
+      );
+      totalExpenseAmount += convertedAmount;
+      grouped[t.categoryId] = (grouped[t.categoryId] ?? 0) + convertedAmount;
     }
 
     final List<InsightSpendingItem> listItems = [];
@@ -113,14 +129,19 @@ class InsightViewModel extends ChangeNotifier {
       };
       for (final t in expenses) {
         final hour = t.transactionDate.hour;
+        final double convertedAmount = _convertCurrency.execute(
+          amount: t.amount,
+          from: t.currencyCode,
+          to: preferredCurrencyCode,
+        );
         if (hour >= 0 && hour < 6) {
-          dayGroups["00-06"] = dayGroups["00-06"]! + t.amount;
+          dayGroups["00-06"] = dayGroups["00-06"]! + convertedAmount;
         } else if (hour >= 6 && hour < 12) {
-          dayGroups["06-12"] = dayGroups["06-12"]! + t.amount;
+          dayGroups["06-12"] = dayGroups["06-12"]! + convertedAmount;
         } else if (hour >= 12 && hour < 18) {
-          dayGroups["12-18"] = dayGroups["12-18"]! + t.amount;
+          dayGroups["12-18"] = dayGroups["12-18"]! + convertedAmount;
         } else {
-          dayGroups["18-24"] = dayGroups["18-24"]! + t.amount;
+          dayGroups["18-24"] = dayGroups["18-24"]! + convertedAmount;
         }
       }
       for (final entry in dayGroups.entries) {
@@ -136,16 +157,21 @@ class InsightViewModel extends ChangeNotifier {
       };
       for (final t in expenses) {
         final day = t.transactionDate.day;
+        final double convertedAmount = _convertCurrency.execute(
+          amount: t.amount,
+          from: t.currencyCode,
+          to: preferredCurrencyCode,
+        );
         if (day <= 7) {
-          monthGroups["W1"] = monthGroups["W1"]! + t.amount;
+          monthGroups["W1"] = monthGroups["W1"]! + convertedAmount;
         } else if (day <= 14) {
-          monthGroups["W2"] = monthGroups["W2"]! + t.amount;
+          monthGroups["W2"] = monthGroups["W2"]! + convertedAmount;
         } else if (day <= 21) {
-          monthGroups["W3"] = monthGroups["W3"]! + t.amount;
+          monthGroups["W3"] = monthGroups["W3"]! + convertedAmount;
         } else if (day <= 28) {
-          monthGroups["W4"] = monthGroups["W4"]! + t.amount;
+          monthGroups["W4"] = monthGroups["W4"]! + convertedAmount;
         } else {
-          monthGroups["W5"] = monthGroups["W5"]! + t.amount;
+          monthGroups["W5"] = monthGroups["W5"]! + convertedAmount;
         }
       }
       for (final entry in monthGroups.entries) {
@@ -160,7 +186,12 @@ class InsightViewModel extends ChangeNotifier {
         final mIdx = t.transactionDate.month - 1;
         if (mIdx >= 0 && mIdx < 12) {
           final mLabel = months[mIdx];
-          yearGroups[mLabel] = yearGroups[mLabel]! + t.amount;
+          final double convertedAmount = _convertCurrency.execute(
+            amount: t.amount,
+            from: t.currencyCode,
+            to: preferredCurrencyCode,
+          );
+          yearGroups[mLabel] = yearGroups[mLabel]! + convertedAmount;
         }
       }
       for (final entry in yearGroups.entries) {
@@ -181,7 +212,12 @@ class InsightViewModel extends ChangeNotifier {
           final d = t.transactionDate;
           final label = "${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}";
           if (customGroups.containsKey(label)) {
-            customGroups[label] = customGroups[label]! + t.amount;
+            final double convertedAmount = _convertCurrency.execute(
+              amount: t.amount,
+              from: t.currencyCode,
+              to: preferredCurrencyCode,
+            );
+            customGroups[label] = customGroups[label]! + convertedAmount;
           }
         }
         for (final label in dayLabels) {
@@ -209,7 +245,12 @@ class InsightViewModel extends ChangeNotifier {
           for (int i = 0; i < 5; i++) {
             final range = ranges[i];
             if (tMs >= range.start.millisecondsSinceEpoch && tMs <= range.end.millisecondsSinceEpoch) {
-              intervalGroups[intervalLabels[i]] = intervalGroups[intervalLabels[i]]! + t.amount;
+              final double convertedAmount = _convertCurrency.execute(
+                amount: t.amount,
+                from: t.currencyCode,
+                to: preferredCurrencyCode,
+              );
+              intervalGroups[intervalLabels[i]] = intervalGroups[intervalLabels[i]]! + convertedAmount;
               break;
             }
           }

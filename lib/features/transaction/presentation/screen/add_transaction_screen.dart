@@ -17,9 +17,11 @@ import 'package:spend_io_app/features/category/domain/entities/category_entity.d
 import 'package:spend_io_app/features/category/presentation/viewmodels/category_viewmodel.dart';
 
 import 'package:spend_io_app/features/transaction/presentation/widgets/components/fintech_amount_input.dart';
+import 'package:spend_io_app/core/utils/currency_formatter.dart';
 import 'package:spend_io_app/features/transaction/presentation/widgets/components/transaction_metadata_fields.dart';
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
 import 'package:spend_io_app/shared/widgets/date_picker/app_date_picker_sheet.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   final String accountId;
@@ -46,6 +48,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   CategoryEntity? _selectedCategory;
   DateTime _selectedDate = DateTime.now();
   AccountEntity? _selectedAccount;
+  String get _activeCurrencyCode =>
+      _selectedAccount?.currencyCode ??
+      context.currencyContext.preferredCurrencyCode;
 
   @override
   void initState() {
@@ -126,9 +131,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   Future<void> _submitData() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // ĐÃ SỬA LỖI TẠI ĐÂY: Loại bỏ toàn bộ dấu chấm (.) phân cách hàng nghìn trước khi đem đi parse sang double
-    final String cleanAmountText = _amountController.text.replaceAll('.', '');
-    final double? amount = double.tryParse(cleanAmountText);
+    final double? amount = CurrencyFormatter.parse(_amountController.text, currencyCode: _activeCurrencyCode);
 
     if (amount == null || amount <= 0) return;
 
@@ -170,6 +173,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       transactionDate: _selectedDate,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
+      currencyCode: _activeCurrencyCode,
     );
 
     final Map<String, dynamic> txMapLog = {
@@ -277,6 +281,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 controller: _amountController,
                 selectedType: _selectedType,
                 autofocus: activeAccounts.isNotEmpty,
+                currencyCode: _activeCurrencyCode,
               ),
 
               // Các trường Metadata (Ví, Danh mục, Ngày, Ghi chú)

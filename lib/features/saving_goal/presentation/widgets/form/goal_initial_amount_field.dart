@@ -3,10 +3,17 @@ import 'package:flutter/services.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_text_styles.dart';
 import 'package:spend_io_app/core/widgets/common/app_input_decoration.dart';
+import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:spend_io_app/core/utils/currency_input_formatter.dart';
 
 class GoalInitialAmountField extends StatefulWidget {
   final TextEditingController controller;
-  const GoalInitialAmountField({super.key, required this.controller});
+  final String currencyCode;
+  const GoalInitialAmountField({
+    super.key,
+    required this.controller,
+    required this.currencyCode,
+  });
 
   @override
   State<GoalInitialAmountField> createState() => _GoalInitialAmountFieldState();
@@ -54,10 +61,11 @@ class _GoalInitialAmountFieldState extends State<GoalInitialAmountField> {
         TextFormField(
           controller: widget.controller,
           focusNode: _focusNode,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          keyboardType: TextInputType.number,
           textInputAction: TextInputAction.done,
           inputFormatters: [
-            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))
+            FilteringTextInputFormatter.digitsOnly,
+            CurrencyInputFormatter(currencyCode: widget.currencyCode),
           ],
           decoration: AppInputDecoration.getFieldDecoration(
             context: context,
@@ -66,8 +74,11 @@ class _GoalInitialAmountFieldState extends State<GoalInitialAmountField> {
           ),
           validator: (value) {
             if (value != null && value.isNotEmpty) {
-              final amount = double.tryParse(value);
+              final amount = CurrencyFormatter.parse(value, currencyCode: widget.currencyCode);
               if (amount == null || amount < 0) return 'Invalid amount';
+              if (amount > 999999999) {
+                return 'Amount cannot exceed 999.999.999';
+              }
             }
             return null;
           },

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_radius.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
 
 class TotalBalanceHeader extends StatelessWidget {
@@ -43,7 +44,11 @@ class TotalBalanceHeader extends StatelessWidget {
           ),
           const SizedBox(height: AppSizes.xs),
           Text(
-            CurrencyFormatter.format(totalBalance),
+            formatCurrency(
+              totalBalance,
+              currencyCode: context.currencyContext.preferredCurrencyCode,
+              locale: context.currencyContext.locale,
+            ),
             style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.w800,

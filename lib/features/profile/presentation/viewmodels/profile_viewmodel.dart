@@ -1,7 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/database/app_database.dart';
-import 'package:spend_io_app/core/utils/currency_formatter.dart';
 import 'package:spend_io_app/core/utils/localization.dart';
 import 'package:spend_io_app/features/auth/domain/entities/user_entity.dart';
 import 'package:spend_io_app/features/profile/domain/repositories/profile_repository.dart';
@@ -54,16 +53,10 @@ class ProfileViewModel extends ChangeNotifier {
           password: map['password'] as String? ?? '',
           occupation: map['occupation'] as String?,
           financialGoal: map['financial_goal'] as String?,
-          currency: map['currency_code'] as String?,
+          preferredCurrencyCode: map['preferred_currency_code'] as String?,
           onboardingCompleted: (map['onboarding_completed'] as int? ?? 0) == 1,
           displayNameField: map['display_name'] as String?,
         );
-
-        if (_user != null) {
-          final userCurr = _user!.currencyCode ?? 'VND';
-          CurrencyFormatter.currentCurrency = userCurr;
-          CurrencyFormatter.currentLocale = userCurr == 'VND' ? 'vi_VN' : 'en_US';
-        }
 
         debugPrint(
             '[Profile VM Success]: Successfully mapped entity for ${currentUser.email}');
@@ -95,33 +88,13 @@ class ProfileViewModel extends ChangeNotifier {
         .execute(AppSettingsParams(languageCode: languageCode));
     debugPrint(
         '[Locale Pipeline]: VM locale dispatch complete via usecase block.');
-
-    // Auto-sync currency based on language choice:
-    final newCurrency = languageCode == 'vi' ? 'VND' : 'USD';
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser != null && currentUser.email != null) {
-      try {
-        final db = await AppDatabase.database;
-        await db.update(
-          'users',
-          {
-            'currency_code': newCurrency,
-            'updated_at': DateTime.now().toIso8601String(),
-          },
-          where: 'email = ?',
-          whereArgs: [currentUser.email],
-        );
-        await loadCurrentUser();
-      } catch (e) {
-        debugPrint('[Profile VM Language Currency Sync Error]: $e');
-      }
-    }
   }
 
   Future<bool> updateUserProfile({
     required String displayName,
     required String occupation,
     required String financialGoal,
+    required String currency,
   }) async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null || currentUser.email == null) return false;
@@ -137,6 +110,7 @@ class ProfileViewModel extends ChangeNotifier {
           'display_name': displayName,
           'occupation': occupation,
           'financial_goal': financialGoal,
+          'preferred_currency_code': currency,
           'updated_at': DateTime.now().toIso8601String(),
         },
         where: 'email = ?',
@@ -156,11 +130,6 @@ class ProfileViewModel extends ChangeNotifier {
 
   void updateUser(UserEntity? newUser) {
     _user = newUser;
-    if (newUser != null) {
-      final userCurr = newUser.currencyCode ?? 'VND';
-      CurrencyFormatter.currentCurrency = userCurr;
-      CurrencyFormatter.currentLocale = userCurr == 'VND' ? 'vi_VN' : 'en_US';
-    }
     notifyListeners();
   }
 

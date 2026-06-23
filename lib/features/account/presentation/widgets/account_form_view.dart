@@ -253,7 +253,6 @@ class _AccountFormViewState extends State<AccountFormView> {
                   ),
                   const SizedBox(height: AppSizes.md),
                   DropdownButtonFormField<AccountType>(
-                    value: _selectedType,
                     dropdownColor: backgroundColor,
                     style: TextStyle(color: primaryTextColor),
                     decoration: InputDecoration(
@@ -269,8 +268,9 @@ class _AccountFormViewState extends State<AccountFormView> {
                       String nameDisplay = 'Other';
                       if (type == AccountType.cash) nameDisplay = 'Cash';
                       if (type == AccountType.bank) nameDisplay = 'Bank';
-                      if (type == AccountType.creditCard)
+                      if (type == AccountType.creditCard) {
                         nameDisplay = 'Credit Card';
+                      }
                       if (type == AccountType.eWallet) nameDisplay = 'E-Wallet';
 
                       return DropdownMenuItem(

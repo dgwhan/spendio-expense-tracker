@@ -7,6 +7,7 @@ class RecentTransactionModel {
   final double amount;
   final DateTime date;
   final bool isExpense;
+  final String currencyCode;
 
   const RecentTransactionModel({
     required this.id,
@@ -15,5 +16,6 @@ class RecentTransactionModel {
     required this.amount,
     required this.date,
     required this.isExpense,
+    this.currencyCode = 'USD',
   });
 }

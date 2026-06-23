@@ -39,13 +39,13 @@ class BudgetLocalDataSourceImpl implements BudgetLocalDataSource {
 
     if (result.isEmpty) {
       debugPrint(
-          '[💡 SQLITE FETCH NOTICE]: Không tìm thấy budget nào cho User ID: $userId');
+          '[SQLITE FETCH NOTICE]: Không tìm thấy budget nào cho User ID: $userId');
       return null;
     }
 
     final budget = BudgetModel.fromMap(result.first);
     debugPrint(
-        '[✅ SQLITE FETCH SUCCESS]: Đã tải thành công ngân sách [${budget.name}] - Số tiền: \$${budget.amount} từ SQLite lên RAM.');
+        '[SQLITE FETCH SUCCESS]: Đã tải thành công ngân sách [${budget.name}] - Số tiền: \$${budget.amount} từ SQLite lên RAM.');
     return budget;
   }
 
@@ -56,13 +56,13 @@ class BudgetLocalDataSourceImpl implements BudgetLocalDataSource {
       budget.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    // 🌟 LOG THEO DÕI INSERT BUDGET
+
     debugPrint('------------------------------------------------------------');
-    debugPrint('[📥 SQLITE BUDGET INSERTED]: Ghi dữ liệu LOCAL thành công!');
-    debugPrint('  ❖ ID: ${budget.id}');
-    debugPrint('  ❖ User ID: ${budget.userId}');
-    debugPrint('  ❖ Name: ${budget.name}');
-    debugPrint('  ❖ Amount: \$${budget.amount}');
+    debugPrint('[SQLITE BUDGET INSERTED]: Ghi dữ liệu LOCAL thành công!');
+    debugPrint('ID: ${budget.id}');
+    debugPrint('User ID: ${budget.userId}');
+    debugPrint('Name: ${budget.name}');
+    debugPrint('Amount: \$${budget.amount}');
     debugPrint('------------------------------------------------------------');
   }
 
@@ -76,10 +76,10 @@ class BudgetLocalDataSourceImpl implements BudgetLocalDataSource {
     );
     if (count == 0) {
       debugPrint(
-          '[❌ SQLITE UPDATE ERROR]: Không tìm thấy Budget ID ${budget.id} để cập nhật.');
+          '[SQLITE UPDATE ERROR]: Không tìm thấy Budget ID ${budget.id} để cập nhật.');
     } else {
       debugPrint(
-          '[✏️ SQLITE BUDGET UPDATED]: Cập nhật thành công Budget [${budget.name}] ở Local SQLite.');
+          '[SQLITE BUDGET UPDATED]: Cập nhật thành công Budget [${budget.name}] ở Local SQLite.');
     }
   }
 
@@ -92,10 +92,10 @@ class BudgetLocalDataSourceImpl implements BudgetLocalDataSource {
     );
     if (count == 0) {
       debugPrint(
-          '[❌ SQLITE DELETE ERROR]: Thất bại! Không tìm thấy Budget ID $budgetId để xóa.');
+          '[SQLITE DELETE ERROR]: Thất bại! Không tìm thấy Budget ID $budgetId để xóa.');
     } else {
       debugPrint(
-          '[🗑️ SQLITE BUDGET DELETED]: Đã xóa sạch Budget ID $budgetId khỏi SQLite.');
+          '[SQLITE BUDGET DELETED]: Đã xóa sạch Budget ID $budgetId khỏi SQLite.');
     }
   }
 
@@ -109,7 +109,7 @@ class BudgetLocalDataSourceImpl implements BudgetLocalDataSource {
       orderBy: 'created_at DESC',
     );
     debugPrint(
-        '[🔍 SQLITE QUERY]: Đã nạp ${result.length} ngân sách danh mục con từ SQLite cho User $userId.');
+        '[SQLITE QUERY]: Đã nạp ${result.length} ngân sách danh mục con từ SQLite cho User $userId.');
     return result.map(BudgetCategoryModel.fromMap).toList();
   }
 
@@ -123,7 +123,7 @@ class BudgetLocalDataSourceImpl implements BudgetLocalDataSource {
       whereArgs: [userId, dateIso, dateIso],
     );
     debugPrint(
-        '[🔍 SQLITE QUERY PERIOD]: Tìm thấy ${result.length} mục ngân sách con hoạt động trong chu kỳ $dateIso.');
+        '[SQLITE QUERY PERIOD]: Tìm thấy ${result.length} mục ngân sách con hoạt động trong chu kỳ $dateIso.');
     return result.map(BudgetCategoryModel.fromMap).toList();
   }
 
@@ -134,13 +134,13 @@ class BudgetLocalDataSourceImpl implements BudgetLocalDataSource {
       category.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    // 🌟 LOG THEO DÕI INSERT BUDGET CATEGORY
+
     debugPrint('------------------------------------------------------------');
     debugPrint(
-        '[📥 SQLITE CATEGORY INSERTED]: Ghi danh mục ngân sách LOCAL thành công!');
-    debugPrint('  ❖ Sub-ID: ${category.id}');
-    debugPrint('  ❖ Category ID gốc: ${category.categoryId}');
-    debugPrint('  ❖ Hạn mức danh mục: \$${category.amount}');
+        '[SQLITE CATEGORY INSERTED]: Ghi danh mục ngân sách LOCAL thành công!');
+    debugPrint('Sub-ID: ${category.id}');
+    debugPrint('Category ID gốc: ${category.categoryId}');
+    debugPrint('Hạn mức danh mục: \$${category.amount}');
     debugPrint('------------------------------------------------------------');
   }
 
@@ -154,10 +154,10 @@ class BudgetLocalDataSourceImpl implements BudgetLocalDataSource {
     );
     if (count == 0) {
       debugPrint(
-          '[❌ SQLITE CATEGORY UPDATE ERROR]: Không tìm thấy danh mục ngân sách con ${category.id} để cập nhật.');
+          '[SQLITE CATEGORY UPDATE ERROR]: Không tìm thấy danh mục ngân sách con ${category.id} để cập nhật.');
     } else {
       debugPrint(
-          '[✏️ SQLITE CATEGORY UPDATED]: Cập nhật thành công hạn mức danh mục [${category.categoryId}] ở Local.');
+          '[SQLITE CATEGORY UPDATED]: Cập nhật thành công hạn mức danh mục [${category.categoryId}] ở Local.');
     }
   }
 
@@ -170,10 +170,10 @@ class BudgetLocalDataSourceImpl implements BudgetLocalDataSource {
     );
     if (count == 0) {
       debugPrint(
-          '[❌ SQLITE CATEGORY DELETE ERROR]: Không tìm thấy danh mục ${id} để xóa.');
+          '[SQLITE CATEGORY DELETE ERROR]: Không tìm thấy danh mục $id để xóa.');
     } else {
       debugPrint(
-          '[🗑️ SQLITE CATEGORY DELETED]: Đã xóa danh mục ngân sách con $id khỏi SQLite.');
+          '[SQLITE CATEGORY DELETED]: Đã xóa danh mục ngân sách con $id khỏi SQLite.');
     }
   }
 

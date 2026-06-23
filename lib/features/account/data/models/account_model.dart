@@ -59,7 +59,7 @@ class AccountModel extends AccountEntity {
           'Đã tự động gán phục hồi: userId = 0 để tránh crash');
     }
 
-    final String parsedCurrencyCode = map['currency_code']?.toString() ?? 'VND';
+    final String parsedCurrencyCode = map['currency_code']?.toString() ?? 'USD';
 
     return AccountModel(
       id: fallbackId,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 
 class BreakdownCenterInfo extends StatelessWidget {
   final String title;
@@ -27,7 +28,11 @@ class BreakdownCenterInfo extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          CurrencyFormatter.compact(totalAmount),
+          CurrencyFormatter.format(
+            totalAmount,
+            currencyCode: context.currencyContext.preferredCurrencyCode,
+            locale: context.currencyContext.locale,
+          ),
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimaryLight,

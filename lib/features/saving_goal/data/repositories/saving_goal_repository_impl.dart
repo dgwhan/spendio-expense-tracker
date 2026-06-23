@@ -11,11 +11,14 @@ import 'package:spend_io_app/features/saving_goal/domain/entities/saving_goal_co
 import 'package:spend_io_app/features/saving_goal/domain/entities/saving_goal_entity.dart';
 
 import 'package:spend_io_app/features/saving_goal/domain/repositories/saving_goal_repository.dart';
+import 'package:spend_io_app/core/currency/convert_currency_use_case.dart';
+import 'package:spend_io_app/core/currency/exchange_rate_provider.dart';
 
 class SavingGoalRepositoryImpl implements SavingGoalRepository {
   final SavingGoalLocalDatasource local;
   final SavingGoalRemoteDataSource remote;
   final Database db;
+  final ConvertCurrencyUseCase _convertCurrency = const ConvertCurrencyUseCase(LocalExchangeRateProvider());
 
   SavingGoalRepositoryImpl({
     required this.local,
@@ -28,25 +31,13 @@ class SavingGoalRepositoryImpl implements SavingGoalRepository {
   // =========================================================
 
   Future<void> _updateGoalCache(String goalId) async {
-    final contributionResult = await db.rawQuery(
-      '''
-      SELECT COALESCE(SUM(amount), 0) AS total
-      FROM saving_goal_contributions
-      WHERE goal_id = ?
-      AND deleted_at IS NULL
-      ''',
-      [goalId],
-    );
-
-    final contributionTotal =
-        (contributionResult.first['total'] as num).toDouble();
-
     final goalResult = await db.query(
       'saving_goals',
       columns: [
         'target_amount',
         'initial_amount',
         'status',
+        'currency_code',
       ],
       where: 'id = ?',
       whereArgs: [goalId],
@@ -56,21 +47,36 @@ class SavingGoalRepositoryImpl implements SavingGoalRepository {
     if (goalResult.isEmpty) return;
 
     final goal = goalResult.first;
-
     final targetAmount = (goal['target_amount'] as num).toDouble();
-
     final initialAmount = (goal['initial_amount'] as num).toDouble();
-
     final currentStatus = goal['status'] as String? ?? 'active';
+    final goalCurrency = (goal['currency_code'] as String?) ?? 'USD';
+
+    // Query all contributions
+    final contributionRows = await db.query(
+      'saving_goal_contributions',
+      columns: ['amount', 'currency_code'],
+      where: 'goal_id = ? AND deleted_at IS NULL',
+      whereArgs: [goalId],
+    );
+
+    double contributionTotal = 0.0;
+    for (var row in contributionRows) {
+      final double amount = (row['amount'] as num).toDouble();
+      final String contribCurrency = (row['currency_code'] as String?) ?? 'USD';
+      final double convertedAmount = _convertCurrency.execute(
+        amount: amount,
+        from: contribCurrency,
+        to: goalCurrency,
+      );
+      contributionTotal += convertedAmount;
+    }
 
     final currentAmount = initialAmount + contributionTotal;
-
     final progress = targetAmount <= 0 ? 0.0 : currentAmount / targetAmount;
-
     final normalizedProgress = progress.clamp(0.0, 1.0);
 
     String updatedStatus = currentStatus;
-
     if (currentStatus != 'archived') {
       updatedStatus = currentAmount >= targetAmount ? 'completed' : 'active';
     }

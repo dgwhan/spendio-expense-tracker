@@ -66,6 +66,10 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
   }
 
   void _navigateToCreateBudget() async {
+    // Lấy sẵn tham chiếu WalletViewModel trước khi xảy ra bất kỳ Async Gap nào
+    final walletVM = context.read<WalletViewModel>();
+
+    //Chuyển hướng sang màn hình tạo ngân sách
     await Navigator.push(
       context,
       MaterialPageRoute(
@@ -75,9 +79,12 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
         ),
       ),
     );
+
+    //Kiểm tra xem widget còn nằm trên cây UI không trước khi làm mới dữ liệu
     if (mounted) {
       await _handleRefreshData();
-      await context.read<WalletViewModel>().refreshBudgetProgress();
+      //Gọi trực tiếp qua biến đã capture, hoàn toàn không sợ lỗi BuildContext
+      await walletVM.refreshBudgetProgress();
     }
   }
 

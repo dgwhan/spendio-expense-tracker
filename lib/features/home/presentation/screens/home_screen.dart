@@ -17,6 +17,7 @@ import 'package:spend_io_app/features/budget/presentation/screens/monthly/add_bu
 import 'package:spend_io_app/features/budget/presentation/screens/budget_detail_screen.dart';
 import 'package:spend_io_app/features/saving_goal/presentation/screens/saving_goal_list_screen.dart';
 import 'package:spend_io_app/features/account/presentation/screen/account_list_screen.dart';
+import 'package:spend_io_app/features/transaction/presentation/screen/transaction_list_screen.dart';
 
 import 'package:spend_io_app/features/home/presentation/widgets/app_header/app_header.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/balance_summary/balance_summary_card.dart';
@@ -92,7 +93,7 @@ class HomeScreen extends StatelessWidget {
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 sliver: SliverToBoxAdapter(
                   child: BalanceSummaryCard(
-                    summary: dashboardVM.getSummary(txVM.state.transactions),
+                    summary: dashboardVM.getSummary(context, txVM.state.transactions),
                   ),
                 ),
               ),
@@ -219,7 +220,14 @@ class HomeScreen extends StatelessWidget {
                 sliver: SliverToBoxAdapter(
                   child: RecentActivitySection(
                     transactions: dashboardVM.getRecentTransactions(context),
-                    onViewAllTap: () {},
+                    onViewAllTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const TransactionListScreen(),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),

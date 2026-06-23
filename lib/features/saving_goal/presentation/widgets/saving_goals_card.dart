@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
-import 'package:spend_io_app/core/constants/app_radius.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/core/constants/app_text_styles.dart';
-import 'package:spend_io_app/core/utils/currency_formatter.dart'; // Đảm bảo đã import utility này
+import 'package:spend_io_app/core/currency/currency_context.dart';
+import 'package:spend_io_app/core/utils/currency_formatter.dart';
 import 'package:spend_io_app/core/widgets/common/app_empty_state.dart';
 import 'package:spend_io_app/features/saving_goal/domain/entities/saving_goal_entity.dart';
 
@@ -99,8 +99,8 @@ class SavingGoalsCard extends StatelessWidget {
                           const SizedBox(height: 2),
                           // SỬ DỤNG FORMATTER TẠI ĐÂY
                           Text(
-                            '${formatCurrency(goal!.cachedCurrentAmount)} / '
-                            '${formatCurrency(goal!.targetAmount)}',
+                            '${formatCurrency(goal!.cachedCurrentAmount, currencyCode: goal!.currencyCode, locale: context.currencyContext.locale)} / '
+                            '${formatCurrency(goal!.targetAmount, currencyCode: goal!.currencyCode, locale: context.currencyContext.locale)}',
                             style: AppTextStyles.caption
                                 .copyWith(color: subtitleColor),
                           ),

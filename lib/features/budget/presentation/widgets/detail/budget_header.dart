@@ -6,6 +6,7 @@ import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/core/constants/app_text_styles.dart';
 import 'package:spend_io_app/core/dialogs/app_dialogs.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 import 'package:spend_io_app/core/widgets/common/app_more_menu_button.dart';
 import 'package:spend_io_app/features/budget/domain/usecase/monthly/delete_budget_usecase.dart';
 import 'package:spend_io_app/features/budget/domain/usecase/monthly/update_budget_usecase.dart';
@@ -199,7 +200,7 @@ class ProgressIndicatorCard extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                   color: secondaryTextColor,
                   letterSpacing: 0.5)),
-          Text(formatCurrency(totalSpent),
+          Text(formatCurrency(totalSpent, currencyCode: context.currencyContext.preferredCurrencyCode, locale: context.currencyContext.locale),
               style: AppTextStyles.headingMedium
                   .copyWith(color: primaryTextColor, fontSize: 28)),
           const SizedBox(height: AppSizes.md),
@@ -214,7 +215,7 @@ class ProgressIndicatorCard extends StatelessWidget {
                   Text('Total Budget',
                       style: AppTextStyles.bodyNormal
                           .copyWith(color: secondaryTextColor)),
-                  Text(formatCurrency(totalBudget),
+                  Text(formatCurrency(totalBudget, currencyCode: context.currencyContext.preferredCurrencyCode, locale: context.currencyContext.locale),
                       style: AppTextStyles.bodyNormal.copyWith(
                           fontWeight: FontWeight.bold,
                           color: primaryTextColor)),
