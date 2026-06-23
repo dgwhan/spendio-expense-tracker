@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:spend_io_app/core/database/app_database.dart';
 import 'package:spend_io_app/features/auth/domain/entities/user_entity.dart';
 import '../../domain/repositories/profile_repository.dart';
 
@@ -14,7 +13,6 @@ class ProfileViewModel extends ChangeNotifier {
 
   ProfileViewModel({required this.profileRepository});
 
-  // Hàm này dùng để AppProviders/AuthEngine nạp thông tin user sau khi đăng nhập thành công
   void updateUser(UserEntity? newUser) {
     _user = newUser;
     notifyListeners();
@@ -26,10 +24,10 @@ class ProfileViewModel extends ChangeNotifier {
 
     try {
       await profileRepository.logout();
-      await AppDatabase.close();
+      // await AppDatabase.close();
 
       _isLoading = false;
-      _user = null; // Xóa sạch dữ liệu user trong RAM khi logout
+      _user = null;
       notifyListeners();
       return true;
     } catch (e) {

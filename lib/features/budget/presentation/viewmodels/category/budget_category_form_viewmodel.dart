@@ -17,8 +17,6 @@ class BudgetCategoryFormViewModel extends ChangeNotifier {
   CategoryEntity? get selectedCategory => _selectedCategory;
   bool get isEditMode => _editingCategoryBudget != null;
   BudgetCategoryEntity? get editingCategoryBudget => _editingCategoryBudget;
-
-  // ✅ CẬP NHẬT: Thêm getter để UI lấy chuỗi số tiền thô đang lưu trữ
   String get amount => _amount;
 
   void setAmount(String value) {
@@ -30,11 +28,13 @@ class BudgetCategoryFormViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ✅ ĐÃ SỬA: Thêm notifyListeners() để bắn data sang màn Edit lập tức
   void setupEditMode(
       BudgetCategoryEntity budgetCategory, CategoryEntity categoryDetails) {
     _editingCategoryBudget = budgetCategory;
     _amount = budgetCategory.amount.toStringAsFixed(0);
     _selectedCategory = categoryDetails;
+    notifyListeners();
   }
 
   void resetForm() {
@@ -72,7 +72,9 @@ class BudgetCategoryFormViewModel extends ChangeNotifier {
     required int userId,
     required String currencyCode,
   }) async {
-    if (!_formKey.currentState!.validate() || _selectedCategory == null) {
+    if (_formKey.currentState == null ||
+        !_formKey.currentState!.validate() ||
+        _selectedCategory == null) {
       return false;
     }
 
@@ -87,18 +89,14 @@ class BudgetCategoryFormViewModel extends ChangeNotifier {
           double.parse(cleanAmountStr.isEmpty ? '0' : cleanAmountStr);
 
       if (isEditMode) {
-        // EDIT MODE
         final updated = _editingCategoryBudget!.copyWith(
-          categoryId: _selectedCategory!
-              .id, // ✅ ĐỒNG BỘ: Cập nhật lại ID danh mục mới nếu thay đổi
-          name: _selectedCategory!
-              .name, // ✅ ĐỒNG BỘ: Cập nhật tên danh mục hiển thị mới
+          categoryId: _selectedCategory!.id,
+          name: _selectedCategory!.name,
           amount: parsedAmount,
           updatedAt: now,
         );
         await categoryVM.updateCategory(updated);
       } else {
-        // CREATE MODE
         final startDate = _startOfDay(DateTime(now.year, now.month, 1));
         final endDate = _endOfDay(DateTime(now.year, now.month + 1, 0));
 

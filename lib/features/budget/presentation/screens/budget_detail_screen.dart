@@ -40,15 +40,16 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   AccountSortOption _currentSort = AccountSortOption.newest;
-  bool _isInitialized = false;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_isInitialized) {
-      _handleRefreshData();
-      _isInitialized = true;
-    }
+  void initState() {
+    super.initState();
+    // ✅ FIX TRIỆT ĐỂ: Hoãn tiến trình gọi dữ liệu bất đồng bộ cho đến khi Widget dựng xong hoàn toàn khung xương UI
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _handleRefreshData();
+      }
+    });
   }
 
   @override
@@ -66,10 +67,8 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
   }
 
   void _navigateToCreateBudget() async {
-    // Lấy sẵn tham chiếu WalletViewModel trước khi xảy ra bất kỳ Async Gap nào
     final walletVM = context.read<WalletViewModel>();
 
-    //Chuyển hướng sang màn hình tạo ngân sách
     await Navigator.push(
       context,
       MaterialPageRoute(
@@ -80,10 +79,8 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
       ),
     );
 
-    //Kiểm tra xem widget còn nằm trên cây UI không trước khi làm mới dữ liệu
     if (mounted) {
       await _handleRefreshData();
-      //Gọi trực tiếp qua biến đã capture, hoàn toàn không sợ lỗi BuildContext
       await walletVM.refreshBudgetProgress();
     }
   }
@@ -94,7 +91,6 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
     final primaryTextColor =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
 
-    // Lắng nghe thay đổi từ ViewModel
     final budgetVM = context.watch<BudgetViewModel>();
     final budgetCategoryVM = context.watch<BudgetCategoryViewModel>();
 
@@ -113,7 +109,6 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
             .contains(_searchQuery.toLowerCase()))
         .toList();
 
-    // Logic Sắp xếp
     switch (_currentSort) {
       case AccountSortOption.nameAZ:
         filteredCategories.sort((a, b) => a.budgetCategory.name

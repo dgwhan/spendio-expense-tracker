@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:spend_io_app/features/splash/presentation/screens/splash_screen.dart';
+import 'package:spend_io_app/core/constants/app_colors.dart';
+import 'package:spend_io_app/core/theme/text_styles.dart';
+import 'package:spend_io_app/core/widgets/app_header.dart';
+import 'package:spend_io_app/core/widgets/button/app_button.dart';
+import 'package:spend_io_app/core/widgets/button/app_text_button.dart';
 
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/theme/text_styles.dart';
-import '../../../../core/widgets/primary_button.dart';
-import '../providers/auth_provider.dart';
-import '../viewmodels/login_form_viewmodel.dart';
-import '../widgets/login_fields.dart';
-import 'register_screen.dart';
+import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
+import 'package:spend_io_app/features/auth/presentation/screens/register_screen.dart';
+import 'package:spend_io_app/features/auth/presentation/viewmodels/login_form_viewmodel.dart';
+import 'package:spend_io_app/features/auth/presentation/widgets/login_fields.dart';
+import 'package:spend_io_app/features/splash/presentation/screens/splash_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -71,20 +73,28 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
     final loginVM = context.watch<LoginFormViewModel>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
+      appBar: AppHeader(
+        title: '',
+        showBack: true,
+        onBack: () => Navigator.pop(context),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildBackButton(context),
-              const SizedBox(height: 28),
               Text(
                 'Welcome back',
-                style: TextStyles.heading1(color: AppColors.textPrimaryLight),
+                style: TextStyles.heading1(
+                  color: isDark
+                      ? AppColors.textPrimaryDark
+                      : AppColors.textPrimaryLight,
+                ),
               ),
               const SizedBox(height: 32),
               LoginFields(
@@ -92,11 +102,23 @@ class _LoginScreenState extends State<LoginScreen> {
                 emailController: emailController,
                 passwordController: passwordController,
               ),
-              const SizedBox(height: 20),
-              _buildForgotPasswordButton(),
+              const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerRight,
+                child: AppTextButton(
+                  text: 'Forgot password?',
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  onTap: () {
+                    // Xử lý quên mật khẩu
+                  },
+                ),
+              ),
               const SizedBox(height: 32),
               AppButton(
-                title: authProvider.isLoading ? 'Processing...' : 'Sign In',
+                title: 'Sign In',
+                isLoading: authProvider.isLoading,
+                variant: AppButtonVariant.primary,
                 onPressed: (!loginVM.isFormValid || authProvider.isLoading)
                     ? null
                     : login,
@@ -110,71 +132,25 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildBackButton(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.pop(context);
-      },
-      child: Container(
-        height: 40,
-        width: 40,
-        decoration: const BoxDecoration(
-          color: AppColors.surfaceSecondaryLight,
-          shape: BoxShape.circle,
-        ),
-        child: const Icon(
-          Icons.arrow_back,
-          color: AppColors.textPrimaryLight,
-          size: 20,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildForgotPasswordButton() {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: GestureDetector(
-        onTap: () {},
-        child: Text(
-          'Forgot password?',
-          style: TextStyles.bodyMedium(
-            color: AppColors.primary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildFooter(BuildContext context) {
-    return Center(
-      child: GestureDetector(
-        onTap: () {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const RegisterScreen()),
-          );
-        },
-        child: Text.rich(
-          TextSpan(
-            children: [
-              TextSpan(
-                text: 'Don’t have an account? ',
-                style:
-                    TextStyles.bodyMedium(color: AppColors.textSecondaryLight),
-              ),
-              TextSpan(
-                text: 'Register',
-                style: TextStyles.bodyMedium(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          'Don’t have an account? ',
+          style: TextStyles.bodyMedium(color: AppColors.textSecondaryLight),
         ),
-      ),
+        AppTextButton(
+          text: 'Register',
+          fontWeight: FontWeight.w600,
+          onTap: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const RegisterScreen()),
+            );
+          },
+        ),
+      ],
     );
   }
 }

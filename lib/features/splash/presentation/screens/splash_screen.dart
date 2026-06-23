@@ -18,6 +18,10 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> {
   bool _started = false;
 
+  void _log(String msg) {
+    debugPrint("[SPLASH] $msg");
+  }
+
   @override
   void initState() {
     super.initState();
@@ -31,51 +35,64 @@ class _SplashScreenState extends State<SplashScreen> {
     if (_started) return;
     _started = true;
 
-    // stabilize provider tree
+    _log("Splash start...");
+
     await Future.delayed(Duration.zero);
+
+    if (!mounted) return;
 
     final coordinator = context.read<StartupCoordinator>();
 
     final startTime = DateTime.now();
+
     final result = await coordinator.resolve(context);
 
     final elapsed = DateTime.now().difference(startTime);
     const minDuration = Duration(seconds: 2);
 
     if (elapsed < minDuration) {
-      await Future.delayed(minDuration - elapsed);
+      final wait = minDuration - elapsed;
+      _log("Enforcing splash min duration: $wait");
+      await Future.delayed(wait);
     }
 
     if (!mounted) return;
 
+    _log("Navigation result: $result");
+
+    _navigate(result, coordinator);
+  }
+
+  void _navigate(
+    StartupResult result,
+    StartupCoordinator coordinator,
+  ) {
+    if (!mounted) return;
+
+    Widget next;
+
     switch (result) {
       case StartupResult.login:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const StartScreen()),
-        );
+        next = const StartScreen();
         break;
 
       case StartupResult.onboarding:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => OnboardingFlowScreen(
-              userEmail: coordinator.authProvider.currentUser?.email ?? '',
-            ),
-          ),
+        next = OnboardingFlowScreen(
+          userEmail: coordinator.authProvider.currentUser?.email ?? '',
         );
         break;
 
       case StartupResult.home:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const NavigationEntry(),
-          ),
-        );
+        next = const NavigationEntry();
         break;
     }
+
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 250),
+        pageBuilder: (_, __, ___) => next,
+      ),
+    );
   }
 
   @override

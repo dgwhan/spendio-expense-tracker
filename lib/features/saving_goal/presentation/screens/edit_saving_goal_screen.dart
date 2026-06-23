@@ -10,7 +10,7 @@ import 'package:spend_io_app/core/utils/currency_formatter.dart';
 import 'package:spend_io_app/core/widgets/app_header.dart';
 import 'package:spend_io_app/core/widgets/common/app_dual_action_buttons.dart';
 import 'package:spend_io_app/core/widgets/common/app_input_decoration.dart';
-import 'package:spend_io_app/core/widgets/primary_button.dart';
+import 'package:spend_io_app/core/widgets/button/app_action_button.dart';
 import 'package:spend_io_app/features/saving_goal/domain/entities/saving_goal_entity.dart';
 import 'package:spend_io_app/features/saving_goal/presentation/viewmodels/saving_goal_detail_viewmodel.dart';
 
@@ -142,8 +142,8 @@ class _EditSavingGoalScreenState extends State<EditSavingGoalScreen> {
                   secondaryLabel: vm.loading ? 'Saving...' : 'Save Changes',
                   onPrimaryPressed: () => Navigator.pop(context, false),
                   onSecondaryPressed: vm.loading ? null : _save,
-                  primaryVariant: AppButtonVariant.cancel,
-                  secondaryVariant: AppButtonVariant.primary,
+                  primaryVariant: AppActionButtonVariant.cancel,
+                  secondaryVariant: AppActionButtonVariant.primary,
                 ),
               ],
             ),

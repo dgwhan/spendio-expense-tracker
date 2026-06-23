@@ -5,12 +5,10 @@ import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/core/constants/app_text_styles.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
 import 'package:spend_io_app/core/currency/currency_context.dart';
-import 'package:spend_io_app/core/currency/convert_currency_use_case.dart';
-import 'package:spend_io_app/core/currency/exchange_rate_provider.dart';
 import 'package:spend_io_app/core/widgets/app_header.dart';
 import 'package:spend_io_app/core/widgets/common/app_empty_state.dart';
 import 'package:spend_io_app/core/widgets/input/app_search_bar.dart';
-import 'package:spend_io_app/core/widgets/primary_button.dart';
+import 'package:spend_io_app/core/widgets/button/app_action_button.dart';
 import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
 import 'package:spend_io_app/features/account/presentation/screen/account_details_screen.dart';
 import 'package:spend_io_app/features/account/presentation/screen/add_account_screen.dart';
@@ -104,9 +102,11 @@ class _AccountListScreenState extends State<AccountListScreen> {
           onBack: () => Navigator.pop(context)),
       body: Consumer<AccountViewModel>(
         builder: (context, viewModel, _) {
+          // 1. Lọc tài khoản theo từ khóa tìm kiếm
           final sortedAccounts = List.from(viewModel.accounts.where((a) =>
               a.name.toLowerCase().contains(_searchQuery.toLowerCase())));
 
+          // 2. Sắp xếp danh sách tài khoản
           switch (_currentSort) {
             case AccountSortOption.nameAZ:
               sortedAccounts.sort((a, b) =>
@@ -120,14 +120,8 @@ class _AccountListScreenState extends State<AccountListScreen> {
               break;
           }
 
-          final double totalNetWorth = sortedAccounts.fold(0.0, (sum, acc) {
-            final double converted = const ConvertCurrencyUseCase(LocalExchangeRateProvider()).execute(
-              amount: acc.balance,
-              from: acc.currencyCode,
-              to: context.currencyContext.preferredCurrencyCode,
-            );
-            return sum + converted;
-          });
+          final double totalNetWorth =
+              sortedAccounts.fold(0.0, (sum, acc) => sum + acc.balance);
 
           return SafeArea(
             child: CustomScrollView(
@@ -139,7 +133,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Net worth card
+                        // Tổng tài sản Card
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(16),
@@ -166,8 +160,10 @@ class _AccountListScreenState extends State<AccountListScreen> {
                                     Text(
                                         formatCurrency(
                                           totalNetWorth,
-                                          currencyCode: context.currencyContext.preferredCurrencyCode,
-                                          locale: context.currencyContext.locale,
+                                          currencyCode: context.currencyContext
+                                              .preferredCurrencyCode,
+                                          locale:
+                                              context.currencyContext.locale,
                                         ),
                                         style: AppTextStyles.largeAmount
                                             .copyWith(
@@ -177,7 +173,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
                                   ],
                                 ),
                               ),
-                              AppButton(
+                              AppActionButton(
                                   title: 'Add',
                                   onPressed: () =>
                                       _openAddAccount(context, viewModel)),
@@ -187,14 +183,12 @@ class _AccountListScreenState extends State<AccountListScreen> {
 
                         const SizedBox(height: AppSizes.md),
 
-                        // Hàng 1: Tiêu đề danh sách
                         Text('Accounts List',
                             style: AppTextStyles.sectionTitle.copyWith(
                                 color: primaryTextColor, fontSize: 15)),
 
                         const SizedBox(height: AppSizes.sm),
 
-                        // Hàng 2: Search Bar + Filter
                         Row(
                           children: [
                             Expanded(

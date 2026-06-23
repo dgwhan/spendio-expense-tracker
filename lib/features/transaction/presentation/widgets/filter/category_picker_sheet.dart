@@ -3,8 +3,7 @@ import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 
 class CategoryPickerSheet extends StatelessWidget {
-  final List<dynamic>
-      categories; // Nhận danh sách CategoryEntity từ module của bạn
+  final List<dynamic> categories;
   final dynamic selectedCategory;
   final ValueChanged<dynamic> onCategorySelected;
 
@@ -18,6 +17,7 @@ class CategoryPickerSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Container(
       decoration: BoxDecoration(
@@ -25,12 +25,13 @@ class CategoryPickerSheet extends StatelessWidget {
         borderRadius:
             const BorderRadius.vertical(top: Radius.circular(AppSizes.lg)),
       ),
-      padding: const EdgeInsets.only(
+      padding: EdgeInsets.only(
         top: AppSizes.md,
         left: AppSizes.md,
         right: AppSizes.md,
+        // Ép tràn ra sau thanh điều hướng hệ thống nhưng cộng thêm đệm để chữ không dính sát rạt đáy screen
+        bottom: bottomPadding + AppSizes.sm,
       ),
-      // Ràng buộc chiều cao tối đa của Bottom Sheet bằng 60% màn hình
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.6,
       ),
@@ -62,7 +63,7 @@ class CategoryPickerSheet extends StatelessWidget {
             ),
           ),
 
-          // 2. SLIVER GRID: Hiển thị danh sách các Category động
+          // 2. SLIVER GRID: Danh sách danh mục dạng khối phẳng Borderless trơn láng
           SliverGrid(
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 4,
@@ -84,26 +85,27 @@ class CategoryPickerSheet extends StatelessWidget {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     decoration: BoxDecoration(
+                      // Sử dụng khối màu nền mịn để phân biệt trạng thái thay vì dùng viền nét cứng
                       color: isSelected
-                          ? catColor.withValues(alpha: 0.15)
+                          ? catColor.withValues(alpha: 0.12)
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(AppSizes.md),
-                      border: Border.all(
-                        color: isSelected ? catColor : Colors.transparent,
-                        width: 1.5,
-                      ),
+                      border:
+                          null, // ĐỒNG BỘ: Gỡ bỏ hoàn toàn Border viền cứng ở đây
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         CircleAvatar(
-                          backgroundColor: catColor.withValues(alpha: 0.2),
+                          backgroundColor: isSelected
+                              ? catColor
+                              : catColor.withValues(alpha: 0.15),
                           child: Icon(
                             IconData(
                               cat.iconCodePoint ?? 57574,
                               fontFamily: cat.iconFontFamily ?? 'MaterialIcons',
                             ),
-                            color: catColor,
+                            color: isSelected ? Colors.white : catColor,
                           ),
                         ),
                         const SizedBox(height: AppSizes.xs),
@@ -114,9 +116,8 @@ class CategoryPickerSheet extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 12,
-                            fontWeight: isSelected
-                                ? FontWeight.bold
-                                : FontWeight.normal,
+                            fontWeight:
+                                isSelected ? FontWeight.bold : FontWeight.w500,
                           ),
                         ),
                       ],
@@ -128,7 +129,7 @@ class CategoryPickerSheet extends StatelessWidget {
             ),
           ),
 
-          // 3. SLIVER PADDING: Tạo khoảng trống an toàn dưới đáy Sheet khi cuộn kịch sàn
+          // 3. SLIVER PADDING: Khoảng cách đệm an toàn kịch sàn
           const SliverToBoxAdapter(
             child: SizedBox(height: AppSizes.lg),
           ),

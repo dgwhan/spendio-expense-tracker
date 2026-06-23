@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_text_styles.dart';
-import 'package:spend_io_app/core/widgets/primary_button.dart';
+import 'package:spend_io_app/core/widgets/button/app_action_button.dart';
 import 'package:spend_io_app/features/auth/presentation/screens/login_screen.dart';
 
 class AppDialogs {
@@ -154,9 +154,9 @@ class AppDialogs {
               // destructive delete action button
               SizedBox(
                 width: double.infinity,
-                child: AppButton(
+                child: AppActionButton(
                   title: 'Delete',
-                  variant: AppButtonVariant.delete,
+                  variant: AppActionButtonVariant.delete,
                   onPressed: () => Navigator.pop(dialogContext, true),
                 ),
               ),
@@ -165,9 +165,9 @@ class AppDialogs {
               // cancel fallback action button
               SizedBox(
                 width: double.infinity,
-                child: AppButton(
+                child: AppActionButton(
                   title: 'Cancel',
-                  variant: AppButtonVariant.cancel,
+                  variant: AppActionButtonVariant.cancel,
                   onPressed: () => Navigator.pop(dialogContext, false),
                 ),
               ),

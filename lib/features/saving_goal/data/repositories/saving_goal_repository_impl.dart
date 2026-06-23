@@ -11,14 +11,11 @@ import 'package:spend_io_app/features/saving_goal/domain/entities/saving_goal_co
 import 'package:spend_io_app/features/saving_goal/domain/entities/saving_goal_entity.dart';
 
 import 'package:spend_io_app/features/saving_goal/domain/repositories/saving_goal_repository.dart';
-import 'package:spend_io_app/core/currency/convert_currency_use_case.dart';
-import 'package:spend_io_app/core/currency/exchange_rate_provider.dart';
 
 class SavingGoalRepositoryImpl implements SavingGoalRepository {
   final SavingGoalLocalDatasource local;
   final SavingGoalRemoteDataSource remote;
   final Database db;
-  final ConvertCurrencyUseCase _convertCurrency = const ConvertCurrencyUseCase(LocalExchangeRateProvider());
 
   SavingGoalRepositoryImpl({
     required this.local,
@@ -37,7 +34,6 @@ class SavingGoalRepositoryImpl implements SavingGoalRepository {
         'target_amount',
         'initial_amount',
         'status',
-        'currency_code',
       ],
       where: 'id = ?',
       whereArgs: [goalId],
@@ -50,12 +46,11 @@ class SavingGoalRepositoryImpl implements SavingGoalRepository {
     final targetAmount = (goal['target_amount'] as num).toDouble();
     final initialAmount = (goal['initial_amount'] as num).toDouble();
     final currentStatus = goal['status'] as String? ?? 'active';
-    final goalCurrency = (goal['currency_code'] as String?) ?? 'USD';
 
-    // Query all contributions
+    // Lấy danh sách các khoản đóng góp (Contributions)
     final contributionRows = await db.query(
       'saving_goal_contributions',
-      columns: ['amount', 'currency_code'],
+      columns: ['amount'],
       where: 'goal_id = ? AND deleted_at IS NULL',
       whereArgs: [goalId],
     );
@@ -63,13 +58,8 @@ class SavingGoalRepositoryImpl implements SavingGoalRepository {
     double contributionTotal = 0.0;
     for (var row in contributionRows) {
       final double amount = (row['amount'] as num).toDouble();
-      final String contribCurrency = (row['currency_code'] as String?) ?? 'USD';
-      final double convertedAmount = _convertCurrency.execute(
-        amount: amount,
-        from: contribCurrency,
-        to: goalCurrency,
-      );
-      contributionTotal += convertedAmount;
+
+      contributionTotal += amount;
     }
 
     final currentAmount = initialAmount + contributionTotal;
@@ -99,11 +89,8 @@ class SavingGoalRepositoryImpl implements SavingGoalRepository {
   // =========================================================
 
   @override
-  Future<List<SavingGoalEntity>> getGoals(
-    int userId,
-  ) async {
+  Future<List<SavingGoalEntity>> getGoals(int userId) async {
     final models = await local.getGoals(userId);
-
     return models.map((e) => e.toEntity()).toList();
   }
 
@@ -112,11 +99,8 @@ class SavingGoalRepositoryImpl implements SavingGoalRepository {
   // =========================================================
 
   @override
-  Future<SavingGoalEntity?> getGoalById(
-    String goalId,
-  ) async {
+  Future<SavingGoalEntity?> getGoalById(String goalId) async {
     final model = await local.getGoalById(goalId);
-
     return model?.toEntity();
   }
 
@@ -125,11 +109,8 @@ class SavingGoalRepositoryImpl implements SavingGoalRepository {
   // =========================================================
 
   @override
-  Future<void> createGoal(
-    SavingGoalEntity goal,
-  ) async {
+  Future<void> createGoal(SavingGoalEntity goal) async {
     final model = SavingGoalModel.fromEntity(goal);
-
     await local.insertGoal(model);
 
     try {
@@ -142,11 +123,8 @@ class SavingGoalRepositoryImpl implements SavingGoalRepository {
   // =========================================================
 
   @override
-  Future<void> updateGoal(
-    SavingGoalEntity goal,
-  ) async {
+  Future<void> updateGoal(SavingGoalEntity goal) async {
     final model = SavingGoalModel.fromEntity(goal);
-
     await local.updateGoal(model);
 
     try {
@@ -193,21 +171,15 @@ class SavingGoalRepositoryImpl implements SavingGoalRepository {
 
   @override
   Future<void> addContribution(
-    SavingGoalContributionEntity contribution,
-  ) async {
-    final model = GoalContributionModel.fromEntity(
-      contribution,
-    );
-
+      SavingGoalContributionEntity contribution) async {
+    final model = GoalContributionModel.fromEntity(contribution);
     await local.insertContribution(model);
 
     try {
       await remote.syncContribution(model);
     } catch (_) {}
 
-    await _updateGoalCache(
-      contribution.goalId,
-    );
+    await _updateGoalCache(contribution.goalId);
   }
 
   // =========================================================
@@ -216,10 +188,8 @@ class SavingGoalRepositoryImpl implements SavingGoalRepository {
 
   @override
   Future<List<SavingGoalContributionEntity>> getContributions(
-    String goalId,
-  ) async {
+      String goalId) async {
     final models = await local.getContributions(goalId);
-
     return models.map((e) => e.toEntity()).toList();
   }
 }

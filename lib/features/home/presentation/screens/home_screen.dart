@@ -16,7 +16,6 @@ import 'package:spend_io_app/features/budget/presentation/viewmodels/monthly/bud
 import 'package:spend_io_app/features/budget/presentation/screens/monthly/add_budget_screen.dart';
 import 'package:spend_io_app/features/budget/presentation/screens/budget_detail_screen.dart';
 import 'package:spend_io_app/features/saving_goal/presentation/screens/saving_goal_list_screen.dart';
-import 'package:spend_io_app/features/account/presentation/screen/account_list_screen.dart';
 import 'package:spend_io_app/features/transaction/presentation/screen/transaction_list_screen.dart';
 
 import 'package:spend_io_app/features/home/presentation/widgets/app_header/app_header.dart';
@@ -56,7 +55,9 @@ class HomeScreen extends StatelessWidget {
             await dashboardVM.walletViewModel.initialize();
 
             if (context.mounted) {
-              await context.read<CategoryViewModel>().loadCategories(user.id ?? 1);
+              await context
+                  .read<CategoryViewModel>()
+                  .loadCategories(user.id ?? 1);
             }
 
             if (context.mounted) {
@@ -93,7 +94,8 @@ class HomeScreen extends StatelessWidget {
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 sliver: SliverToBoxAdapter(
                   child: BalanceSummaryCard(
-                    summary: dashboardVM.getSummary(context, txVM.state.transactions),
+                    summary: dashboardVM.getSummary(
+                        context, txVM.state.transactions),
                   ),
                 ),
               ),
@@ -110,7 +112,8 @@ class HomeScreen extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => ChangeNotifierProvider<BudgetFormViewModel>(
+                          builder: (_) =>
+                              ChangeNotifierProvider<BudgetFormViewModel>(
                             create: (_) => BudgetFormViewModel(),
                             child: AddBudgetScreen(userId: user.id ?? 1),
                           ),
@@ -121,7 +124,7 @@ class HomeScreen extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const AccountListScreen(),
+                          builder: (_) => const TransactionListScreen(),
                         ),
                       );
                     },
@@ -138,12 +141,13 @@ class HomeScreen extends StatelessWidget {
                       final user = authProvider.currentUser;
                       if (user == null) return;
                       final currentBudgetProgress = budgetVM.currentBudget;
-                      
+
                       if (currentBudgetProgress == null) {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => ChangeNotifierProvider<BudgetFormViewModel>(
+                            builder: (_) =>
+                                ChangeNotifierProvider<BudgetFormViewModel>(
                               create: (_) => BudgetFormViewModel(),
                               child: AddBudgetScreen(userId: user.id ?? 1),
                             ),
@@ -173,7 +177,8 @@ class HomeScreen extends StatelessWidget {
                     onCategoryManagementTap: () {
                       final user = authProvider.currentUser;
                       if (user == null) return;
-                      final remoteUid = fb.FirebaseAuth.instance.currentUser?.uid ?? '';
+                      final remoteUid =
+                          fb.FirebaseAuth.instance.currentUser?.uid ?? '';
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -194,9 +199,12 @@ class HomeScreen extends StatelessWidget {
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 sliver: SliverToBoxAdapter(
                   child: SpendingBreakdownSection(
-                    weekData: dashboardVM.getSpendingBreakdownForPeriod(context, 'Week'),
-                    monthData: dashboardVM.getSpendingBreakdownForPeriod(context, 'Month'),
-                    yearData: dashboardVM.getSpendingBreakdownForPeriod(context, 'Year'),
+                    weekData: dashboardVM.getSpendingBreakdownForPeriod(
+                        context, 'Week'),
+                    monthData: dashboardVM.getSpendingBreakdownForPeriod(
+                        context, 'Month'),
+                    yearData: dashboardVM.getSpendingBreakdownForPeriod(
+                        context, 'Year'),
                     onViewDetailTap: () => _navigateToInsights(context),
                     onViewMoreTap: () => _navigateToInsights(context),
                   ),

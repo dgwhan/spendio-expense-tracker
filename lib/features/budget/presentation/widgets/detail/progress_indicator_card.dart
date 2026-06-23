@@ -223,7 +223,10 @@ class ProgressIndicatorCard extends StatelessWidget {
                   color: secondaryTextColor,
                   letterSpacing: 0.5)),
           const SizedBox(height: 2),
-          Text(formatCurrency(totalSpent, currencyCode: context.currencyContext.preferredCurrencyCode, locale: context.currencyContext.locale),
+          Text(
+              formatCurrency(totalSpent,
+                  currencyCode: context.currencyContext.preferredCurrencyCode,
+                  locale: context.currencyContext.locale),
               style: AppTextStyles.headingMedium
                   .copyWith(color: primaryTextColor)),
           const SizedBox(height: AppSizes.md),
@@ -238,7 +241,11 @@ class ProgressIndicatorCard extends StatelessWidget {
                   Text('Total Budget',
                       style: AppTextStyles.bodyNormal
                           .copyWith(color: secondaryTextColor)),
-                  Text(formatCurrency(totalBudget, currencyCode: context.currencyContext.preferredCurrencyCode, locale: context.currencyContext.locale),
+                  Text(
+                      formatCurrency(totalBudget,
+                          currencyCode:
+                              context.currencyContext.preferredCurrencyCode,
+                          locale: context.currencyContext.locale),
                       style: AppTextStyles.bodyNormal.copyWith(
                           fontWeight: FontWeight.bold,
                           color: primaryTextColor)),

@@ -7,14 +7,14 @@ import 'package:spend_io_app/core/widgets/app_header.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
 import 'package:spend_io_app/core/currency/currency_context.dart';
 import 'package:spend_io_app/core/widgets/common/app_dual_action_buttons.dart'; // core action buttons dùng chung
-import 'package:spend_io_app/core/widgets/primary_button.dart';
+import 'package:spend_io_app/core/widgets/button/app_action_button.dart';
 import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
 import 'package:spend_io_app/features/category/domain/entities/category_entity.dart';
 import 'package:spend_io_app/features/transaction/domain/entities/transaction_entity.dart';
 import 'package:spend_io_app/features/transaction/domain/entities/transaction_type.dart';
 import 'package:spend_io_app/features/transaction/presentation/screen/edit_transaction_screen.dart';
 import 'package:spend_io_app/features/transaction/presentation/viewmodels/transaction_viewmodel.dart';
-import 'package:spend_io_app/features/transaction/presentation/widgets/components/transaction_info_card.dart';
+import 'package:spend_io_app/features/transaction/presentation/widgets/transaction_info_card.dart';
 
 class TransactionDetailScreen extends StatefulWidget {
   final TransactionEntity transaction;
@@ -188,7 +188,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                 secondaryLabel: 'Delete',
                 onPrimaryPressed: _handleEdit,
                 onSecondaryPressed: _handleDelete,
-                secondaryVariant: AppButtonVariant.delete,
+                secondaryVariant: AppActionButtonVariant.delete,
               ),
               const SizedBox(height: AppSizes.md),
             ],

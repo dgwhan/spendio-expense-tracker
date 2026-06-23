@@ -8,7 +8,7 @@ import 'package:spend_io_app/features/account/domain/entities/account_entity.dar
 import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
 import 'package:spend_io_app/features/account/presentation/widgets/account_form.dart';
 
-class EditAccountScreen extends StatelessWidget {
+class EditAccountScreen extends StatefulWidget {
   final AccountViewModel viewModel;
   final AccountEntity account;
 
@@ -18,19 +18,23 @@ class EditAccountScreen extends StatelessWidget {
     required this.account,
   });
 
-  // get default icon
+  @override
+  State<EditAccountScreen> createState() => _EditAccountScreenState();
+}
+
+class _EditAccountScreenState extends State<EditAccountScreen> {
   IconData _getDefaultIcon(AccountType type) {
     switch (type) {
       case AccountType.cash:
-        return Icons.wallet;
+        return Icons.wallet_rounded;
       case AccountType.bank:
-        return Icons.account_balance;
+        return Icons.account_balance_rounded;
       case AccountType.eWallet:
-        return Icons.account_balance_wallet;
+        return Icons.account_balance_wallet_rounded;
       case AccountType.creditCard:
-        return Icons.credit_card;
+        return Icons.credit_card_rounded;
       default:
-        return Icons.help_outline;
+        return Icons.help_outline_rounded;
     }
   }
 
@@ -64,6 +68,71 @@ class EditAccountScreen extends StatelessWidget {
     );
   }
 
+  Future<void> _handleUpdateAccount(
+    String name,
+    AccountType type,
+    double balance,
+    String currencyCode,
+  ) async {
+    final icon = _getDefaultIcon(type);
+
+    final updatedAccount = AccountEntity(
+      id: widget.account.id,
+      userId: widget.account.userId,
+      name: name,
+      type: type,
+      balance: balance,
+      currencyCode: currencyCode,
+      icon: icon,
+      createdAt: widget.account.createdAt,
+      updatedAt: DateTime.now(),
+      deletedAt: widget.account.deletedAt,
+    );
+
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
+    final double statusBarHeight = MediaQuery.of(context).padding.top;
+    final double screenHeight = MediaQuery.of(context).size.height;
+    final double headerHeight = kToolbarHeight + statusBarHeight;
+    final double calculatedTopMargin = screenHeight - (headerHeight + 60);
+
+    try {
+      final localId = widget.account.userId;
+      final currentUser = FirebaseAuth.instance.currentUser;
+      final String remoteUid = currentUser?.uid ?? '';
+
+      final success = await widget.viewModel.updateAccount(
+        localId,
+        remoteUid,
+        updatedAccount,
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        _showStatusSnackBar(
+          messenger: messenger,
+          message: 'Account updated successfully!',
+          backgroundColor: AppColors.success,
+          topMargin: calculatedTopMargin,
+        );
+        navigator.pop(true);
+      } else {
+        if (widget.viewModel.updateAccountError != null) {
+          _showStatusSnackBar(
+            messenger: messenger,
+            message: widget.viewModel.updateAccountError!,
+            backgroundColor: AppColors.error,
+            topMargin: calculatedTopMargin,
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('[Edit Account Screen] Failed to execute update pipeline: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -78,82 +147,18 @@ class EditAccountScreen extends StatelessWidget {
         onBack: () => Navigator.pop(context),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
-          child: Column(
-            children: [
-              const SizedBox(height: AppSizes.md),
-
-              // account form context layout
-              AccountForm(
-                account: account,
-                title: 'Account Settings',
+          slivers: [
+            // ĐỒNG BỘ SLIVER: Đưa AccountForm vào cuộn mượt mà chống tràn bàn phím ảo
+            SliverToBoxAdapter(
+              child: AccountForm(
+                account: widget.account,
                 actionLabel: 'Update',
-                onSubmit: (name, type, balance, currencyCode) async {
-                  final icon = _getDefaultIcon(type);
-
-                  final updatedAccount = AccountEntity(
-                    id: account.id,
-                    userId: account.userId,
-                    name: name,
-                    type: type,
-                    balance: balance,
-                    currencyCode: currencyCode,
-                    icon: icon,
-                    createdAt: account.createdAt,
-                    updatedAt: DateTime.now(),
-                    deletedAt: account.deletedAt,
-                  );
-
-                  final messenger = ScaffoldMessenger.of(context);
-                  final navigator = Navigator.of(context);
-
-                  final double statusBarHeight =
-                      MediaQuery.of(context).padding.top;
-                  final double screenHeight =
-                      MediaQuery.of(context).size.height;
-                  final double headerHeight = kToolbarHeight + statusBarHeight;
-                  final double calculatedTopMargin =
-                      screenHeight - (headerHeight + 60);
-
-                  try {
-                    final localId = account.userId;
-                    final currentUser = FirebaseAuth.instance.currentUser;
-                    final String remoteUid = currentUser?.uid ?? '';
-
-                    final success = await viewModel.updateAccount(
-                      localId,
-                      remoteUid,
-                      updatedAccount,
-                    );
-
-                    if (success) {
-                      _showStatusSnackBar(
-                        messenger: messenger,
-                        message: 'Account updated successfully!',
-                        backgroundColor: AppColors.success,
-                        topMargin: calculatedTopMargin,
-                      );
-                      navigator.pop(true);
-                    } else {
-                      if (viewModel.updateAccountError != null) {
-                        _showStatusSnackBar(
-                          messenger: messenger,
-                          message: viewModel.updateAccountError!,
-                          backgroundColor: AppColors.error,
-                          topMargin: calculatedTopMargin,
-                        );
-                      }
-                    }
-                  } catch (e) {
-                    debugPrint(
-                        '[Edit Account Screen] Failed to execute update pipeline: $e');
-                  }
-                },
+                onSubmit: _handleUpdateAccount,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

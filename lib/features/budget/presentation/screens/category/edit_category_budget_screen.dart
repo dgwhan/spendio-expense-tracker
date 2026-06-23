@@ -2,43 +2,57 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
-import 'package:spend_io_app/core/constants/app_radius.dart';
+import 'package:spend_io_app/core/widgets/app_header.dart';
+import 'package:spend_io_app/core/widgets/button/app_button.dart';
+import 'package:spend_io_app/core/utils/localization.dart';
 import 'package:spend_io_app/features/budget/presentation/viewmodels/category/budget_category_form_viewmodel.dart';
 import 'package:spend_io_app/features/budget/presentation/viewmodels/category/budget_category_viewmodel.dart';
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
 import 'package:spend_io_app/features/category/presentation/widgets/category_selection_sheet.dart';
-import 'package:intl/intl.dart';
+import 'package:spend_io_app/features/transaction/presentation/widgets/fintech_amount_input.dart';
+import 'package:spend_io_app/features/transaction/domain/entities/transaction_type.dart';
+import 'package:spend_io_app/core/utils/currency_formatter.dart';
 import 'package:spend_io_app/core/currency/currency_context.dart';
 
 class EditCategoryBudgetScreen extends StatefulWidget {
   final int userId;
+  final double? initialAmount;
 
   const EditCategoryBudgetScreen({
     super.key,
     required this.userId,
+    this.initialAmount,
   });
 
   @override
-  State<EditCategoryBudgetScreen> createState() =>
-      _EditCategoryBudgetScreenState();
+  State<EditCategoryBudgetScreen> createState() {
+    return _EditCategoryBudgetScreenState();
+  }
 }
 
 class _EditCategoryBudgetScreenState extends State<EditCategoryBudgetScreen> {
   late final TextEditingController _amountController;
+  bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
-    final formVM = context.read<BudgetCategoryFormViewModel>();
 
-    final rawAmountStr = formVM.amount;
-    final cleanAmountStr = rawAmountStr.replaceAll(RegExp(r'[^\d]'), '');
-    final parsedAmount = double.tryParse(cleanAmountStr) ?? 0.0;
+    final double rawAmount = widget.initialAmount ?? 0.0;
 
-    final formatter = NumberFormat.decimalPattern('vi_VN');
-    final initialText = parsedAmount > 0
-        ? formatter.format(parsedAmount.round())
-        : '0';
+    String initialText = '0';
+    if (rawAmount > 0) {
+      initialText = formatCurrency(
+        rawAmount,
+        currencyCode: context.read<CurrencyContext>().preferredCurrencyCode,
+        locale: context.read<CurrencyContext>().locale,
+      )
+          .replaceAll('đ', '')
+          .replaceAll('\$', '')
+          .replaceAll('VND', '')
+          .replaceAll('USD', '')
+          .trim();
+    }
 
     _amountController = TextEditingController(text: initialText);
   }
@@ -49,50 +63,21 @@ class _EditCategoryBudgetScreenState extends State<EditCategoryBudgetScreen> {
     super.dispose();
   }
 
-  void _onAmountChanged(String value, BudgetCategoryFormViewModel formVM) {
-    String cleanString = value.replaceAll(RegExp(r'[^\d]'), '');
-
-    if (cleanString.isEmpty || cleanString == '0') {
-      _amountController.text = '0';
-      formVM.setAmount('0');
-      return;
-    }
-
-    double parsedAmount = double.parse(cleanString);
-    if (parsedAmount > 999999999) {
-      final double oldAmount = double.tryParse(formVM.amount) ?? 0;
-      final formatter = NumberFormat.decimalPattern('vi_VN');
-      final String oldFormatted = formatter.format(oldAmount.round());
-      _amountController.value = TextEditingValue(
-        text: oldFormatted,
-        selection: TextSelection.collapsed(offset: oldFormatted.length),
-      );
-      return;
-    }
-
-    final formatter = NumberFormat.decimalPattern('vi_VN');
-    String formatted = formatter.format(parsedAmount.round());
-
-    _amountController.value = TextEditingValue(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
-    );
-
-    formVM.setAmount(cleanString);
-  }
-
   void _showCategoryPicker(BudgetCategoryFormViewModel formVM) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => CategorySelectionSheet(
-        currentType: 'expense',
-        selectedCategory: formVM.selectedCategory,
-        onCategorySelected: (cat) {
-          formVM.setCategory(cat);
-        },
-      ),
+      useSafeArea: false,
+      builder: (_) {
+        return CategorySelectionSheet(
+          currentType: 'expense',
+          selectedCategory: formVM.selectedCategory,
+          onCategorySelected: (cat) {
+            formVM.setCategory(cat);
+          },
+        );
+      },
     );
   }
 
@@ -100,235 +85,219 @@ class _EditCategoryBudgetScreenState extends State<EditCategoryBudgetScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final backgroundColor =
-        isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
+        isDark ? AppColors.backgroundDark : const Color(0xFFF8F9FB);
     final primaryTextColor =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final secondaryTextColor =
-        isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
-    final buttonSecondaryColor = isDark ? Colors.grey[800] : Colors.grey[200];
+        isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
+    final cardColor = isDark ? AppColors.surfaceDark : Colors.white;
 
     final formVM = context.watch<BudgetCategoryFormViewModel>();
     final categoryVM = context.read<BudgetCategoryViewModel>();
     final walletVM = context.read<WalletViewModel>();
-    final displayName =
-        formVM.selectedCategory?.name ?? 'Select Category Target';
+
+    final displayName = formVM.selectedCategory?.name ??
+        AppLocalizations.translate('Select Category Target');
+    final activeCurrencyCode = formVM.isEditMode
+        ? formVM.editingCategoryBudget?.currencyCode ??
+            context.currencyContext.preferredCurrencyCode
+        : context.currencyContext.preferredCurrencyCode;
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded,
-              color: primaryTextColor, size: 20),
-          onPressed: () => Navigator.pop(context, false),
-        ),
-        title: Text(
-          'Edit Limit',
-          style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: primaryTextColor),
-        ),
-        centerTitle: true,
+      appBar: AppHeader(
+        title: AppLocalizations.translate('Edit Budget'),
+        showBack: true,
+        onBack: () {
+          Navigator.pop(context, false);
+        },
       ),
       body: SafeArea(
         child: Form(
           key: formVM.formKey,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSizes.lg),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Update Limit',
-                  style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w800,
-                      color: primaryTextColor),
-                ),
-                const SizedBox(height: AppSizes.xs),
-                Text(
-                  'Modify the configuration and spending limit for your category.',
-                  style: TextStyle(
-                      fontSize: 16,
-                      color: secondaryTextColor,
-                      fontWeight: FontWeight.w400),
-                ),
-                const Spacer(flex: 1),
-                InkWell(
-                  onTap: () => _showCategoryPicker(formVM),
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  child: Container(
-                    padding: const EdgeInsets.all(AppSizes.md),
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.grey[900] : Colors.grey[100],
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      border: Border.all(
-                        color: formVM.selectedCategory == null
-                            ? Colors.orange.withValues(alpha: 0.5)
-                            : Colors.transparent,
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          formVM.selectedCategory != null
-                              ? IconData(
-                                  formVM.selectedCategory!.iconCodePoint,
-                                  fontFamily:
-                                      formVM.selectedCategory!.iconFontFamily ??
-                                          'MaterialIcons',
-                                )
-                              : Icons.category_outlined,
-                          color: formVM.selectedCategory != null
-                              ? Color(formVM.selectedCategory!.colorValue)
-                              : AppColors.primary,
-                        ),
-                        const SizedBox(width: AppSizes.md),
-                        Expanded(
-                          child: Text(
-                            displayName,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: formVM.selectedCategory != null
-                                  ? primaryTextColor
-                                  : secondaryTextColor,
-                            ),
-                          ),
-                        ),
-                        Icon(Icons.keyboard_arrow_down_rounded,
-                            color: secondaryTextColor),
-                      ],
-                    ),
-                  ),
-                ),
-                const Spacer(flex: 1),
-                Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IntrinsicWidth(
-                        child: TextFormField(
-                          controller: _amountController,
-                          keyboardType: TextInputType.number,
-                          autofocus: true,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              fontSize: 56,
-                              fontWeight: FontWeight.w700,
-                              color: primaryTextColor.withValues(alpha: 0.9)),
-                          decoration: const InputDecoration(
-                            border: InputBorder.none,
-                            contentPadding: EdgeInsets.zero,
-                          ),
-                          validator: formVM.validateAmount,
-                          onChanged: (val) => _onAmountChanged(val, formVM),
-                        ),
-                      ),
-                      const SizedBox(height: AppSizes.xs),
-                      Text(
-                        formVM.isEditMode
-                            ? ((formVM.editingCategoryBudget?.currencyCode ?? 'USD') == 'VND' ? '₫ VND' : '\$ USD')
-                            : (context.currencyContext.preferredCurrencyCode == 'VND' ? '₫ VND' : '\$ USD'),
-                        style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: secondaryTextColor),
-                      ),
-                    ],
-                  ),
-                ),
-                const Spacer(flex: 3),
-                Row(
+          child: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      flex: 2,
-                      child: SizedBox(
-                        height: 54,
-                        child: OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            backgroundColor: buttonSecondaryColor,
-                            side: BorderSide.none,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.md),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                          AppSizes.lg, AppSizes.md, AppSizes.lg, AppSizes.xs),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            AppLocalizations.translate('Update Budget'),
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              color: primaryTextColor,
                             ),
                           ),
-                          onPressed: formVM.isSubmitting
-                              ? null
-                              : () => Navigator.pop(context, false),
-                          child: Text(
-                            'Cancel',
+                          const SizedBox(height: 6),
+                          Text(
+                            AppLocalizations.translate(
+                                'Modify the configuration and spending limit for your category.'),
                             style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.white70 : Colors.black87,
+                              fontSize: 13,
+                              color: secondaryTextColor,
+                              fontWeight: FontWeight.w400,
                             ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.md),
+                    Padding(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: AppSizes.md),
+                      child: InkWell(
+                        onTap: () => _showCategoryPicker(formVM),
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.all(AppSizes.md),
+                          decoration: BoxDecoration(
+                            color: cardColor,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: isDark
+                                ? null
+                                : [
+                                    BoxShadow(
+                                      color:
+                                          Colors.black.withValues(alpha: 0.015),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    )
+                                  ],
+                          ),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 18,
+                                backgroundColor: formVM.selectedCategory != null
+                                    ? Color(formVM.selectedCategory!.colorValue)
+                                        .withValues(alpha: 0.12)
+                                    : AppColors.primary.withValues(alpha: 0.12),
+                                child: Icon(
+                                  formVM.selectedCategory != null
+                                      ? IconData(
+                                          formVM
+                                              .selectedCategory!.iconCodePoint,
+                                          fontFamily: formVM.selectedCategory!
+                                                  .iconFontFamily ??
+                                              'MaterialIcons',
+                                        )
+                                      : Icons.category_outlined,
+                                  color: formVM.selectedCategory != null
+                                      ? Color(
+                                          formVM.selectedCategory!.colorValue)
+                                      : AppColors.primary,
+                                  size: 18,
+                                ),
+                              ),
+                              const SizedBox(width: AppSizes.md),
+                              Expanded(
+                                child: Text(
+                                  displayName,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    color: formVM.selectedCategory != null
+                                        ? primaryTextColor
+                                        : secondaryTextColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              Icon(Icons.keyboard_arrow_down_rounded,
+                                  color: secondaryTextColor, size: 20),
+                            ],
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: AppSizes.md),
-                    Expanded(
-                      flex: 3,
-                      child: SizedBox(
-                        height: 54,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.md)),
-                          ),
-                          onPressed: formVM.isSubmitting ||
-                                  formVM.selectedCategory == null
-                              ? null
-                              : () async {
-                                  final currencyCode = formVM.isEditMode
-                                      ? formVM.editingCategoryBudget?.currencyCode ?? context.currencyContext.preferredCurrencyCode
-                                      : context.currencyContext.preferredCurrencyCode;
-                                  final success =
-                                      await formVM.submitCategoryBudget(
-                                    categoryVM: categoryVM,
-                                    userId: widget.userId,
-                                    currencyCode: currencyCode,
-                                  );
-
-                                  if (success && context.mounted) {
-                                    await walletVM.refreshBudgetProgress();
-
-                                    if (context.mounted) {
-                                      // ✅ ĐÃ SỬA: Đẩy trạng thái true về để màn hình Detail biết cần phải reload dữ liệu
-                                      Navigator.pop(context, true);
-                                      debugPrint(
-                                          '[UX SUCCESS]: Updated budget category config and requested wallet refresh.');
-                                    }
-                                  }
-                                },
-                          child: formVM.isSubmitting
-                              ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                      color: Colors.white, strokeWidth: 2))
-                              : const Text(
-                                  'Save Changes',
-                                  style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600),
-                                ),
-                        ),
-                      ),
+                    const SizedBox(height: AppSizes.sm),
+                    FintechAmountInput(
+                      controller: _amountController,
+                      selectedType: TransactionType.expense,
+                      autofocus: true,
+                      currencyCode: activeCurrencyCode,
                     ),
                   ],
                 ),
-                const SizedBox(height: AppSizes.md),
-              ],
-            ),
+              ),
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                        AppSizes.md, AppSizes.md, AppSizes.md, AppSizes.xl),
+                    child: AppButton(
+                      title: _isSaving
+                          ? AppLocalizations.translate('Saving...')
+                          : AppLocalizations.translate('Save Changes'),
+                      isLoading: _isSaving,
+                      onPressed: formVM.selectedCategory == null
+                          ? null
+                          : () async {
+                              if (_isSaving) return;
+
+                              final cleanAmount = _amountController.text
+                                  .replaceAll(RegExp(r'[^\d]'), '');
+
+                              if (cleanAmount.isEmpty || cleanAmount == '0') {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(AppLocalizations.translate(
+                                        'Please enter a valid amount')),
+                                    backgroundColor: AppColors.error,
+                                  ),
+                                );
+                                return;
+                              }
+
+                              setState(() {
+                                _isSaving = true;
+                              });
+
+                              formVM.setAmount(cleanAmount);
+
+                              try {
+                                final success =
+                                    await formVM.submitCategoryBudget(
+                                  categoryVM: categoryVM,
+                                  userId: widget.userId,
+                                  currencyCode: activeCurrencyCode,
+                                );
+
+                                if (success && context.mounted) {
+                                  await walletVM.refreshBudgetProgress();
+                                  if (context.mounted) {
+                                    Navigator.pop(context, true);
+                                  }
+                                } else {
+                                  if (mounted) {
+                                    setState(() {
+                                      _isSaving = false;
+                                    });
+                                  }
+                                }
+                              } catch (e) {
+                                debugPrint('[BUDGET UPDATE ERROR]: $e');
+                                if (mounted) {
+                                  setState(() {
+                                    _isSaving = false;
+                                  });
+                                }
+                              }
+                            },
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

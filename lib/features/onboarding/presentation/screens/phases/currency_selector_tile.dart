@@ -37,10 +37,6 @@ class CurrencySelectorTile extends StatelessWidget {
                         color: Colors.black),
                   ),
                   const SizedBox(height: 2),
-                  const Text(
-                    'Sớm ra mắt / Coming Soon',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
                 ],
               ),
             ),

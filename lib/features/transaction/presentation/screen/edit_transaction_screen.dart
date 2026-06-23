@@ -3,24 +3,23 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
-import 'package:spend_io_app/core/widgets/app_header.dart'; // Đồng bộ sử dụng AppHeader
+import 'package:spend_io_app/core/widgets/app_header.dart';
+import 'package:spend_io_app/core/widgets/button/app_button.dart';
 import 'package:spend_io_app/features/transaction/domain/entities/transaction_entity.dart';
 import 'package:spend_io_app/features/transaction/domain/entities/transaction_type.dart';
 import 'package:spend_io_app/features/transaction/presentation/viewmodels/transaction_viewmodel.dart';
-
 import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
 import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
-import 'package:spend_io_app/features/transaction/presentation/widgets/wallet_picker_sheet.dart';
+import 'package:spend_io_app/features/transaction/presentation/widgets/filter/wallet_picker_sheet.dart';
 import 'package:spend_io_app/features/category/presentation/widgets/category_selection_sheet.dart';
 import 'package:spend_io_app/features/category/domain/entities/category_entity.dart';
 import 'package:spend_io_app/features/category/presentation/viewmodels/category_viewmodel.dart';
-
-import 'package:spend_io_app/features/transaction/presentation/widgets/components/fintech_amount_input.dart';
-import 'package:spend_io_app/features/transaction/presentation/widgets/components/transaction_metadata_fields.dart';
-import 'package:spend_io_app/shared/widgets/date_picker/app_date_picker_sheet.dart';
-
-// Import core formatter để hiển thị số tiền ban đầu có dấu chấm phân cách chuẩn xác
+import 'package:spend_io_app/features/transaction/presentation/widgets/fintech_amount_input.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:spend_io_app/features/transaction/presentation/widgets/transaction_metadata_fields.dart';
+import 'package:spend_io_app/features/transaction/presentation/widgets/transaction_type_segment.dart';
+import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
+import 'package:spend_io_app/shared/widgets/date_picker/app_date_picker_sheet.dart';
 import 'package:spend_io_app/core/currency/currency_context.dart';
 
 class EditTransactionScreen extends StatefulWidget {
@@ -36,7 +35,9 @@ class EditTransactionScreen extends StatefulWidget {
   });
 
   @override
-  State<EditTransactionScreen> createState() => _EditTransactionScreenState();
+  State<EditTransactionScreen> createState() {
+    return _EditTransactionScreenState();
+  }
 }
 
 class _EditTransactionScreenState extends State<EditTransactionScreen> {
@@ -48,8 +49,11 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
   CategoryEntity? _selectedCategory;
   late DateTime _selectedDate;
   AccountEntity? _selectedAccount;
-  String get _activeCurrencyCode =>
-      _selectedAccount?.currencyCode ?? widget.transaction.currencyCode;
+  bool _isSubmitting = false;
+
+  String get _activeCurrencyCode {
+    return _selectedAccount?.currencyCode ?? widget.transaction.currencyCode;
+  }
 
   @override
   void initState() {
@@ -57,14 +61,16 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
 
     final double rawAmount = widget.transaction.amount.abs();
 
-    // ĐỔI MỚI: Dùng formatCurrency từ core và loại bỏ chữ 'đ' để hiển thị số tiền cũ dạng "1.000" thay vì số thô "1000"
-    final String formattedInitialAmount =
-        formatCurrency(rawAmount, currencyCode: widget.transaction.currencyCode, locale: context.currencyContext.locale)
-            .replaceAll('đ', '')
-            .replaceAll('\$', '')
-            .replaceAll('VND', '')
-            .replaceAll('USD', '')
-            .trim();
+    final String formattedInitialAmount = formatCurrency(
+      rawAmount,
+      currencyCode: widget.transaction.currencyCode,
+      locale: context.currencyContext.locale,
+    )
+        .replaceAll('đ', '')
+        .replaceAll('\$', '')
+        .replaceAll('VND', '')
+        .replaceAll('USD', '')
+        .trim();
 
     _amountController = TextEditingController(text: formattedInitialAmount);
     _noteController =
@@ -72,6 +78,20 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
 
     _selectedType = widget.transaction.type;
     _selectedDate = widget.transaction.transactionDate;
+
+    // ✅ FIX NGHẼN 6 SỐ TỪ XA: Ép bộ lắng nghe Controller dọn sạch dấu trước khi con bị digitsOnly chặn đứng
+    _amountController.addListener(() {
+      final text = _amountController.text;
+      if (text.contains('.') || text.contains(',')) {
+        final cleanText = text.replaceAll(RegExp(r'[^0-9]'), '');
+        if (cleanText != text) {
+          _amountController.value = _amountController.value.copyWith(
+            text: cleanText,
+            selection: TextSelection.collapsed(offset: cleanText.length),
+          );
+        }
+      }
+    });
 
     final accountVM = context.read<AccountViewModel>();
     if (accountVM.accounts.isNotEmpty) {
@@ -106,11 +126,17 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
   void _showWalletPicker(List<AccountEntity> accounts) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      useSafeArea: false,
       builder: (_) => WalletPickerSheet(
         accounts: accounts,
         selectedAccount: _selectedAccount,
-        onAccountSelected: (acc) => setState(() => _selectedAccount = acc),
+        onAccountSelected: (acc) {
+          setState(() {
+            _selectedAccount = acc;
+          });
+        },
       ),
     );
   }
@@ -120,6 +146,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      useSafeArea: false,
       builder: (_) => CategorySelectionSheet(
         currentType:
             _selectedType == TransactionType.expense ? 'expense' : 'income',
@@ -139,6 +166,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      useSafeArea: false,
       builder: (_) => AppDatePickerSheet(
         initialRange: DateTimeRange(start: _selectedDate, end: _selectedDate),
         isSingleDateMode: true,
@@ -165,12 +193,15 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     }
   }
 
-  void _submitData() {
+  Future<void> _submitData() async {
+    if (_isSubmitting) return;
+
     if (!_formKey.currentState!.validate()) return;
 
-    final double? amount = CurrencyFormatter.parse(_amountController.text, currencyCode: _activeCurrencyCode);
+    final double? amount = CurrencyFormatter.parse(_amountController.text,
+        currencyCode: _activeCurrencyCode);
 
-    if (amount == null || amount <= 0) return;
+    if (amount == null || amount <= 0 || amount > 999999999) return;
 
     if (_selectedAccount == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -191,6 +222,12 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
       );
       return;
     }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    FocusScope.of(context).unfocus();
 
     final updatedTx = TransactionEntity(
       id: widget.transaction.id,
@@ -224,25 +261,32 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     debugPrint(
         '====================================================================================================');
     debugPrint(
-        '[DATABASE HANDLER] Action Triggered: onTap (Update Transaction)');
-    debugPrint(
         '[DATABASE HANDLER] UPDATE PAYLOAD JSON STR: ${jsonEncode(txMapLog)}');
     debugPrint(
         '====================================================================================================');
 
-    widget.transactionVM
-        .updateTransaction(
-      newEntity: updatedTx,
-      oldEntity: widget.transaction,
-    )
-        .then((_) {
+    final navigator = Navigator.of(context);
+    final walletVM = context.read<WalletViewModel>();
+
+    try {
+      await widget.transactionVM.updateTransaction(
+        newEntity: updatedTx,
+        oldEntity: widget.transaction,
+      );
+      await walletVM.refreshBudgetProgress();
+
       if (mounted) {
         int count = 0;
-        Navigator.popUntil(context, (route) {
-          return count++ == 2;
+        navigator.popUntil((route) => count++ == 2);
+      }
+    } catch (e) {
+      debugPrint('[UX ERROR]: Thất bại khi cập nhật giao dịch: $e');
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
         });
       }
-    });
+    }
   }
 
   @override
@@ -251,18 +295,19 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     final activeAccounts = context.watch<AccountViewModel>().accounts;
 
     final backgroundColor =
-        isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
-    final surfaceColor = isDark
-        ? AppColors.surfaceSecondaryDark
-        : AppColors.surfaceSecondaryLight;
+        isDark ? AppColors.backgroundDark : const Color(0xFFF8F9FB);
+    final surfaceColor = isDark ? AppColors.surfaceDark : Colors.white;
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      // ĐỒNG BỘ: Sử dụng AppHeader hệ thống thống nhất thay cho SliverAppBar rời rạc
       appBar: AppHeader(
         title: 'Edit Transaction',
         showBack: true,
-        onBack: () => Navigator.pop(context),
+        onBack: () {
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          }
+        },
       ),
       body: SafeArea(
         child: Form(
@@ -270,159 +315,90 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
           child: CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
-              // ĐỒNG BỘ: Custom Segmented Tab chuyển đổi trạng thái Expense / Income
+              // THÀNH PHẦN 1: TAB SEGMENT
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(
-                    AppSizes.md, AppSizes.md, AppSizes.md, AppSizes.md),
+                    AppSizes.md, 12, AppSizes.md, AppSizes.sm),
                 sliver: SliverToBoxAdapter(
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: surfaceColor,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      children: [
-                        _buildTypeSegment(
-                          label: 'Expense',
-                          isSelected: _selectedType == TransactionType.expense,
-                          activeColor: AppColors.expense,
-                          isDark: isDark,
-                          onTap: () => setState(() {
-                            _selectedType = TransactionType.expense;
-                            _selectedCategory = null;
-                          }),
-                        ),
-                        _buildTypeSegment(
-                          label: 'Income',
-                          isSelected: _selectedType == TransactionType.income,
-                          activeColor: AppColors.income,
-                          isDark: isDark,
-                          onTap: () => setState(() {
-                            _selectedType = TransactionType.income;
-                            _selectedCategory = null;
-                          }),
-                        ),
-                      ],
-                    ),
+                  child: TransactionTypeSegment(
+                    selectedType: _selectedType,
+                    onTypeChanged: (type) {
+                      setState(() {
+                        _selectedType = type;
+                        _selectedCategory = null;
+                      });
+                    },
                   ),
                 ),
               ),
 
-              // ĐỒNG BỘ: Ô nhập tiền Fintech không border, tự động thêm dấu chấm hàng nghìn
-              FintechAmountInput(
-                controller: _amountController,
-                selectedType: _selectedType,
-                autofocus: false,
-                currencyCode: _activeCurrencyCode,
+              // THÀNH PHẦN 2: AMOUNT INPUT
+              SliverToBoxAdapter(
+                child: FintechAmountInput(
+                  controller: _amountController,
+                  selectedType: _selectedType,
+                  autofocus: false,
+                  currencyCode: _activeCurrencyCode,
+                ),
               ),
 
-              // ĐỒNG BỘ: Grouped Card chứa Metadata Fields (Ví, Danh mục, Ngày, Note)
-              TransactionMetadataFields(
-                activeAccounts: activeAccounts,
-                selectedAccount: _selectedAccount,
-                selectedCategory: _selectedCategory,
-                selectedDate: _selectedDate,
-                noteController: _noteController,
-                onWalletTap: () => _showWalletPicker(activeAccounts),
-                onCategoryTap: _showCategoryPicker,
-                onDateTap: _pickDate,
-              ),
-
-              // ĐỒNG BỘ: Nút bấm Submit phủ Gradient thương hiệu chuyển động mượt mà
+              // THÀNH PHẦN 3: METADATA CARD
               SliverPadding(
-                padding: const EdgeInsets.all(AppSizes.md),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.md, vertical: AppSizes.xs),
                 sliver: SliverToBoxAdapter(
                   child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
                     decoration: BoxDecoration(
+                      color: surfaceColor,
                       borderRadius: BorderRadius.circular(16),
-                      gradient: _selectedAccount == null
-                          ? null
-                          : const LinearGradient(
-                              colors: [
-                                AppColors.gradientStart,
-                                AppColors.gradientEnd
-                              ],
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                            ),
-                      color:
-                          _selectedAccount == null ? AppColors.disabled : null,
-                      boxShadow: _selectedAccount == null
+                      boxShadow: isDark
                           ? null
                           : [
                               BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.3),
+                                color: Colors.black.withValues(alpha: 0.015),
                                 blurRadius: 12,
                                 offset: const Offset(0, 4),
                               )
                             ],
                     ),
-                    child: ElevatedButton(
-                      onPressed: _submitData,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16)),
-                      ),
-                      child: const Text(
-                        'Save Changes',
-                        style: TextStyle(
-                          color: AppColors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.2,
-                        ),
+                    child: TransactionMetadataFields(
+                      activeAccounts: activeAccounts,
+                      selectedAccount: _selectedAccount,
+                      selectedCategory: _selectedCategory,
+                      selectedDate: _selectedDate,
+                      noteController: _noteController,
+                      onWalletTap: () {
+                        _showWalletPicker(activeAccounts);
+                      },
+                      onCategoryTap: _showCategoryPicker,
+                      onDateTap: _pickDate,
+                    ),
+                  ),
+                ),
+              ),
+
+              // ✅ FIX TRIỆT ĐỂ RENDERSLIVER & SNACKBAR OFF SCREEN: Ghìm chặt khối nút dưới đáy CustomScrollView chống nổ layout
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                        AppSizes.md, AppSizes.md, AppSizes.md, AppSizes.xl),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: AppButton(
+                        title: 'Save Changes',
+                        isLoading: _isSubmitting,
+                        onPressed: _submitData,
+                        variant: AppButtonVariant.primary,
                       ),
                     ),
                   ),
                 ),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Widget nội bộ tạo khối lựa chọn chuyển trạng thái mượt mà
-  Widget _buildTypeSegment({
-    required String label,
-    required bool isSelected,
-    required Color activeColor,
-    required bool isDark,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? (isDark
-                    ? activeColor.withValues(alpha: 0.2)
-                    : activeColor.withValues(alpha: 0.12))
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Center(
-            child: Text(
-              label,
-              style: TextStyle(
-                color: isSelected
-                    ? activeColor
-                    : (isDark
-                        ? AppColors.textMutedDark
-                        : AppColors.textMutedLight),
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                fontSize: 15,
-              ),
-            ),
           ),
         ),
       ),

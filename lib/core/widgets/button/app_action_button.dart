@@ -3,26 +3,25 @@ import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/core/constants/app_text_styles.dart';
 
-// variants enum
-enum AppButtonVariant { primary, cancel, delete }
+enum AppActionButtonVariant { primary, cancel, delete }
 
-class AppButton extends StatelessWidget {
+class AppActionButton extends StatelessWidget {
   final String title;
   final VoidCallback? onPressed;
-  final AppButtonVariant variant;
+  final AppActionButtonVariant variant;
 
-  const AppButton({
+  const AppActionButton({
     super.key,
     required this.title,
     required this.onPressed,
-    this.variant = AppButtonVariant.primary,
+    this.variant = AppActionButtonVariant.primary,
   });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 48,
-      child: (variant == AppButtonVariant.primary)
+      child: (variant == AppActionButtonVariant.primary)
           ? _buildPrimaryButton()
           : _buildOutlinedButton(),
     );
@@ -52,7 +51,7 @@ class AppButton extends StatelessWidget {
 
   // outlined button (cancel, delete)
   Widget _buildOutlinedButton() {
-    final isDelete = variant == AppButtonVariant.delete;
+    final isDelete = variant == AppActionButtonVariant.delete;
     final color = isDelete ? AppColors.error : Colors.grey;
 
     return OutlinedButton(

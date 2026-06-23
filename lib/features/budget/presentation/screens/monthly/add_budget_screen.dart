@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
-import 'package:spend_io_app/core/constants/app_radius.dart';
 import 'package:spend_io_app/features/budget/domain/usecase/monthly/update_budget_usecase.dart';
 import 'package:spend_io_app/features/budget/presentation/viewmodels/monthly/budget_form_viewmodel.dart';
 import 'package:spend_io_app/features/budget/presentation/viewmodels/monthly/budget_viewmodel.dart';
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
+import 'package:spend_io_app/features/transaction/presentation/widgets/fintech_amount_input.dart';
+import 'package:spend_io_app/features/transaction/domain/entities/transaction_type.dart';
 import 'package:spend_io_app/core/currency/currency_context.dart';
+import 'package:spend_io_app/core/widgets/app_header.dart';
+import 'package:spend_io_app/core/widgets/button/app_button.dart';
+import 'package:spend_io_app/core/utils/localization.dart';
 
 class AddBudgetScreen extends StatefulWidget {
   final int userId;
@@ -37,47 +40,15 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
     super.dispose();
   }
 
-  void _onAmountChanged(String value, BudgetFormViewModel formVM) {
-    String cleanString = value.replaceAll(RegExp(r'[^\d]'), '');
-
-    if (cleanString.isEmpty || cleanString == '0') {
-      _amountController.text = '0';
-      formVM.setAmount('0');
-      return;
-    }
-
-    double parsedAmount = double.parse(cleanString);
-    if (parsedAmount > 999999999) {
-      final double oldAmount = double.tryParse(formVM.amount) ?? 0;
-      final formatter = NumberFormat.decimalPattern('vi_VN');
-      final String oldFormatted = formatter.format(oldAmount.round());
-      _amountController.value = TextEditingValue(
-        text: oldFormatted,
-        selection: TextSelection.collapsed(offset: oldFormatted.length),
-      );
-      return;
-    }
-
-    final formatter = NumberFormat.decimalPattern('vi_VN');
-    String formatted = formatter.format(parsedAmount.round());
-
-    _amountController.value = TextEditingValue(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
-    );
-
-    formVM.setAmount(cleanString);
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final backgroundColor =
-        isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
+        isDark ? AppColors.backgroundDark : const Color(0xFFF8F9FB);
     final primaryTextColor =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final secondaryTextColor =
-        isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+        isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
 
     final formVM = context.watch<BudgetFormViewModel>();
     final budgetVM = context.read<BudgetViewModel>();
@@ -86,127 +57,116 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded,
-              color: primaryTextColor, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Set Limit',
-          style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: primaryTextColor),
-        ),
-        centerTitle: true,
+      appBar: AppHeader(
+        title: AppLocalizations.translate('Monthly Budget'),
+        showBack: true,
+        onBack: () => Navigator.pop(context),
       ),
       body: SafeArea(
         child: Form(
           key: formVM.formKey,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSizes.lg),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Set Limit',
-                  style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w800,
-                      color: primaryTextColor),
-                ),
-                const SizedBox(height: AppSizes.xs),
-                Text(
-                  'How much do you want to spend this period?',
-                  style: TextStyle(
-                      fontSize: 16,
-                      color: secondaryTextColor,
-                      fontWeight: FontWeight.w400),
-                ),
-                const Spacer(flex: 2),
-                Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IntrinsicWidth(
-                        child: TextFormField(
-                          controller: _amountController,
-                          keyboardType: TextInputType.number,
-                          autofocus: true,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              fontSize: 56,
-                              fontWeight: FontWeight.w700,
-                              color: primaryTextColor.withValues(alpha: 0.9)),
-                          decoration: const InputDecoration(
-                            border: InputBorder.none,
-                            contentPadding: EdgeInsets.zero,
-                          ),
-                          validator: formVM.validateAmount,
-                          onChanged: (val) => _onAmountChanged(val, formVM),
-                        ),
-                      ),
-                      const SizedBox(height: AppSizes.xs),
-                      Text(
-                        context.currencyContext.preferredCurrencyCode == 'VND' ? '₫ VND' : '\$ USD',
-                        style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: secondaryTextColor),
-                      ),
-                    ],
-                  ),
-                ),
-                const Spacer(flex: 3),
-                SizedBox(
-                  width: double.infinity,
-                  height: 54,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.md)),
-                    ),
-                    onPressed: formVM.isSubmitting
-                        ? null
-                        : () async {
-                            final success = await formVM.submitBudget(
-                              budgetVM: budgetVM,
-                              updateBudgetUseCase: updateBudgetUseCase,
-                              userId: widget.userId,
-                              preferredCurrencyCode: context.currencyContext.preferredCurrencyCode,
-                            );
-
-                            if (success && context.mounted) {
-                              await walletVM.refreshBudgetProgress();
-                              if (context.mounted) {
-                                Navigator.pop(context);
-                                debugPrint(
-                                    '[UX SUCCESS]: Khởi tạo hạn mức ngân sách thành công.');
-                              }
-                            }
-                          },
-                    child: formVM.isSubmitting
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                                color: Colors.white, strokeWidth: 2))
-                        : const Text(
-                            'Save Limit',
+          child: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              // KHỐI 1: TIÊU ĐỀ VÀ WHITE CARD NHẬP TIỀN FINTECH ĐỒNG BỘ
+              SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: AppSizes.lg),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: AppSizes.md),
+                          Text(
+                            AppLocalizations.translate('Create Budget'),
                             style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.w600),
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              color: primaryTextColor,
+                            ),
                           ),
+                          const SizedBox(height: 6),
+                          Text(
+                            AppLocalizations.translate(
+                                'How much do you want to spend this period?'),
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: secondaryTextColor,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.md),
+
+                    // ✅ ĐÃ ĐỒNG BỘ: Thay thế ô nhập chữ to căn giữa bằng component White Card phẳng giống Category
+                    FintechAmountInput(
+                      controller: _amountController,
+                      selectedType: TransactionType.expense,
+                      autofocus: true,
+                      currencyCode:
+                          context.currencyContext.preferredCurrencyCode,
+                    ),
+                  ],
+                ),
+              ),
+
+              // KHỐI 2: ĐẨY NÚT BẤM LƯU XUỐNG ĐÁY MÀN HÌNH CHỐNG OVERFLOW CHUẨN SLIVER
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                        AppSizes.md, AppSizes.md, AppSizes.md, AppSizes.xl),
+                    child: AppButton(
+                      title: formVM.isSubmitting
+                          ? AppLocalizations.translate('Saving...')
+                          : AppLocalizations.translate('Save Budget'),
+                      isLoading: formVM.isSubmitting,
+                      onPressed: () async {
+                        final cleanAmount = _amountController.text
+                            .replaceAll(RegExp(r'[^\d]'), '');
+
+                        if (cleanAmount.isEmpty || cleanAmount == '0') {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(AppLocalizations.translate(
+                                  'Please enter a valid amount')),
+                              backgroundColor: AppColors.error,
+                            ),
+                          );
+                          return;
+                        }
+
+                        formVM.setAmount(cleanAmount);
+
+                        final success = await formVM.submitBudget(
+                          budgetVM: budgetVM,
+                          updateBudgetUseCase: updateBudgetUseCase,
+                          userId: widget.userId,
+                          preferredCurrencyCode:
+                              context.currencyContext.preferredCurrencyCode,
+                        );
+
+                        if (success && context.mounted) {
+                          await walletVM.refreshBudgetProgress();
+                          if (context.mounted) {
+                            Navigator.pop(context);
+                            debugPrint(
+                                '[UX SUCCESS]: Cấu hình ngân sách tháng qua White Card thành công.');
+                          }
+                        }
+                      },
+                    ),
                   ),
                 ),
-                const SizedBox(height: AppSizes.md),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

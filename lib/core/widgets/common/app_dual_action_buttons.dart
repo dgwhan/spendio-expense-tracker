@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
-import 'package:spend_io_app/core/widgets/primary_button.dart';
+import 'package:spend_io_app/core/widgets/button/app_action_button.dart';
 
 class AppDualActionButtons extends StatelessWidget {
   final String primaryLabel;
   final String secondaryLabel;
   final VoidCallback? onPrimaryPressed;
   final VoidCallback? onSecondaryPressed;
-  final AppButtonVariant primaryVariant;
-  final AppButtonVariant secondaryVariant;
+  final AppActionButtonVariant primaryVariant;
+  final AppActionButtonVariant secondaryVariant;
 
   const AppDualActionButtons({
     super.key,
@@ -16,8 +16,8 @@ class AppDualActionButtons extends StatelessWidget {
     required this.secondaryLabel,
     required this.onPrimaryPressed,
     required this.onSecondaryPressed,
-    this.primaryVariant = AppButtonVariant.primary,
-    this.secondaryVariant = AppButtonVariant.cancel,
+    this.primaryVariant = AppActionButtonVariant.primary,
+    this.secondaryVariant = AppActionButtonVariant.cancel,
   });
 
   @override
@@ -26,7 +26,7 @@ class AppDualActionButtons extends StatelessWidget {
       children: [
         // left action button
         Expanded(
-          child: AppButton(
+          child: AppActionButton(
             title: primaryLabel,
             variant: primaryVariant,
             onPressed: onPrimaryPressed,
@@ -35,7 +35,7 @@ class AppDualActionButtons extends StatelessWidget {
         const SizedBox(width: AppSizes.md),
         // right action button
         Expanded(
-          child: AppButton(
+          child: AppActionButton(
             title: secondaryLabel,
             variant: secondaryVariant,
             onPressed: onSecondaryPressed,

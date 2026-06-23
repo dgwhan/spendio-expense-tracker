@@ -24,23 +24,17 @@ class AppProviders {
 
   static List<SingleChildWidget> providers(Database database) {
     return [
-      // CORE
-
       Provider<Database>.value(value: database),
-
       ...AuthModuleProvider.providers,
       ...OnboardingModuleProvider.providers,
-
       ...AccountModuleProvider.providers,
       ...CategoryModuleProvider.providers,
       ...SavingGoalModuleProvider.providers(database),
-
       ...TransactionProvider.providers,
       ...BudgetModuleProvider.providers,
       ...WalletModuleProvider.providers,
       ...ProfileModuleProvider.providers,
       ...InsightModuleProvider.providers,
-
       ProxyProvider2<AuthProvider, CheckWalletInitializationUseCase,
           StartupCoordinator>(
         update: (context, auth, walletCheck, previous) {
@@ -48,6 +42,11 @@ class AppProviders {
             authProvider: auth,
             checkWalletInitializationUseCase: walletCheck,
             getCurrentUserUseCase: context.read<GetCurrentUserUseCase>(),
+            categoryRepository: context.read(),
+            profileVM: context.read(),
+            walletVM: context.read(),
+            categoryVM: context.read(),
+            transactionVM: context.read(),
           );
         },
       ),

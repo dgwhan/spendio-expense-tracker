@@ -10,7 +10,6 @@ import 'package:spend_io_app/features/account/domain/entities/account_entity.dar
 import 'package:spend_io_app/features/account/presentation/screen/edit_account_screen.dart';
 import 'package:spend_io_app/features/account/presentation/widgets/account_details_header.dart';
 import 'package:spend_io_app/features/account/presentation/widgets/account_metrics_section.dart';
-import 'package:spend_io_app/features/transaction/presentation/widgets/components/account_transaction_sort_button.dart';
 import 'package:spend_io_app/shared/widgets/date_picker/app_custome_date_picker_sheet.dart';
 import 'package:spend_io_app/features/category/presentation/viewmodels/category_viewmodel.dart';
 import 'package:spend_io_app/features/transaction/domain/entities/transaction_entity.dart';
@@ -29,7 +28,9 @@ class AccountDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<AccountDetailsViewModel>(
-      create: (_) => AccountDetailsViewModel(),
+      create: (_) {
+        return AccountDetailsViewModel();
+      },
       child: _AccountDetailsScreenBody(
           targetAccountId: account.id, initialAccount: account),
     );
@@ -46,8 +47,9 @@ class _AccountDetailsScreenBody extends StatefulWidget {
   });
 
   @override
-  State<_AccountDetailsScreenBody> createState() =>
-      _AccountDetailsScreenBodyState();
+  State<_AccountDetailsScreenBody> createState() {
+    return _AccountDetailsScreenBodyState();
+  }
 }
 
 class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
@@ -83,12 +85,10 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
   @override
   void dispose() {
     _searchController.dispose();
-    // Restore all transactions for the Home screen and other general views
     context.read<TransactionViewModel>().loadAllTransactions();
     super.dispose();
   }
 
-  // handle delete account safely
   void _showDeleteConfirmation(BuildContext context, AccountViewModel accountVM,
       AccountEntity account) async {
     final navigator = Navigator.of(context);
@@ -113,7 +113,6 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
     }
   }
 
-  // handle edit account view call
   void _triggerEdit(BuildContext context, AccountViewModel accountVM,
       AccountEntity account) async {
     final detailsVM = context.read<AccountDetailsViewModel>();
@@ -122,19 +121,21 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
     final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
-        builder: (_) =>
-            EditAccountScreen(viewModel: accountVM, account: account),
+        builder: (_) {
+          return EditAccountScreen(viewModel: accountVM, account: account);
+        },
       ),
     );
 
     if (result == true && mounted) {
-      setState(() => _hasBeenUpdated = true);
+      setState(() {
+        _hasBeenUpdated = true;
+      });
       final freshTx = txVM.state.transactions;
       detailsVM.initialize(account, freshTx);
     }
   }
 
-  // handle show range calendarpicker safely
   void _openCustomRangePicker(BuildContext context) async {
     final detailsVM = context.read<AccountDetailsViewModel>();
 
@@ -142,9 +143,11 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (sheetCtx) => AppCustomeDatePickerSheet(
-        initialRange: detailsVM.filterState.customDateRange,
-      ),
+      builder: (sheetCtx) {
+        return AppCustomeDatePickerSheet(
+          initialRange: detailsVM.filterState.customDateRange,
+        );
+      },
     );
 
     if (range != null && mounted) {
@@ -152,12 +155,12 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
     }
   }
 
-  // handle back context navigation safely
   void _navigateBack(BuildContext context) {
-    //kiểm tra có màn hình nào để return về k
     if (Navigator.canPop(context)) {
       Future.microtask(() {
-        if (!context.mounted) return;
+        if (!context.mounted) {
+          return;
+        }
 
         final returnAction = _hasBeenUpdated
             ? AccountDetailsAction.updated
@@ -177,8 +180,9 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
 
     final accountVM = context.watch<AccountViewModel>();
     final txState = context.watch<TransactionViewModel>().state;
-    final matches =
-        accountVM.accounts.where((acc) => acc.id == widget.targetAccountId);
+    final matches = accountVM.accounts.where((acc) {
+      return acc.id == widget.targetAccountId;
+    });
 
     if (matches.isEmpty && _hasBeenUpdated) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -188,10 +192,9 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        context.read<AccountDetailsViewModel>().initialize(
-              account,
-              txState.transactions,
-            );
+        context
+            .read<AccountDetailsViewModel>()
+            .initialize(account, txState.transactions);
       }
     });
 
@@ -200,16 +203,19 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
     final ledgerState = detailsVM.ledgerState;
 
     final List<TransactionEntity> liveFiltered = List.from(
-        (ledgerState?.filteredTransactions != null)
-            ? ledgerState!.filteredTransactions
-            : []);
+      (ledgerState?.filteredTransactions != null)
+          ? ledgerState!.filteredTransactions
+          : [],
+    );
 
     if (_transactionSort == AccountSortOption.newest) {
-      liveFiltered
-          .sort((a, b) => b.transactionDate.compareTo(a.transactionDate));
+      liveFiltered.sort((a, b) {
+        return b.transactionDate.compareTo(a.transactionDate);
+      });
     } else if (_transactionSort == AccountSortOption.oldest) {
-      liveFiltered
-          .sort((a, b) => a.transactionDate.compareTo(b.transactionDate));
+      liveFiltered.sort((a, b) {
+        return a.transactionDate.compareTo(b.transactionDate);
+      });
     }
 
     double liveTotalReceived = 0;
@@ -233,7 +239,9 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop) return;
+        if (didPop) {
+          return;
+        }
         _navigateBack(context);
       },
       child: Scaffold(
@@ -248,7 +256,9 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
               await context
                   .read<AccountViewModel>()
                   .loadAccounts(account.userId, remoteUid, forceRefresh: true);
-              if (!context.mounted) return;
+              if (!context.mounted) {
+                return;
+              }
               await context
                   .read<TransactionViewModel>()
                   .loadByAccount(widget.targetAccountId);
@@ -261,19 +271,27 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
                   accountName: account.name,
                   balance: account.balance,
                   primaryTextColor: primaryTextColor,
-                  onBackTap: () => _navigateBack(context),
-                  onEditTap: () => _triggerEdit(context, accountVM, account),
-                  onDeleteTap: () =>
-                      _showDeleteConfirmation(context, accountVM, account),
+                  onBackTap: () {
+                    _navigateBack(context);
+                  },
+                  onEditTap: () {
+                    _triggerEdit(context, accountVM, account);
+                  },
+                  onDeleteTap: () {
+                    _showDeleteConfirmation(context, accountVM, account);
+                  },
                 ),
                 AccountMetricsSection(
                   account: account,
                   activeRangeDisplay: activeRangeDisplay,
                   totalReceived: liveTotalReceived,
                   totalSpent: liveTotalSpent,
-                  onPresetSelected: (label) =>
-                      context.read<AccountDetailsViewModel>().setFilter(label),
-                  onCustomRangeTap: () => _openCustomRangePicker(context),
+                  onPresetSelected: (label) {
+                    context.read<AccountDetailsViewModel>().setFilter(label);
+                  },
+                  onCustomRangeTap: () {
+                    _openCustomRangePicker(context);
+                  },
                 ),
                 SliverToBoxAdapter(
                   child: Padding(
@@ -285,17 +303,14 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
                           child: AppSearchBar(
                             controller: _searchController,
                             hintText: 'Search transactions...',
-                            onChanged: (value) => context
-                                .read<AccountDetailsViewModel>()
-                                .setSearchQuery(value),
+                            onChanged: (value) {
+                              context
+                                  .read<AccountDetailsViewModel>()
+                                  .setSearchQuery(value);
+                            },
                           ),
                         ),
                         const SizedBox(width: AppSizes.md),
-                        AccountTransactionSortButton(
-                          currentSort: _transactionSort,
-                          onSortSelected: (option) =>
-                              setState(() => _transactionSort = option),
-                        ),
                       ],
                     ),
                   ),
@@ -305,7 +320,13 @@ class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
                   transactions: liveFiltered,
                   categories:
                       context.watch<CategoryViewModel>().state.categories,
-                )
+                  selectedDatePreset:
+                      filterState.activeRangeLabel == 'Custom Range...'
+                          ? 'Custom'
+                          : 'All',
+                  customStartDate: filterState.customDateRange?.start,
+                  customEndDate: filterState.customDateRange?.end,
+                ),
               ],
             ),
           ),

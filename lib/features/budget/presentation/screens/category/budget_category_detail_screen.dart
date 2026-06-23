@@ -21,8 +21,7 @@ import 'package:spend_io_app/features/category/domain/entities/category_entity.d
 import 'package:spend_io_app/features/transaction/domain/entities/transaction_entity.dart';
 import 'package:spend_io_app/features/transaction/presentation/screen/transaction_detail_screen.dart';
 import 'package:spend_io_app/features/transaction/presentation/viewmodels/transaction_viewmodel.dart';
-import 'package:spend_io_app/features/transaction/presentation/widgets/components/account_transaction_item.dart';
-import 'package:spend_io_app/features/transaction/presentation/widgets/components/account_transaction_sort_button.dart';
+import 'package:spend_io_app/features/transaction/presentation/widgets/account_transaction_item.dart';
 
 class BudgetCategoryDetailScreen extends StatefulWidget {
   final BudgetCategoryProgressEntity progress;
@@ -235,11 +234,6 @@ class _BudgetCategoryDetailScreenState
                           ),
                         ),
                         const SizedBox(width: AppSizes.sm),
-                        AccountTransactionSortButton(
-                          currentSort: _transactionSort,
-                          onSortSelected: (val) =>
-                              setState(() => _transactionSort = val),
-                        ),
                       ],
                     ),
                   ],

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
+import 'package:spend_io_app/core/constants/app_sizes.dart';
+import 'package:spend_io_app/core/constants/app_text_styles.dart';
 import 'package:spend_io_app/core/utils/localization.dart';
-import 'package:spend_io_app/features/home/presentation/widgets/shared/dashboard_section_container.dart';
 import 'package:spend_io_app/features/home/presentation/widgets/recent_activity/transaction_tile.dart';
 import 'package:spend_io_app/features/home/data/models/recent_transaction_model.dart';
-import 'package:spend_io_app/shared/widgets/buttons/app_text_button.dart';
+import 'package:spend_io_app/core/widgets/button/app_text_button.dart';
 
 class RecentActivitySection extends StatefulWidget {
   final List<RecentTransactionModel> transactions;
@@ -27,94 +28,74 @@ class _RecentActivitySectionState extends State<RecentActivitySection> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final totalAvailable = widget.transactions.take(_maxHomeCount).toList();
 
     final displayTransactions = _isExpanded
         ? totalAvailable
         : totalAvailable.take(_collapsedCount).toList();
 
+    final titleColor =
+        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Title Header Section
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
+          padding: const EdgeInsets.symmetric(
+              horizontal: 4.0, vertical: AppSizes.sm),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 AppLocalizations.translate('recent_transactions'),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimaryLight,
-                    ),
+                style: AppTextStyles.sectionTitle.copyWith(
+                  color: titleColor,
+                ),
               ),
-              TextButton(
-                onPressed: widget.onViewAllTap,
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Text(
-                  AppLocalizations.translate('view_all'),
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-                ),
+              AppTextButton(
+                text: AppLocalizations.translate('view_all'),
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                onTap: widget.onViewAllTap,
               ),
             ],
           ),
         ),
 
-        // Khung danh sách giao dịch
         if (displayTransactions.isNotEmpty) ...[
-          DashboardSectionContainer(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: displayTransactions.length,
-                  separatorBuilder: (context, index) => Divider(
-                    height: 1,
-                    color: AppColors.borderLight,
-                  ),
-                  itemBuilder: (context, index) {
-                    return TransactionTile(
-                        transaction: displayTransactions[index]);
-                  },
-                ),
-                if (totalAvailable.length > _collapsedCount) ...[
-                  Divider(height: 1, color: AppColors.borderLight),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4.0),
-                    child: Center(
-                      child: AppTextButton(
-                        text: _isExpanded 
-                            ? AppLocalizations.translate('see_less')
-                            : AppLocalizations.translate('see_more'),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        onTap: () {
-                          setState(() {
-                            _isExpanded = !_isExpanded;
-                          });
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: displayTransactions.length,
+            itemBuilder: (context, index) {
+              return TransactionTile(
+                transaction: displayTransactions[index],
+              );
+            },
           ),
+
+          // Nút mở rộng See More / See Less đặt thoáng ở cuối danh sách
+          if (totalAvailable.length > _collapsedCount) ...[
+            const SizedBox(height: AppSizes.xs),
+            Center(
+              child: AppTextButton(
+                text: _isExpanded
+                    ? AppLocalizations.translate('see_less')
+                    : AppLocalizations.translate('see_more'),
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                onTap: () {
+                  setState(() {
+                    _isExpanded = !_isExpanded;
+                  });
+                },
+              ),
+            ),
+          ],
         ],
       ],
     );
   }
 }
-

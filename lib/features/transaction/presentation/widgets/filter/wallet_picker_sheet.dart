@@ -25,7 +25,16 @@ class WalletPickerSheet extends StatelessWidget {
         borderRadius:
             const BorderRadius.vertical(top: Radius.circular(AppSizes.lg)),
       ),
-      padding: const EdgeInsets.all(AppSizes.md),
+      // Dùng Padding kết hợp với viewInsets/viewPadding để xử lý khoảng cách đáy
+      // thay vì dùng SafeArea (SafeArea sẽ cố tình đẩy widget lên trên thanh nav gốc)
+      padding: EdgeInsets.only(
+        top: AppSizes.md,
+        left: AppSizes.md,
+        right: AppSizes.md,
+        bottom: MediaQuery.of(context).padding.bottom +
+            AppSizes
+                .md, // Đè lên nav nhưng cộng thêm padding để không bị dính sát chữ vào cạnh dưới screen
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,

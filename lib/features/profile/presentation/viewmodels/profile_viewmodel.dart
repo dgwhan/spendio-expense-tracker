@@ -139,7 +139,7 @@ class ProfileViewModel extends ChangeNotifier {
 
     try {
       await profileRepository.logout();
-      await AppDatabase.close();
+      // await AppDatabase.close();
 
       _user = null;
       _isLoading = false;

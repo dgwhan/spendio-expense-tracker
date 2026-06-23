@@ -39,40 +39,40 @@ class QuickActionsGrid extends StatelessWidget {
           crossAxisSpacing: 8,
           childAspectRatio: 0.85,
           children: [
-            // _ActionItem(
-            //   icon: Icons.add_chart_rounded,
-            //   label: 'Create\nBudget',
-            //   onTap: onCreateBudgetTap,
-            //   isDark: isDark,
-            // ),
             _ActionItem(
               icon: Icons.history_rounded,
               label: 'Transaction\nHistory',
-              onTap: onTransactionHistoryTap,
+              onTap: () {
+                debugPrint('[QUICK ACTION] Clicked: Transaction History');
+                onTransactionHistoryTap?.call();
+              },
               isDark: isDark,
             ),
             _ActionItem(
               icon: Icons.track_changes_rounded,
               label: 'Savings\nGoals',
-              onTap: onManageSavingsTap,
+              onTap: () {
+                debugPrint('[QUICK ACTION] Clicked: Savings Goals');
+                onManageSavingsTap?.call();
+              },
               isDark: isDark,
             ),
-            // _ActionItem(
-            //   icon: Icons.stacked_line_chart_rounded,
-            //   label: 'Financial\nPulse',
-            //   onTap: onInsightsTap,
-            //   isDark: isDark,
-            // ),
             _ActionItem(
               icon: Icons.calendar_month_rounded,
               label: 'Monthly\nBudget',
-              onTap: onMonthlyBudgetTap,
+              onTap: () {
+                debugPrint('[QUICK ACTION] Clicked: Monthly Budget');
+                onMonthlyBudgetTap?.call();
+              },
               isDark: isDark,
             ),
             _ActionItem(
               icon: Icons.grid_view_rounded,
               label: 'Category\nManage',
-              onTap: onCategoryManagementTap,
+              onTap: () {
+                debugPrint('[QUICK ACTION] Clicked: Category Management');
+                onCategoryManagementTap?.call();
+              },
               isDark: isDark,
             ),
           ],

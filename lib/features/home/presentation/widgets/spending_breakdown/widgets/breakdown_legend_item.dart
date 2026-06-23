@@ -12,7 +12,7 @@ class BreakdownLegendItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = BreakdownColorHelper.getColor(item.name);
+    final color = BreakdownColorHelper.getColor(context, item.name);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

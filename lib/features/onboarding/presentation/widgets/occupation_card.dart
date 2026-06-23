@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:spend_io_app/core/constants/app_colors.dart';
+import 'package:spend_io_app/core/constants/app_radius.dart';
+import 'package:spend_io_app/core/constants/app_text_styles.dart';
 import 'package:spend_io_app/features/onboarding/presentation/viewmodels/onboarding_viewmodel.dart';
 
 class OccupationCard extends StatelessWidget {
   final String title;
-  final String icon;
+  final IconData icon;
   final bool selected;
   final VoidCallback onTap;
 
@@ -20,23 +23,40 @@ class OccupationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final viewModel = context.watch<OnboardingViewModel>();
     final bool isError = viewModel.hasError;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    Color getBackgroundColor() {
+      if (selected) {
+        return AppColors.primary.withValues(alpha: 0.08);
+      }
+      return isDark
+          ? AppColors.surfaceSecondaryDark
+          : AppColors.surfaceSecondaryLight;
+    }
+
+    Color getBorderColor() {
+      if (selected) return AppColors.primary;
+      if (isError) {
+        return AppColors.error.withValues(alpha: 0.8);
+      }
+      return Colors.transparent;
+    }
+
+    Color getContentColor() {
+      if (selected) return AppColors.primary;
+      return isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    }
 
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
-          color: selected
-              ? const Color(0xFF6366F1).withValues(alpha: 0.08)
-              : const Color(0xFFE5E7EB),
-          borderRadius: BorderRadius.circular(24),
+          color: getBackgroundColor(),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
           border: Border.all(
-            color: selected
-                ? const Color(0xFF6366F1) //nếu dc chọn
-                : (isError
-                    ? Colors.red.withValues(alpha: 0.8)
-                    : Colors.transparent), //nếu chưa chọn, cảnh báo viền đỏ
+            color: getBorderColor(),
             width: 1.5,
           ),
         ),
@@ -44,25 +64,21 @@ class OccupationCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset(
+            Icon(
               icon,
-              width: 44,
-              height: 44,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => const Icon(
-                Icons.work_outline,
-                size: 44,
-                color: Colors.grey,
-              ),
+              size: 32,
+              color: getContentColor(),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 16,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.bodyNormal.copyWith(
+                fontSize: 13,
                 fontWeight: FontWeight.bold,
-                color: Colors.black,
+                color: getContentColor(),
               ),
             ),
           ],

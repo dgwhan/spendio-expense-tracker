@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/core/constants/app_text_styles.dart';
-import 'package:spend_io_app/core/widgets/primary_button.dart';
+import 'package:spend_io_app/core/widgets/button/app_action_button.dart';
 
 class AppEmptyState extends StatelessWidget {
   final String title;
@@ -84,7 +84,7 @@ class AppEmptyState extends StatelessWidget {
             // action button
             if (actionLabel != null && onActionTap != null) ...[
               const SizedBox(height: AppSizes.sm),
-              AppButton(
+              AppActionButton(
                 title: actionLabel!,
                 onPressed: onActionTap,
               ),
@@ -134,7 +134,7 @@ class AppEmptyState extends StatelessWidget {
             // action button
             if (actionLabel != null && onActionTap != null) ...[
               const SizedBox(height: AppSizes.lg),
-              AppButton(
+              AppActionButton(
                 title: actionLabel!,
                 onPressed: onActionTap,
               ),

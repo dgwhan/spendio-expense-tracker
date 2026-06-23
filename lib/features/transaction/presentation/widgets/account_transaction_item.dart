@@ -11,7 +11,7 @@ import 'package:spend_io_app/features/transaction/domain/entities/transaction_ty
 class AccountTransactionItem extends StatelessWidget {
   final TransactionEntity tx;
   final List<CategoryEntity> categories;
-  final VoidCallback? onTap; // Thêm callback để sau này bấm vào xem/sửa/xóa
+  final VoidCallback? onTap;
 
   const AccountTransactionItem({
     super.key,

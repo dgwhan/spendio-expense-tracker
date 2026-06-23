@@ -14,7 +14,7 @@ class BreakdownChart extends StatelessWidget {
     final donutSections = data.items.map((item) {
       return DonutSectionData(
         value: item.percentage,
-        color: BreakdownColorHelper.getColor(item.name),
+        color: BreakdownColorHelper.getColor(context, item.name),
       );
     }).toList();
 

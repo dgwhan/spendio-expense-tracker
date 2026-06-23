@@ -1,9 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import '../../domain/entities/onboarding_entity.dart';
-import '../../domain/usecases/check_onboarding_usecase.dart';
-import '../../domain/usecases/complete_onboarding_usecase.dart';
-import '../../domain/usecases/get_onboarding_usecase.dart';
-import '../../domain/usecases/save_onboarding_usecase.dart';
+import 'package:spend_io_app/features/onboarding/domain/entities/onboarding_entity.dart';
+import 'package:spend_io_app/features/onboarding/domain/usecases/check_onboarding_usecase.dart';
+import 'package:spend_io_app/features/onboarding/domain/usecases/complete_onboarding_usecase.dart';
+import 'package:spend_io_app/features/onboarding/domain/usecases/get_onboarding_usecase.dart';
+import 'package:spend_io_app/features/onboarding/domain/usecases/save_onboarding_usecase.dart';
 
 class OnboardingViewModel extends ChangeNotifier {
   final SaveOnboardingUseCase saveOnboardingUseCase;
@@ -17,6 +18,11 @@ class OnboardingViewModel extends ChangeNotifier {
     required this.checkOnboardingUseCase,
     required this.completeOnboardingUseCase,
   });
+
+  // TÍNH NĂNG MỚI: Quản lý luồng phát tín hiệu rung lắc
+  final StreamController<bool> _shakeController =
+      StreamController<bool>.broadcast();
+  Stream<bool> get shakeStream => _shakeController.stream;
 
   int _currentStep = 0;
   int get currentStep => _currentStep;
@@ -41,6 +47,11 @@ class OnboardingViewModel extends ChangeNotifier {
 
   double? _initialBalance;
   double? get initialBalance => _initialBalance;
+
+  // TÍNH NĂNG MỚI: Hàm trigger phát tín hiệu rung cho các card nhỏ lắng nghe
+  void triggerShake() {
+    _shakeController.add(true);
+  }
 
   void nextStep() {
     _currentStep++;
@@ -157,7 +168,8 @@ class OnboardingViewModel extends ChangeNotifier {
         email: email,
         entity: temporaryEntity,
       );
-      debugPrint('[Onboarding ViewModel]: Onboarding pipeline completed successfully for $email.');
+      debugPrint(
+          '[Onboarding ViewModel]: Onboarding pipeline completed successfully for $email.');
     } finally {
       _setLoading(false);
     }
@@ -198,5 +210,12 @@ class OnboardingViewModel extends ChangeNotifier {
     if (_isLoading == value) return;
     _isLoading = value;
     notifyListeners();
+  }
+
+  // TÍNH NĂNG MỚI: Giải phóng bộ nhớ StreamController khi hủy ViewModel
+  @override
+  void dispose() {
+    _shakeController.close();
+    super.dispose();
   }
 }

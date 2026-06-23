@@ -121,8 +121,18 @@ class BudgetCategoryCard extends StatelessWidget {
     final associatedCategory = hasCategoryMatch
         ? rootCategories.firstWhere((e) => e.id == category.categoryId)
         : fallbackCategory;
-    final categoryColor = Color(associatedCategory.colorValue);
-    final displayPercent = progress.percentage.toStringAsFixed(0);
+
+    // 🟢 LOGIC MÀU SẮC ĐỘNG: Nếu xài lố quá hạn mức (> 100% hoặc spent > amount) thì chuyển hẳn sang màu đỏ lỗi hệ thống
+    final bool isOverBudget =
+        progress.percentage > 100.0 || progress.spent > category.amount;
+    final Color activeThemeColor =
+        isOverBudget ? AppColors.error : Color(associatedCategory.colorValue);
+
+    // 🟢 KHỐNG CHẾ HIỂN THỊ PHẦN TRĂM: Nếu vượt quá 100% thì ghim cứng chữ hiển thị là "100" chứ không cho nhảy số vô cực
+    final String displayPercent = progress.percentage > 100.0
+        ? '100'
+        : progress.percentage.toStringAsFixed(0);
+
     final coreCategoryEntity = CategoryEntity(
         id: associatedCategory.id,
         userId: userId,
@@ -173,14 +183,14 @@ class BudgetCategoryCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                          color: categoryColor.withValues(alpha: 0.08),
+                          color: activeThemeColor.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(10)),
                       child: Icon(
                           IconData(associatedCategory.iconCodePoint,
                               fontFamily: associatedCategory.iconFontFamily ??
                                   'MaterialIcons'),
                           size: 20,
-                          color: categoryColor),
+                          color: activeThemeColor),
                     ),
                     const SizedBox(width: AppSizes.md),
                     Expanded(
@@ -201,8 +211,8 @@ class BudgetCategoryCard extends StatelessWidget {
                     ),
                     Text('$displayPercent%',
                         style: AppTextStyles.bodyNormal.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: primaryTextColor)),
+                            fontWeight: FontWeight.w800,
+                            color: activeThemeColor)),
                     moreMenu,
                   ],
                 ),
@@ -213,7 +223,8 @@ class BudgetCategoryCard extends StatelessWidget {
                     backgroundColor: isDark
                         ? AppColors.surfaceSecondaryDark
                         : AppColors.surfaceSecondaryLight,
-                    valueColor: AlwaysStoppedAnimation<Color>(categoryColor)),
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(activeThemeColor)),
               ],
             ),
           ),
@@ -246,7 +257,7 @@ class BudgetCategoryCard extends StatelessWidget {
                           fontFamily: associatedCategory.iconFontFamily ??
                               'MaterialIcons'),
                       size: 16,
-                      color: categoryColor),
+                      color: activeThemeColor),
                   const SizedBox(width: 6),
                   Expanded(
                       child: Text(displayName,
@@ -258,10 +269,14 @@ class BudgetCategoryCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
-              Text(formatCurrency(progress.spent, currencyCode: category.currencyCode, locale: context.currencyContext.locale),
+              Text(
+                  formatCurrency(progress.spent,
+                      currencyCode: category.currencyCode,
+                      locale: context.currencyContext.locale),
                   style: AppTextStyles.bodyNormal.copyWith(
                       fontWeight: FontWeight.w800, color: primaryTextColor)),
-              Text('of ${formatCurrency(category.amount, currencyCode: category.currencyCode, locale: context.currencyContext.locale)}',
+              Text(
+                  'of ${formatCurrency(category.amount, currencyCode: category.currencyCode, locale: context.currencyContext.locale)}',
                   style: AppTextStyles.caption
                       .copyWith(fontSize: 10, color: mutedTextColor)),
               const SizedBox(height: 8),
@@ -271,13 +286,13 @@ class BudgetCategoryCard extends StatelessWidget {
                   backgroundColor: isDark
                       ? AppColors.surfaceSecondaryDark
                       : AppColors.surfaceSecondaryLight,
-                  valueColor: AlwaysStoppedAnimation<Color>(categoryColor)),
+                  valueColor: AlwaysStoppedAnimation<Color>(activeThemeColor)),
               const SizedBox(height: 4),
               Text('$displayPercent% Spent',
                   style: AppTextStyles.caption.copyWith(
                       fontSize: 9,
                       fontWeight: FontWeight.bold,
-                      color: categoryColor)),
+                      color: activeThemeColor)),
             ],
           ),
         ),

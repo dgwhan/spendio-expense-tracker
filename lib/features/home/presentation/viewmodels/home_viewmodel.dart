@@ -12,13 +12,9 @@ import 'package:spend_io_app/features/category/presentation/viewmodels/category_
 import 'package:spend_io_app/features/transaction/domain/entities/transaction_entity.dart';
 import 'package:spend_io_app/features/transaction/domain/entities/transaction_type.dart';
 import 'package:spend_io_app/features/category/domain/entities/category_entity.dart';
-import 'package:spend_io_app/core/currency/convert_currency_use_case.dart';
-import 'package:spend_io_app/core/currency/exchange_rate_provider.dart';
-import 'package:spend_io_app/core/currency/currency_context.dart';
 
 class HomeViewModel extends ChangeNotifier {
   WalletViewModel walletViewModel;
-  final ConvertCurrencyUseCase _convertCurrency = const ConvertCurrencyUseCase(LocalExchangeRateProvider());
 
   HomeViewModel({required this.walletViewModel});
 
@@ -27,25 +23,18 @@ class HomeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // SUMMARY
-
-  DashboardSummaryModel getSummary(BuildContext context, List<TransactionEntity> transactions) {
+  DashboardSummaryModel getSummary(
+      BuildContext context, List<TransactionEntity> transactions) {
     final w = walletViewModel.summary;
-    final preferredCurrencyCode = context.currencyContext.preferredCurrencyCode;
 
     double totalIncome = 0;
     double totalExpense = 0;
 
     for (final tx in transactions) {
-      final double convertedAmount = _convertCurrency.execute(
-        amount: tx.amount,
-        from: tx.currencyCode,
-        to: preferredCurrencyCode,
-      );
       if (tx.type == TransactionType.income) {
-        totalIncome += convertedAmount;
+        totalIncome += tx.amount;
       } else if (tx.type == TransactionType.expense) {
-        totalExpense += convertedAmount;
+        totalExpense += tx.amount;
       }
     }
 
@@ -58,10 +47,8 @@ class HomeViewModel extends ChangeNotifier {
   }
 
   // CATEGORY RESOLVER (SAFE + FEATURE-BASED)
-
   String _resolveCategoryName(BuildContext context, String categoryId) {
     final categoryVM = context.read<CategoryViewModel>();
-
     final categories = categoryVM.state.categories;
 
     final CategoryEntity? match = categories
@@ -76,7 +63,6 @@ class HomeViewModel extends ChangeNotifier {
   }
 
   // RECENT TRANSACTIONS
-
   List<RecentTransactionModel> getRecentTransactions(BuildContext context) {
     final txVM = context.read<TransactionViewModel>();
     final txs = txVM.state.transactions;
@@ -97,13 +83,11 @@ class HomeViewModel extends ChangeNotifier {
     return list.take(10).toList();
   }
 
-  // SPENDING BREAKDOWN
-
+  // SPENDING BREAKDOWN FOR PERIOD
   SpendingBreakdownModel getSpendingBreakdownForPeriod(
       BuildContext context, String period) {
     final txVM = context.read<TransactionViewModel>();
     final txs = txVM.state.transactions;
-    final preferredCurrencyCode = context.currencyContext.preferredCurrencyCode;
 
     final now = DateTime.now();
     DateTime threshold;
@@ -113,7 +97,6 @@ class HomeViewModel extends ChangeNotifier {
     } else if (period == 'Year') {
       threshold = DateTime(now.year, 1, 1);
     } else {
-      // Month
       threshold = DateTime(now.year, now.month, 1);
     }
 
@@ -126,13 +109,8 @@ class HomeViewModel extends ChangeNotifier {
     final Map<String, double> grouped = {};
 
     for (final t in expenses) {
-      final double convertedAmount = _convertCurrency.execute(
-        amount: t.amount,
-        from: t.currencyCode,
-        to: preferredCurrencyCode,
-      );
-      total += convertedAmount;
-      grouped[t.categoryId] = (grouped[t.categoryId] ?? 0) + convertedAmount;
+      total += t.amount;
+      grouped[t.categoryId] = (grouped[t.categoryId] ?? 0) + t.amount;
     }
 
     final items = grouped.entries.map((e) {
@@ -152,10 +130,10 @@ class HomeViewModel extends ChangeNotifier {
     );
   }
 
+  // SPENDING BREAKDOWN
   SpendingBreakdownModel getSpendingBreakdown(BuildContext context) {
     final txVM = context.read<TransactionViewModel>();
     final txs = txVM.state.transactions;
-    final preferredCurrencyCode = context.currencyContext.preferredCurrencyCode;
 
     final expenses =
         txs.where((t) => t.type == TransactionType.expense).toList();
@@ -164,13 +142,8 @@ class HomeViewModel extends ChangeNotifier {
     final Map<String, double> grouped = {};
 
     for (final t in expenses) {
-      final double convertedAmount = _convertCurrency.execute(
-        amount: t.amount,
-        from: t.currencyCode,
-        to: preferredCurrencyCode,
-      );
-      total += convertedAmount;
-      grouped[t.categoryId] = (grouped[t.categoryId] ?? 0) + convertedAmount;
+      total += t.amount;
+      grouped[t.categoryId] = (grouped[t.categoryId] ?? 0) + t.amount;
     }
 
     final items = grouped.entries.map((e) {
@@ -189,27 +162,19 @@ class HomeViewModel extends ChangeNotifier {
   }
 
   // FINANCIAL PULSE
-
   FinancialPulseModel getFinancialPulse(BuildContext context) {
     final wallet = walletViewModel.summary;
-    final preferredCurrencyCode = context.currencyContext.preferredCurrencyCode;
-
     final txVM = context.read<TransactionViewModel>();
     final txs = txVM.state.transactions;
 
     double expenseTotal = 0.0;
     for (final t in txs) {
       if (t.type == TransactionType.expense) {
-        final double convertedAmount = _convertCurrency.execute(
-          amount: t.amount,
-          from: t.currencyCode,
-          to: preferredCurrencyCode,
-        );
-        expenseTotal += convertedAmount;
+        expenseTotal += t.amount;
       }
     }
 
-    final topCategoryId = _findTopCategory(txs, preferredCurrencyCode);
+    final topCategoryId = _findTopCategory(txs);
 
     return FinancialPulseModel(
       thisWeekTotal: expenseTotal / 4,
@@ -225,18 +190,12 @@ class HomeViewModel extends ChangeNotifier {
   }
 
   // HELPERS
-
-  String _findTopCategory(List<TransactionEntity> txs, String preferredCurrencyCode) {
+  String _findTopCategory(List<TransactionEntity> txs) {
     final Map<String, double> map = {};
 
     for (final t in txs) {
       if (t.type != TransactionType.expense) continue;
-      final double convertedAmount = _convertCurrency.execute(
-        amount: t.amount,
-        from: t.currencyCode,
-        to: preferredCurrencyCode,
-      );
-      map[t.categoryId] = (map[t.categoryId] ?? 0) + convertedAmount;
+      map[t.categoryId] = (map[t.categoryId] ?? 0) + t.amount;
     }
 
     if (map.isEmpty) return 'none';

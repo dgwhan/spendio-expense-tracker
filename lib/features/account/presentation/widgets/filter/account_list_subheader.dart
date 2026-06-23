@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
-import 'package:spend_io_app/shared/widgets/buttons/app_text_button.dart';
+import 'package:spend_io_app/core/widgets/button/app_text_button.dart';
 
 enum AccountSortOption { nameAZ, newest, oldest }
 

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 class ShakeWidget extends StatefulWidget {
@@ -19,7 +20,6 @@ class _ShakeWidgetState extends State<ShakeWidget>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   StreamSubscription<bool>? _subscription;
-
   bool _canShakeNow = false;
 
   @override
@@ -60,21 +60,18 @@ class _ShakeWidgetState extends State<ShakeWidget>
       animation: _controller,
       builder: (context, child) {
         final progress = _controller.value;
-        final double offset = 12.0 *
-            (1.0 - progress) *
-            (progress * 4.0 * 3.14159).floor().clamp(-1, 1) *
-            ((progress * 4.0 * 3.14159) * 5).floor().sineValue();
+        if (progress == 0.0 || progress == 1.0) return child!;
 
-        return Transform.translate(
-          offset: Offset(offset, 0),
+        // ROTATION SHAKE:
+        final double angle =
+            math.sin(progress * 3 * 2 * math.pi) * 0.06 * (1.0 - progress);
+
+        return Transform.rotate(
+          angle: angle,
           child: child,
         );
       },
       child: widget.child,
     );
   }
-}
-
-extension on int {
-  double sineValue() => this % 2 == 0 ? 1.0 : -1.0;
 }

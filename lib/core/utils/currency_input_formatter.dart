@@ -18,7 +18,7 @@ class CurrencyInputFormatter extends TextInputFormatter {
     if (newText.isEmpty) return newValue.copyWith(text: '');
 
     final double amount = double.parse(newText);
-    if (amount > 999999999) return oldValue;
+    // if (amount > 999999999) return oldValue;
 
     final formatter = NumberFormat.decimalPattern('vi_VN');
 

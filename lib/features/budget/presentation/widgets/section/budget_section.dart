@@ -7,6 +7,8 @@ import 'package:spend_io_app/features/budget/domain/entities/category/budget_cat
 import 'package:spend_io_app/features/budget/presentation/widgets/category/budget_category_card.dart';
 import 'package:spend_io_app/features/budget/presentation/widgets/monthly/monthly_budget_card.dart';
 import 'package:spend_io_app/core/widgets/common/app_circle_add_button.dart';
+import 'package:spend_io_app/features/budget/domain/entities/category/budget_category_entity.dart';
+import 'package:spend_io_app/features/category/domain/entities/category_entity.dart';
 
 class BudgetSection extends StatelessWidget {
   final double totalSpent;
@@ -18,6 +20,10 @@ class BudgetSection extends StatelessWidget {
   final VoidCallback onGetDetailBudgetTap;
   final VoidCallback onCreateCategoryBudgetTap;
 
+  final Function(
+          BudgetCategoryEntity budgetCategory, CategoryEntity categoryDetails)
+      onEditCategoryBudgetTap;
+
   const BudgetSection({
     super.key,
     required this.totalSpent,
@@ -28,6 +34,7 @@ class BudgetSection extends StatelessWidget {
     required this.onCreateBudgetTap,
     required this.onGetDetailBudgetTap,
     required this.onCreateCategoryBudgetTap,
+    required this.onEditCategoryBudgetTap,
   });
 
   @override
@@ -48,7 +55,7 @@ class BudgetSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // --- TIÊU ĐỀ BUDGET THÁNG (Cỡ chữ 15 từ Core) ---
+        // --- TIÊU ĐỀ BUDGET THÁNG ---
         InkWell(
           onTap: onGetDetailBudgetTap,
           highlightColor: Colors.transparent,
@@ -90,7 +97,7 @@ class BudgetSection extends StatelessWidget {
                   TextButton(
                     onPressed: onCreateBudgetTap,
                     child: Text(
-                      'Set Up Monthly Budget',
+                      'Focus Monthly Budget',
                       style: AppTextStyles.caption.copyWith(
                           color: AppColors.primary,
                           fontWeight: FontWeight.bold),
@@ -129,7 +136,7 @@ class BudgetSection extends StatelessWidget {
         ),
         const SizedBox(height: AppSizes.sm),
 
-        // --- DANH SÁCH DANH MỤC DẠNG THẺ NGANG ---
+        // --- DANH SÁCH DANH MỤC NGÂN SÁCH (LIST VIEW) ---
         if (categories.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -147,10 +154,31 @@ class BudgetSection extends StatelessWidget {
             itemCount: categories.length,
             separatorBuilder: (context, index) => const SizedBox(height: 10),
             itemBuilder: (context, index) {
-              return BudgetCategoryCard(
-                progress: categories[index],
-                userId: userId,
-                cardType: BudgetCardType.horizontal,
+              final progressItem = categories[index];
+              final budgetCat = progressItem.budgetCategory;
+
+              return InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () {
+                  onEditCategoryBudgetTap(
+                    budgetCat,
+                    CategoryEntity(
+                      id: budgetCat.categoryId,
+                      userId: userId,
+                      name: budgetCat.name,
+                      type: 'expense',
+                      groupName: 'Default',
+                      iconCodePoint: 57937,
+                      iconFontFamily: 'MaterialIcons',
+                      colorValue: 0xFFF44336,
+                    ),
+                  );
+                },
+                child: BudgetCategoryCard(
+                  progress: progressItem,
+                  userId: userId,
+                  cardType: BudgetCardType.horizontal,
+                ),
               );
             },
           ),

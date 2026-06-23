@@ -5,7 +5,7 @@ import 'package:spend_io_app/core/constants/app_text_styles.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
 import 'package:spend_io_app/core/currency/currency_context.dart';
 import 'package:spend_io_app/core/widgets/app_header.dart';
-import 'package:spend_io_app/core/widgets/primary_button.dart';
+import 'package:spend_io_app/core/widgets/button/app_action_button.dart';
 import 'package:spend_io_app/features/saving_goal/domain/entities/saving_goal_entity.dart';
 import 'package:spend_io_app/features/saving_goal/presentation/screens/edit_saving_goal_screen.dart';
 import 'package:spend_io_app/features/saving_goal/presentation/viewmodels/saving_goal_detail_viewmodel.dart';
@@ -103,7 +103,7 @@ class _SavingGoalDetailScreenState extends State<SavingGoalDetailScreen> {
                       const SizedBox(height: AppSizes.lg),
                       SizedBox(
                         width: double.infinity,
-                        child: AppButton(
+                        child: AppActionButton(
                           title: 'Add Money',
                           onPressed: () => showModalBottomSheet(
                             context: context,

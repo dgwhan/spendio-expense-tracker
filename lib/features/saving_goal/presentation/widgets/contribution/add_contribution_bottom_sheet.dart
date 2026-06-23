@@ -9,7 +9,7 @@ import 'package:spend_io_app/core/currency/currency_context.dart';
 import 'package:spend_io_app/core/widgets/bottom_sheets/app_bottom_sheet_header.dart';
 import 'package:spend_io_app/core/widgets/common/app_dual_action_buttons.dart';
 import 'package:spend_io_app/core/widgets/common/app_input_decoration.dart';
-import 'package:spend_io_app/core/widgets/primary_button.dart';
+import 'package:spend_io_app/core/widgets/button/app_action_button.dart';
 import 'package:spend_io_app/features/saving_goal/domain/entities/saving_goal_contribution_entity.dart';
 
 class AddContributionBottomSheet extends StatefulWidget {
@@ -131,8 +131,8 @@ class _AddContributionBottomSheetState
                 secondaryLabel: 'Add',
                 onPrimaryPressed: () => Navigator.pop(context),
                 onSecondaryPressed: _submit,
-                primaryVariant: AppButtonVariant.cancel,
-                secondaryVariant: AppButtonVariant.primary,
+                primaryVariant: AppActionButtonVariant.cancel,
+                secondaryVariant: AppActionButtonVariant.primary,
               ),
               const SizedBox(height: AppSizes.md),
             ],

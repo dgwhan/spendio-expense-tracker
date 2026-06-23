@@ -1,7 +1,5 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:spend_io_app/core/widgets/shake_widget.dart';
 import 'package:spend_io_app/features/navigation/presentation/screens/navigation_entry.dart';
 import 'package:spend_io_app/features/onboarding/presentation/screens/onboarding_shell_screen.dart';
 import 'package:spend_io_app/features/onboarding/presentation/screens/phases/balance_phase_screen.dart';
@@ -26,30 +24,13 @@ class OnboardingFlowScreen extends StatefulWidget {
 }
 
 class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
-  final StreamController<bool> _shakeTrigger =
-      StreamController<bool>.broadcast();
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final onboardingVM = context.read<OnboardingViewModel>();
       await onboardingVM.loadOnboarding(email: widget.userEmail);
-
-      debugPrint('[ONBOARDING] Flow STARTED for user: ${widget.userEmail}');
-      debugPrint('[ONBOARDING DATA INITIAL] '
-          'displayName: ${onboardingVM.displayName}, '
-          'occupation: ${onboardingVM.occupation}, '
-          'goals: ${onboardingVM.goals}, '
-          'currencyCode: ${onboardingVM.currencyCode}, '
-          'initialBalance: ${onboardingVM.initialBalance}');
     });
-  }
-
-  @override
-  void dispose() {
-    _shakeTrigger.close();
-    super.dispose();
   }
 
   String _getStepName(int step) {
@@ -89,27 +70,16 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
       onBack: currentStep == 0
           ? null
           : () {
-              debugPrint(
-                  '[ONBOARDING] User click BACK: Step $currentStep -> ${currentStep - 1}');
               viewModel.setError(false);
               viewModel.previousStep();
             },
       onNext: () async {
-        debugPrint(
-            '[ONBOARDING INTERACT] User triggered NEXT at step $currentStep (${_getStepName(currentStep)})');
-        debugPrint('[ONBOARDING CURRENT STATE] '
-            'displayName: ${viewModel.displayName}, '
-            'occupation: ${viewModel.occupation}, '
-            'goals: ${viewModel.goals}, '
-            'currencyCode: ${viewModel.currencyCode}, '
-            'initialBalance: ${viewModel.initialBalance}');
-
         if (viewModel.canContinue()) {
           if (currentStep == 4) {
             final balance = viewModel.initialBalance ?? 0.0;
             if (balance > 999999999) {
               viewModel.setError(true);
-              _shakeTrigger.add(true);
+              viewModel.triggerShake(); // Kích hoạt hiệu ứng qua ViewModel
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: const Text('Amount cannot exceed 999.999.999'),
@@ -122,27 +92,13 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
           viewModel.setError(false);
 
           if (currentStep < totalSteps - 1) {
-            debugPrint(
-                '[ONBOARDING] Step $currentStep SUCCESS -> Moving to step ${currentStep + 1} (${_getStepName(currentStep + 1)})');
             viewModel.nextStep();
           } else {
             FocusScope.of(context).unfocus();
-            debugPrint(
-                '[ONBOARDING] User clicked GET STARTED at final step. Submitting to local DB...');
-
             await viewModel.completeOnboarding(email: widget.userEmail);
 
             if (!context.mounted) return;
             await context.read<AuthProvider>().reloadUser();
-
-            debugPrint(
-                '[ONBOARDING SUCCESS] PROFILE SAVED COMPLETE FOR ${widget.userEmail}');
-            debugPrint('[ONBOARDING FINAL DATA GATHERED] '
-                'displayName: ${viewModel.displayName}, '
-                'occupation: ${viewModel.occupation}, '
-                'goals: ${viewModel.goals}, '
-                'currencyCode: ${viewModel.currencyCode}, '
-                'initialBalance: ${viewModel.initialBalance}');
 
             if (!context.mounted) return;
             await Future.delayed(const Duration(milliseconds: 150));
@@ -156,9 +112,8 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
           }
         } else {
           viewModel.setError(true);
-          _shakeTrigger.add(true);
-          debugPrint(
-              '[ONBOARDING VALIDATION FAILED] at step $currentStep (${_getStepName(currentStep)}). Triggering Shake animation.');
+          viewModel
+              .triggerShake(); // Kích hoạt Stream phát tín hiệu lắc khẽ cho các card con lắng nghe
         }
       },
       nextButtonText:
@@ -178,10 +133,8 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
         },
         child: Container(
           key: ValueKey<int>(currentStep),
-          child: ShakeWidget(
-            triggerStream: _shakeTrigger.stream,
-            child: steps[currentStep],
-          ),
+          child: steps[
+              currentStep], // Sạch sẽ, không bọc cấu trúc ShakeWidget toàn cục ở đây nữa
         ),
       ),
     );

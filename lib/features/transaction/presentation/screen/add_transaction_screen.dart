@@ -5,20 +5,20 @@ import 'package:provider/provider.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/core/widgets/app_header.dart';
+import 'package:spend_io_app/core/widgets/button/app_button.dart';
 import 'package:spend_io_app/features/transaction/domain/entities/transaction_entity.dart';
 import 'package:spend_io_app/features/transaction/domain/entities/transaction_type.dart';
 import 'package:spend_io_app/features/transaction/presentation/viewmodels/transaction_viewmodel.dart';
-
 import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
 import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
-import 'package:spend_io_app/features/transaction/presentation/widgets/wallet_picker_sheet.dart';
+import 'package:spend_io_app/features/transaction/presentation/widgets/filter/wallet_picker_sheet.dart';
 import 'package:spend_io_app/features/category/presentation/widgets/category_selection_sheet.dart';
 import 'package:spend_io_app/features/category/domain/entities/category_entity.dart';
 import 'package:spend_io_app/features/category/presentation/viewmodels/category_viewmodel.dart';
-
-import 'package:spend_io_app/features/transaction/presentation/widgets/components/fintech_amount_input.dart';
+import 'package:spend_io_app/features/transaction/presentation/widgets/fintech_amount_input.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
-import 'package:spend_io_app/features/transaction/presentation/widgets/components/transaction_metadata_fields.dart';
+import 'package:spend_io_app/features/transaction/presentation/widgets/transaction_metadata_fields.dart';
+import 'package:spend_io_app/features/transaction/presentation/widgets/transaction_type_segment.dart';
 import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
 import 'package:spend_io_app/shared/widgets/date_picker/app_date_picker_sheet.dart';
 import 'package:spend_io_app/core/currency/currency_context.dart';
@@ -36,7 +36,9 @@ class AddTransactionScreen extends StatefulWidget {
   });
 
   @override
-  State<AddTransactionScreen> createState() => _AddTransactionScreenState();
+  State<AddTransactionScreen> createState() {
+    return _AddTransactionScreenState();
+  }
 }
 
 class _AddTransactionScreenState extends State<AddTransactionScreen> {
@@ -48,9 +50,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   CategoryEntity? _selectedCategory;
   DateTime _selectedDate = DateTime.now();
   AccountEntity? _selectedAccount;
-  String get _activeCurrencyCode =>
-      _selectedAccount?.currencyCode ??
-      context.currencyContext.preferredCurrencyCode;
+  bool _isSubmitting = false;
+
+  String get _activeCurrencyCode {
+    return _selectedAccount?.currencyCode ??
+        context.currencyContext.preferredCurrencyCode;
+  }
 
   @override
   void initState() {
@@ -65,6 +70,19 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     } else {
       _selectedAccount = null;
     }
+
+    _amountController.addListener(() {
+      final text = _amountController.text;
+      if (text.contains('.') || text.contains(',')) {
+        final cleanText = text.replaceAll(RegExp(r'[^0-9]'), '');
+        if (cleanText != text) {
+          _amountController.value = _amountController.value.copyWith(
+            text: cleanText,
+            selection: TextSelection.collapsed(offset: cleanText.length),
+          );
+        }
+      }
+    });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CategoryViewModel>().loadCategories(widget.userId);
@@ -81,11 +99,17 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   void _showWalletPicker(List<AccountEntity> accounts) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      useSafeArea: false,
       builder: (_) => WalletPickerSheet(
         accounts: accounts,
         selectedAccount: _selectedAccount,
-        onAccountSelected: (acc) => setState(() => _selectedAccount = acc),
+        onAccountSelected: (acc) {
+          setState(() {
+            _selectedAccount = acc;
+          });
+        },
       ),
     );
   }
@@ -95,6 +119,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      useSafeArea: false,
       builder: (_) => CategorySelectionSheet(
         currentType:
             _selectedType == TransactionType.expense ? 'expense' : 'income',
@@ -114,6 +139,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      useSafeArea: false,
       builder: (_) => AppDatePickerSheet(
         initialRange: DateTimeRange(start: _selectedDate, end: _selectedDate),
         isSingleDateMode: true,
@@ -129,16 +155,21 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   }
 
   Future<void> _submitData() async {
+    if (_isSubmitting) return;
+
     if (!_formKey.currentState!.validate()) return;
 
-    final double? amount = CurrencyFormatter.parse(_amountController.text, currencyCode: _activeCurrencyCode);
+    final double? amount = CurrencyFormatter.parse(_amountController.text,
+        currencyCode: _activeCurrencyCode);
 
-    if (amount == null || amount <= 0) return;
+    if (amount == null || amount <= 0 || amount > 999999999) {
+      return;
+    }
 
     if (_selectedAccount == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select a source wallet/account to continue.'),
+          content: Text('Please select a source wallet to continue.'),
           backgroundColor: AppColors.warning,
         ),
       );
@@ -154,6 +185,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       );
       return;
     }
+
+    setState(() {
+      _isSubmitting = true;
+    });
 
     FocusScope.of(context).unfocus();
 
@@ -176,27 +211,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       currencyCode: _activeCurrencyCode,
     );
 
-    final Map<String, dynamic> txMapLog = {
-      'id': newTx.id,
-      'user_id': newTx.userId,
-      'account_id': newTx.accountId,
-      'category_id': newTx.categoryId,
-      'amount': newTx.amount,
-      'type': newTx.type.toString().split('.').last,
-      'note': newTx.note,
-      'transaction_date': newTx.transactionDate.toIso8601String(),
-      'created_at': newTx.createdAt.toIso8601String(),
-      'updated_at': newTx.updatedAt.toIso8601String(),
-    };
-
-    debugPrint(
-        '====================================================================================================');
-    debugPrint(
-        '[DATABASE HANDLER] Action Triggered: onTap (Recognizer: TapGestureRecognizer)');
-    debugPrint('[DATABASE HANDLER] PAYLOAD JSON STR: ${jsonEncode(txMapLog)}');
-    debugPrint(
-        '====================================================================================================');
-
     final navigator = Navigator.of(context);
     final walletVM = context.read<WalletViewModel>();
 
@@ -205,12 +219,17 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       await walletVM.refreshBudgetProgress();
 
       if (mounted) {
-        navigator.pop();
-        debugPrint(
-            '[UX SUCCESS]: Đã tạo giao dịch và ép cập nhật tiến trình Wallet Card thành công.');
+        if (Navigator.canPop(context)) {
+          navigator.pop();
+        }
       }
     } catch (e) {
       debugPrint('[UX ERROR]: Thất bại khi lưu giao dịch: $e');
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
     }
   }
 
@@ -220,17 +239,19 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     final activeAccounts = context.watch<AccountViewModel>().accounts;
 
     final backgroundColor =
-        isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
-    final surfaceColor = isDark
-        ? AppColors.surfaceSecondaryDark
-        : AppColors.surfaceSecondaryLight;
+        isDark ? AppColors.backgroundDark : const Color(0xFFF8F9FB);
+    final surfaceColor = isDark ? AppColors.surfaceDark : Colors.white;
 
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppHeader(
         title: 'New Transaction',
         showBack: true,
-        onBack: () => Navigator.pop(context),
+        onBack: () {
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          }
+        },
       ),
       body: SafeArea(
         child: Form(
@@ -240,157 +261,83 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             slivers: [
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(
-                    AppSizes.md, AppSizes.md, AppSizes.md, AppSizes.md),
+                    AppSizes.md, 12, AppSizes.md, AppSizes.sm),
                 sliver: SliverToBoxAdapter(
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: surfaceColor,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      children: [
-                        _buildTypeSegment(
-                          label: 'Expense',
-                          isSelected: _selectedType == TransactionType.expense,
-                          activeColor: AppColors.expense,
-                          isDark: isDark,
-                          onTap: () => setState(() {
-                            _selectedType = TransactionType.expense;
-                            _selectedCategory = null;
-                          }),
-                        ),
-                        _buildTypeSegment(
-                          label: 'Income',
-                          isSelected: _selectedType == TransactionType.income,
-                          activeColor: AppColors.income,
-                          isDark: isDark,
-                          onTap: () => setState(() {
-                            _selectedType = TransactionType.income;
-                            _selectedCategory = null;
-                          }),
-                        ),
-                      ],
-                    ),
+                  child: TransactionTypeSegment(
+                    selectedType: _selectedType,
+                    onTypeChanged: (type) {
+                      setState(() {
+                        _selectedType = type;
+                        _selectedCategory = null;
+                      });
+                    },
                   ),
                 ),
               ),
-
-              // Ô nhập số tiền (Fintech Component)
-              FintechAmountInput(
-                controller: _amountController,
-                selectedType: _selectedType,
-                autofocus: activeAccounts.isNotEmpty,
-                currencyCode: _activeCurrencyCode,
+              SliverToBoxAdapter(
+                child: FintechAmountInput(
+                  controller: _amountController,
+                  selectedType: _selectedType,
+                  autofocus: activeAccounts.isNotEmpty,
+                  currencyCode: _activeCurrencyCode,
+                ),
               ),
-
-              // Các trường Metadata (Ví, Danh mục, Ngày, Ghi chú)
-              TransactionMetadataFields(
-                activeAccounts: activeAccounts,
-                selectedAccount: _selectedAccount,
-                selectedCategory: _selectedCategory,
-                selectedDate: _selectedDate,
-                noteController: _noteController,
-                onWalletTap: () => _showWalletPicker(activeAccounts),
-                onCategoryTap: _showCategoryPicker,
-                onDateTap: _pickDate,
-              ),
-
-              // Nút bấm lưu giao dịch
               SliverPadding(
-                padding: const EdgeInsets.all(AppSizes.md),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.md, vertical: AppSizes.xs),
                 sliver: SliverToBoxAdapter(
                   child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
                     decoration: BoxDecoration(
+                      color: surfaceColor,
                       borderRadius: BorderRadius.circular(16),
-                      gradient: _selectedAccount == null
-                          ? null
-                          : const LinearGradient(
-                              colors: [
-                                AppColors.gradientStart,
-                                AppColors.gradientEnd
-                              ],
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                            ),
-                      color:
-                          _selectedAccount == null ? AppColors.disabled : null,
-                      boxShadow: _selectedAccount == null
+                      boxShadow: isDark
                           ? null
                           : [
                               BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.3),
+                                color: Colors.black.withValues(alpha: 0.015),
                                 blurRadius: 12,
                                 offset: const Offset(0, 4),
                               )
                             ],
                     ),
-                    child: ElevatedButton(
-                      onPressed: _submitData,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16)),
-                      ),
-                      child: Text(
-                        _selectedAccount == null
+                    child: TransactionMetadataFields(
+                      activeAccounts: activeAccounts,
+                      selectedAccount: _selectedAccount,
+                      selectedCategory: _selectedCategory,
+                      selectedDate: _selectedDate,
+                      noteController: _noteController,
+                      onWalletTap: () {
+                        _showWalletPicker(activeAccounts);
+                      },
+                      onCategoryTap: _showCategoryPicker,
+                      onDateTap: _pickDate,
+                    ),
+                  ),
+                ),
+              ),
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                        AppSizes.md, AppSizes.md, AppSizes.md, AppSizes.xl),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: AppButton(
+                        title: _selectedAccount == null
                             ? 'Continue to Create Wallet'
                             : 'Save Transaction',
-                        style: const TextStyle(
-                          color: AppColors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.2,
-                        ),
+                        isLoading: _isSubmitting,
+                        onPressed: _submitData,
+                        variant: AppButtonVariant.primary,
                       ),
                     ),
                   ),
                 ),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTypeSegment({
-    required String label,
-    required bool isSelected,
-    required Color activeColor,
-    required bool isDark,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? (isDark
-                    ? activeColor.withValues(alpha: 0.2)
-                    : activeColor.withValues(alpha: 0.12))
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Center(
-            child: Text(
-              label,
-              style: TextStyle(
-                color: isSelected
-                    ? activeColor
-                    : (isDark
-                        ? AppColors.textMutedDark
-                        : AppColors.textMutedLight),
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                fontSize: 15,
-              ),
-            ),
           ),
         ),
       ),

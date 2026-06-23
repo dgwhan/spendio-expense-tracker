@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
-import 'package:spend_io_app/core/widgets/primary_button.dart';
+import 'package:spend_io_app/core/widgets/button/app_action_button.dart';
 import 'package:spend_io_app/core/widgets/app_header.dart';
 import 'package:spend_io_app/core/widgets/common/app_dual_action_buttons.dart'; // Đã import component
 import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
@@ -155,8 +155,8 @@ class _CreateSavingGoalScreenState extends State<CreateSavingGoalScreen> {
                   secondaryLabel: vm.loading ? 'Saving...' : 'Create Goal',
                   onPrimaryPressed: () => Navigator.pop(context),
                   onSecondaryPressed: vm.loading ? null : _saveGoal,
-                  primaryVariant: AppButtonVariant.cancel,
-                  secondaryVariant: AppButtonVariant.primary,
+                  primaryVariant: AppActionButtonVariant.cancel,
+                  secondaryVariant: AppActionButtonVariant.primary,
                 ),
                 const SizedBox(height: 40),
               ],

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
+import 'package:spend_io_app/core/constants/app_radius.dart';
+import 'package:spend_io_app/core/constants/app_sizes.dart';
+import 'package:spend_io_app/core/constants/app_text_styles.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
 import 'package:spend_io_app/core/currency/currency_context.dart';
 import 'package:spend_io_app/features/home/data/models/recent_transaction_model.dart';
@@ -20,7 +23,7 @@ class TransactionTile extends StatelessWidget {
     required this.transaction,
   });
 
-  // Fallback helper màu phân chia category
+  // Fallback trợ giúp phân chia kiểu cách khi không tìm thấy category thực tế
   Map<String, dynamic> _getCategoryStyle(String category) {
     switch (category) {
       case 'Food & Drink':
@@ -50,7 +53,7 @@ class TransactionTile extends StatelessWidget {
     }
   }
 
-  // Helper định dạng ngày, giờ
+  // Helper định dạng ngày, giờ linh hoạt
   String _formatDateTime(DateTime date) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -90,7 +93,6 @@ class TransactionTile extends StatelessWidget {
       }
     }
 
-    // Resolve styles dynamically
     IconData iconData;
     Color iconColor;
     Color bgColor;
@@ -113,15 +115,13 @@ class TransactionTile extends StatelessWidget {
     final primaryColor =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final secondaryColor =
-        isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+        isDark ? AppColors.textSecondaryDark : AppColors.textMutedLight;
 
-    final displayTitle = matchTx != null
-        ? (matchTx.note?.isNotEmpty == true
-            ? matchTx.note!
-            : (categoryEntity?.name ?? matchTx.categoryId))
-        : transaction.title;
+    final displayTitle = categoryEntity?.name ?? transaction.category;
 
-    final displayCategory = categoryEntity?.name ?? transaction.category;
+    final displaySubtitle = matchTx?.note?.isNotEmpty == true
+        ? '${matchTx!.note} • ${_formatDateTime(transaction.date)}'
+        : _formatDateTime(transaction.date);
 
     final formattedAmount = formatCurrency(
       transaction.amount.abs(),
@@ -145,27 +145,28 @@ class TransactionTile extends StatelessWidget {
           );
         }
       },
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 10.0),
+        padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 12.0),
         child: Row(
+          // ĐÃ SỬA LỖI: Thêm đầy đủ thuộc tính children để bọc mảng widget con
           children: [
-            // Icon danh mục
+            // 1. Icon danh mục tròn phẳng
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: bgColor,
-                borderRadius: BorderRadius.circular(12),
+                shape: BoxShape.circle,
               ),
               child: Icon(
                 iconData,
                 color: iconColor,
-                size: 22,
+                size: 20,
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: AppSizes.md),
 
-            // Tiêu đề giao dịch và thời gian
+            // 2. Nội dung text (Category & Subtitle)
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,33 +174,36 @@ class TransactionTile extends StatelessWidget {
                 children: [
                   Text(
                     displayTitle,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: primaryColor,
-                        ),
+                    style: AppTextStyles.bodyNormal.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: primaryColor,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '$displayCategory • ${_formatDateTime(transaction.date)}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: secondaryColor,
-                          fontWeight: FontWeight.w500,
-                        ),
+                    displaySubtitle,
+                    style: AppTextStyles.caption.copyWith(
+                      color: secondaryColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
 
+            // 3. Lượng tiền thu/chi
             Text(
               '${transaction.isExpense ? "-" : "+"}$formattedAmount',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: transaction.isExpense
-                        ? primaryColor
-                        : Colors.green.shade700,
-                  ),
+              style: AppTextStyles.bodyNormal.copyWith(
+                fontWeight: FontWeight.bold,
+                color: transaction.isExpense
+                    ? (isDark ? AppColors.error : AppColors.textPrimaryLight)
+                    : AppColors.success,
+              ),
             ),
           ],
         ),
@@ -207,4 +211,3 @@ class TransactionTile extends StatelessWidget {
     );
   }
 }
-
