@@ -4,7 +4,7 @@ class UserEntity {
   final String password;
   final String? occupation;
   final String? financialGoal;
-  final String? currency;
+  final String? preferredCurrencyCode;
   final bool onboardingCompleted;
   final String? displayNameField;
 
@@ -14,7 +14,7 @@ class UserEntity {
     required this.password,
     this.occupation,
     this.financialGoal,
-    this.currency,
+    this.preferredCurrencyCode,
     this.onboardingCompleted = false,
     this.displayNameField,
   });
@@ -23,7 +23,7 @@ class UserEntity {
       ? displayNameField!
       : email.split('@').first;
 
-  String? get currencyCode => currency;
+  String? get currencyCode => preferredCurrencyCode;
 
   UserEntity copyWith({
     int? id,
@@ -31,7 +31,7 @@ class UserEntity {
     String? password,
     String? occupation,
     String? financialGoal,
-    String? currency,
+    String? preferredCurrencyCode,
     bool? onboardingCompleted,
     String? displayNameField,
   }) {
@@ -41,7 +41,7 @@ class UserEntity {
       password: password ?? this.password,
       occupation: occupation ?? this.occupation,
       financialGoal: financialGoal ?? this.financialGoal,
-      currency: currency ?? this.currency,
+      preferredCurrencyCode: preferredCurrencyCode ?? this.preferredCurrencyCode,
       onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
       displayNameField: displayNameField ?? this.displayNameField,
     );

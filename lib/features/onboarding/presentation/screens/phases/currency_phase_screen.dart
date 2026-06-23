@@ -1,8 +1,8 @@
-import 'dart:io'; 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:spend_io_app/core/constants/app_colors.dart';
+import 'package:spend_io_app/core/utils/localization.dart';
 import 'package:spend_io_app/features/onboarding/data/models/currency_item.dart';
-import 'package:spend_io_app/features/onboarding/presentation/screens/phases/currency_search_bottom_sheet.dart';
 import 'package:spend_io_app/features/onboarding/presentation/screens/phases/currency_selector_tile.dart';
 import 'package:spend_io_app/features/profile/presentation/viewmodels/profile_viewmodel.dart';
 import '../../viewmodels/onboarding_viewmodel.dart';
@@ -22,64 +22,31 @@ class _CurrencyPhaseScreenState extends State<CurrencyPhaseScreen> {
     super.initState();
 
     final viewModel = context.read<OnboardingViewModel>();
-    final savedCode = viewModel.currencyCode;
+    
+    // Tạm thời mặc định là VND
+    _selectedCurrency = supportedCurrencies.firstWhere(
+      (element) => element.code == 'VND',
+      orElse: () => supportedCurrencies.first,
+    );
 
-    if (savedCode != null) {
-      _selectedCurrency = supportedCurrencies.firstWhere(
-        (element) => element.code == savedCode,
-        orElse: () => supportedCurrencies.first,
-      );
-    } else {
-      final String deviceLocale = Platform.localeName.toUpperCase();
-      CurrencyItem defaultCoreCurrency;
-
-      // Kiểm tra xem mã ngôn ngữ hệ thống thuộc quốc gia Core nào
-      if (deviceLocale.contains('VN')) {
-        defaultCoreCurrency =
-            supportedCurrencies.firstWhere((c) => c.code == 'VND');
-      } else {
-        defaultCoreCurrency =
-            supportedCurrencies.firstWhere((c) => c.code == 'USD');
-      }
-
-      _selectedCurrency = defaultCoreCurrency;
-
-      debugPrint(
-          '[Server Locale Active]: Server is currently set to English region ($deviceLocale)"');
-      debugPrint(
-          '[Default Currency Render]: Default flag: ${_selectedCurrency.flag} [${_selectedCurrency.code}]');
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        viewModel.updateCurrency(_selectedCurrency.code);
-        final profileVM = context.read<ProfileViewModel>();
-        profileVM.changeLanguage(_selectedCurrency.code == 'VND' ? 'vi' : 'en');
-      });
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      viewModel.updateCurrency('VND');
+      final profileVM = context.read<ProfileViewModel>();
+      profileVM.changeLanguage('vi');
+    });
   }
 
   void _openCurrencyBottomSheet(
       BuildContext context, OnboardingViewModel viewModel) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => CurrencySearchBottomSheet(
-        currentSelection: _selectedCurrency,
-        onCurrencySelected: (newCurrency) {
-          setState(() {
-            _selectedCurrency = newCurrency;
-          });
-          viewModel.updateCurrency(newCurrency.code);
-          final profileVM = context.read<ProfileViewModel>();
-          profileVM.changeLanguage(newCurrency.code == 'VND' ? 'vi' : 'en');
-
-          // Log khi người dùng chủ động thay đổi cờ
-          debugPrint(
-              '[User Selected Currency]: User Change flag: ${newCurrency.flag} [${newCurrency.code}]');
-        },
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          AppLocalizations.currentLanguage == 'vi'
+              ? 'Tính năng chọn quốc gia/tiền tệ sẽ sớm ra mắt! Tạm thời mặc định là VND.'
+              : 'Country/currency selection will be coming soon! Temporarily defaulted to VND.',
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: AppColors.primary,
       ),
     );
   }

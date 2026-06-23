@@ -57,7 +57,7 @@ class AuthLocalDatasource {
       {
         'occupation': user.occupation,
         'financial_goal': user.financialGoal,
-        'currency_code': user.currency,
+        'preferred_currency_code': user.preferredCurrencyCode,
         'onboarding_completed': user.onboardingCompleted ? 1 : 0,
       },
       where: 'id = ?',
@@ -87,16 +87,16 @@ class AuthLocalDatasource {
       userId = localUserMap['id'] as int;
 
       final String? finalCurrency =
-          (userModel.currency != null && userModel.currency!.trim().isNotEmpty)
-              ? userModel.currency
-              : localUserMap['currency_code'] as String?;
+          (userModel.preferredCurrencyCode != null && userModel.preferredCurrencyCode!.trim().isNotEmpty)
+              ? userModel.preferredCurrencyCode
+              : localUserMap['preferred_currency_code'] as String?;
 
       final int localStatusRaw =
           localUserMap['onboarding_completed'] as int? ?? 0;
 
       // Kiểm tra xem dữ liệu Firebase truyền xuống có chứa thông tin Onboarding hay chưa
-      final bool hasOnboardingDataOnFirebase = (userModel.currency != null &&
-              userModel.currency!.trim().isNotEmpty) ||
+      final bool hasOnboardingDataOnFirebase = (userModel.preferredCurrencyCode != null &&
+              userModel.preferredCurrencyCode!.trim().isNotEmpty) ||
           (userModel.occupation != null &&
               userModel.occupation!.trim().isNotEmpty);
 
@@ -120,7 +120,7 @@ class AuthLocalDatasource {
           'occupation': userModel.occupation ?? localUserMap['occupation'],
           'financial_goal':
               userModel.financialGoal ?? localUserMap['financial_goal'],
-          'currency_code': finalCurrency,
+          'preferred_currency_code': finalCurrency,
           'onboarding_completed':
               finalOnboardingStatus, // Luôn ghi số 1 vững chắc
           'updated_at': DateTime.now().toIso8601String(),
@@ -142,9 +142,9 @@ class AuthLocalDatasource {
 
       // Đọc lại trường bảo mật từ DB
       final userCheck = await db.query('users',
-          columns: ['currency_code'], where: 'id = ?', whereArgs: [userId]);
+          columns: ['preferred_currency_code'], where: 'id = ?', whereArgs: [userId]);
       final String? verifiedCurrencyCode = userCheck.isNotEmpty
-          ? userCheck.first['currency_code'] as String?
+          ? userCheck.first['preferred_currency_code'] as String?
           : null;
 
       if (verifiedCurrencyCode == null || verifiedCurrencyCode.trim().isEmpty) {

@@ -15,6 +15,7 @@ class BalancePhaseScreen extends StatefulWidget {
 class _BalancePhaseScreenState extends State<BalancePhaseScreen> {
   late final TextEditingController _balanceController;
   late final String _activeCurrencyCode;
+  String? _errorText;
 
   @override
   void initState() {
@@ -46,15 +47,15 @@ class _BalancePhaseScreenState extends State<BalancePhaseScreen> {
   }
 
   NumberFormat _getFormatter(String currencyCode) {
-    if (currencyCode == 'USD' || currencyCode == 'EUR') {
-      return NumberFormat('#,###', 'en_US');
-    }
     return NumberFormat('#,###', 'vi_VN');
   }
 
   void _onBalanceChanged(String value, OnboardingViewModel viewModel) {
     if (value.isEmpty) {
       viewModel.updateInitialBalance(0.0);
+      setState(() {
+        _errorText = null;
+      });
       return;
     }
 
@@ -62,7 +63,24 @@ class _BalancePhaseScreenState extends State<BalancePhaseScreen> {
     final parsedInt = int.tryParse(cleanValue) ?? 0;
     final parsedDouble = parsedInt.toDouble();
 
+    if (parsedDouble > 999999999) {
+      final double oldBalance = viewModel.initialBalance ?? 0.0;
+      final formatter = _getFormatter(_activeCurrencyCode);
+      final oldFormatted = formatter.format(oldBalance.toInt());
+      _balanceController.value = TextEditingValue(
+        text: oldFormatted,
+        selection: TextSelection.collapsed(offset: oldFormatted.length),
+      );
+      setState(() {
+        _errorText = 'Amount cannot exceed 999.999.999';
+      });
+      return;
+    }
+
     viewModel.updateInitialBalance(parsedDouble);
+    setState(() {
+      _errorText = null;
+    });
 
     final formatter = _getFormatter(_activeCurrencyCode);
     final formattedText = formatter.format(parsedInt);
@@ -114,11 +132,12 @@ class _BalancePhaseScreenState extends State<BalancePhaseScreen> {
                     color: Color(0xFF1A1A1A),
                   ),
                   onChanged: (value) => _onBalanceChanged(value, viewModel),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     border: InputBorder.none,
                     hintText: '0',
-                    hintStyle: TextStyle(
+                    hintStyle: const TextStyle(
                         color: Colors.grey, fontWeight: FontWeight.bold),
+                    errorText: _errorText,
                   ),
                 ),
               ),

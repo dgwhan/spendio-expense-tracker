@@ -25,14 +25,31 @@ class CurrencySelectorTile extends StatelessWidget {
           children: [
             Text(selectedCurrency.flag, style: const TextStyle(fontSize: 22)),
             const SizedBox(width: 12),
-            Text(
-              selectedCurrency.countryName,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    selectedCurrency.countryName,
+                    style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black),
+                  ),
+                  const SizedBox(height: 2),
+                  const Text(
+                    'Sớm ra mắt / Coming Soon',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
             ),
-            const Spacer(),
             Text(
               selectedCurrency.code,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black),
             ),
             const SizedBox(width: 8),
             const Icon(Icons.keyboard_arrow_down, color: Colors.grey),

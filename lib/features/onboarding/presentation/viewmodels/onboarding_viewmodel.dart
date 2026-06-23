@@ -111,7 +111,8 @@ class OnboardingViewModel extends ChangeNotifier {
       case 3:
         return _currencyCode != null;
       case 4:
-        return true;
+        final balance = _initialBalance ?? 0.0;
+        return balance <= 999999999;
       default:
         return false;
     }

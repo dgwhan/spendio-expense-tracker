@@ -26,7 +26,7 @@ class AuthRepositoryImpl implements AuthRepository {
         password: user.password,
         occupation: user.occupation,
         financialGoal: user.financialGoal,
-        currency: user.currency,
+        preferredCurrencyCode: user.preferredCurrencyCode,
         onboardingCompleted: user.onboardingCompleted,
         displayName: displayName,
         createdAt: DateTime.now(),
@@ -111,7 +111,7 @@ class AuthRepositoryImpl implements AuthRepository {
         password: localResult.password,
         occupation: localResult.occupation,
         financialGoal: localResult.financialGoal,
-        currency: localResult.currency,
+        preferredCurrencyCode: localResult.preferredCurrencyCode,
         onboardingCompleted: localResult.onboardingCompleted,
       );
     }
@@ -157,7 +157,7 @@ class AuthRepositoryImpl implements AuthRepository {
       displayName: userData['display_name'] ?? email.split('@').first,
       occupation: userData['occupation'] as String?,
       financialGoal: userData['financial_goal'] as String?,
-      currency: userData['currency_code'] as String?,
+      preferredCurrencyCode: userData['preferred_currency_code'] ?? userData['currency_code'] as String?,
       onboardingCompleted: userData['onboarding_completed'] == 1,
       createdAt: userData['created_at'] != null
           ? DateTime.parse(userData['created_at'] as String)
@@ -181,7 +181,7 @@ class AuthRepositoryImpl implements AuthRepository {
       password: loggedInUser.password,
       occupation: loggedInUser.occupation,
       financialGoal: loggedInUser.financialGoal,
-      currency: loggedInUser.currency,
+      preferredCurrencyCode: loggedInUser.preferredCurrencyCode,
       onboardingCompleted: loggedInUser.onboardingCompleted,
     );
   }
@@ -261,7 +261,7 @@ class AuthRepositoryImpl implements AuthRepository {
       displayName: userData['display_name'] ?? email.split('@').first,
       occupation: userData['occupation'] as String?,
       financialGoal: userData['financial_goal'] as String?,
-      currency: userData['currency_code'] as String?,
+      preferredCurrencyCode: userData['preferred_currency_code'] ?? userData['currency_code'] as String?,
       onboardingCompleted: userData['onboarding_completed'] == 1,
       createdAt: userData['created_at'] != null
           ? DateTime.parse(userData['created_at'] as String)
@@ -301,7 +301,7 @@ class AuthRepositoryImpl implements AuthRepository {
       password: user.password,
       occupation: user.occupation,
       financialGoal: user.financialGoal,
-      currency: user.currency,
+      preferredCurrencyCode: user.preferredCurrencyCode,
       onboardingCompleted: user.onboardingCompleted,
       displayName: user.email.split('@').first,
       createdAt: DateTime.now(),

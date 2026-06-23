@@ -42,7 +42,7 @@ class OnboardingLocalDataSourceImpl implements OnboardingLocalDataSource {
         'display_name': model.displayName ?? email.split('@').first,
         'occupation': model.occupation,
         'financial_goal': model.goals.join(','),
-        'currency_code': model.currencyCode,
+        'preferred_currency_code': model.currencyCode,
         'onboarding_completed': finalStatus,
         'updated_at': nowStr,
       },
@@ -166,7 +166,7 @@ class OnboardingLocalDataSourceImpl implements OnboardingLocalDataSource {
               .where((s) => s.isNotEmpty)
               .toList()
           : [],
-      currencyCode: walletCurrencyCode ?? (userMap['currency_code'] as String?),
+      currencyCode: walletCurrencyCode ?? (userMap['preferred_currency_code'] as String?),
       initialBalance: initialBalance,
       walletId: walletId,
       onboardingCompleted: userMap['onboarding_completed'] == 1,

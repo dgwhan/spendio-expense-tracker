@@ -10,6 +10,7 @@ import 'package:spend_io_app/features/onboarding/presentation/screens/phases/goa
 import 'package:spend_io_app/features/onboarding/presentation/screens/phases/identity_phase_screen.dart';
 import 'package:spend_io_app/features/onboarding/presentation/screens/phases/profession_phase_screen.dart';
 import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
+import 'package:spend_io_app/core/constants/app_colors.dart';
 import '../viewmodels/onboarding_viewmodel.dart';
 
 class OnboardingFlowScreen extends StatefulWidget {
@@ -104,6 +105,20 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
             'initialBalance: ${viewModel.initialBalance}');
 
         if (viewModel.canContinue()) {
+          if (currentStep == 4) {
+            final balance = viewModel.initialBalance ?? 0.0;
+            if (balance > 999999999) {
+              viewModel.setError(true);
+              _shakeTrigger.add(true);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Amount cannot exceed 999.999.999'),
+                  backgroundColor: AppColors.error,
+                ),
+              );
+              return;
+            }
+          }
           viewModel.setError(false);
 
           if (currentStep < totalSteps - 1) {

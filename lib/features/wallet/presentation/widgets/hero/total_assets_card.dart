@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/constants/app_sizes.dart';
 import 'package:spend_io_app/core/utils/currency_formatter.dart';
+import 'package:spend_io_app/core/currency/currency_context.dart';
 import 'package:spend_io_app/core/utils/localization.dart';
 import 'package:spend_io_app/features/wallet/domain/entities/wallet_summary_entity.dart';
 
@@ -45,7 +46,11 @@ class TotalAssetsCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSizes.sm),
           Text(
-            CurrencyFormatter.format(summary.totalAssets),
+            formatCurrency(
+              summary.totalAssets,
+              currencyCode: context.currencyContext.preferredCurrencyCode,
+              locale: context.currencyContext.locale,
+            ),
             style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                   color: AppColors.textPrimaryDark,
                   fontWeight: FontWeight.bold,

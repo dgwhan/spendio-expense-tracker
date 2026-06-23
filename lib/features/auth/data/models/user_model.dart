@@ -8,7 +8,7 @@ class UserModel {
   final String? fullName;
   final String? occupation;
   final String? financialGoal;
-  final String? currency;
+  final String? preferredCurrencyCode;
   final bool onboardingCompleted;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -21,11 +21,13 @@ class UserModel {
     this.fullName,
     this.occupation,
     this.financialGoal,
-    this.currency,
+    this.preferredCurrencyCode,
     this.onboardingCompleted = false,
     required this.createdAt,
     required this.updatedAt,
   });
+
+  String? get currencyCode => preferredCurrencyCode;
 
   Map<String, dynamic> toMap() {
     return {
@@ -36,7 +38,7 @@ class UserModel {
       'full_name': fullName,
       'occupation': occupation,
       'financial_goal': financialGoal,
-      'currency_code': currency,
+      'preferred_currency_code': preferredCurrencyCode,
       'onboarding_completed': onboardingCompleted ? 1 : 0,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
@@ -52,7 +54,7 @@ class UserModel {
       fullName: map['full_name'],
       occupation: map['occupation'],
       financialGoal: map['financial_goal'],
-      currency: map['currency_code'] ?? map['currency'],
+      preferredCurrencyCode: map['preferred_currency_code'] ?? map['currency_code'] ?? map['currency'],
       onboardingCompleted: map['onboarding_completed']?.toString() == '1' ||
           map['onboarding_completed']?.toString() == 'true',
       createdAt: map['created_at'] != null
@@ -72,7 +74,7 @@ class UserModel {
     String? fullName,
     String? occupation,
     String? financialGoal,
-    String? currency,
+    String? preferredCurrencyCode,
     bool? onboardingCompleted,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -85,7 +87,7 @@ class UserModel {
       fullName: fullName ?? this.fullName,
       occupation: occupation ?? this.occupation,
       financialGoal: financialGoal ?? this.financialGoal,
-      currency: currency ?? this.currency,
+      preferredCurrencyCode: preferredCurrencyCode ?? this.preferredCurrencyCode,
       onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -99,7 +101,7 @@ class UserModel {
       password: password,
       occupation: occupation,
       financialGoal: financialGoal,
-      currency: currency,
+      preferredCurrencyCode: preferredCurrencyCode,
       onboardingCompleted: onboardingCompleted,
       displayNameField: displayName,
     );
