@@ -2,7 +2,9 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 class CurrencyInputFormatter extends TextInputFormatter {
-  final NumberFormat _formatter = NumberFormat.decimalPattern('vi_VN');
+  final String currencyCode;
+
+  CurrencyInputFormatter({this.currencyCode = 'USD'});
 
   @override
   TextEditingValue formatEditUpdate(
@@ -15,7 +17,12 @@ class CurrencyInputFormatter extends TextInputFormatter {
 
     if (newText.isEmpty) return newValue.copyWith(text: '');
 
-    final formatted = _formatter.format(int.parse(newText));
+    final double amount = double.parse(newText);
+    if (amount > 999999999) return oldValue;
+
+    final formatter = NumberFormat.decimalPattern('vi_VN');
+
+    final formatted = formatter.format(amount);
 
     return TextEditingValue(
       text: formatted,

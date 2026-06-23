@@ -90,6 +90,18 @@ class AppLocalizations {
       'profile_goal_label': 'Financial Goal / Budget',
       'update_success_msg': 'Profile updated successfully!',
       'update_fail_msg': 'Failed to update profile.',
+      
+      // Transactions List & Filters
+      'all_transactions': 'All Transactions',
+      'search_transactions': 'Search transactions...',
+      'filter_type': 'Type',
+      'filter_category': 'Category',
+      'filter_date': 'Date',
+      'no_transactions_found': 'No transactions found',
+      'clear_filters': 'Clear Filters',
+      'select_date_range': 'Select Date Range',
+      'all': 'All',
+      'this_week': 'This Week',
     },
     'vi': {
       // Navigation & Header
@@ -169,6 +181,18 @@ class AppLocalizations {
       'profile_goal_label': 'Mục tiêu tài chính / Ngân sách',
       'update_success_msg': 'Cập nhật tài khoản thành công!',
       'update_fail_msg': 'Cập nhật tài khoản thất bại.',
+      
+      // Transactions List & Filters
+      'all_transactions': 'Tất cả giao dịch',
+      'search_transactions': 'Tìm kiếm giao dịch...',
+      'filter_type': 'Loại giao dịch',
+      'filter_category': 'Danh mục',
+      'filter_date': 'Thời gian',
+      'no_transactions_found': 'Không tìm thấy giao dịch nào',
+      'clear_filters': 'Xóa bộ lọc',
+      'select_date_range': 'Chọn khoảng thời gian',
+      'all': 'Tất cả',
+      'this_week': 'Tuần này',
     }
   };
 

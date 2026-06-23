@@ -13,6 +13,8 @@ class BudgetCategoriesTable {
 
       amount REAL NOT NULL,
 
+      currency_code TEXT NOT NULL DEFAULT 'USD',
+
       period_type TEXT NOT NULL,
 
       start_date TEXT NOT NULL,

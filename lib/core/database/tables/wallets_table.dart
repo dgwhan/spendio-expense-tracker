@@ -13,8 +13,8 @@ class WalletsTable {
 
       balance REAL DEFAULT 0,
 
-      currency_code TEXT,
-
+      currency_code TEXT NOT NULL DEFAULT 'USD',
+      
       icon_code_point INTEGER,
 
       icon_font_family TEXT,

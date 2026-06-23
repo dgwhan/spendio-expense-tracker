@@ -13,7 +13,7 @@ class UsersTable {
 
       occupation TEXT,
       financial_goal TEXT,
-      currency_code TEXT,
+      preferred_currency_code TEXT,
 
       onboarding_completed INTEGER DEFAULT 0,
 

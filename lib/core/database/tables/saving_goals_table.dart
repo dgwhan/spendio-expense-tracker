@@ -12,6 +12,8 @@ class SavingGoalsTable {
       target_amount REAL NOT NULL,
       initial_amount REAL DEFAULT 0,
 
+      currency_code TEXT NOT NULL DEFAULT 'USD',
+
       cached_current_amount REAL DEFAULT 0,
       cached_progress REAL DEFAULT 0,
 

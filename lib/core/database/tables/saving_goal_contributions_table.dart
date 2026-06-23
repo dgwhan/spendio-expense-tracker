@@ -10,6 +10,8 @@ class SavingGoalContributionsTable {
 
       amount REAL NOT NULL,
 
+      currency_code TEXT NOT NULL DEFAULT 'USD',
+
       note TEXT,
 
       created_at TEXT NOT NULL,

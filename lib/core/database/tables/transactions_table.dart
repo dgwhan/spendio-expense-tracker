@@ -8,7 +8,11 @@ class TransactionsTable {
       account_id TEXT NOT NULL,
       category_id TEXT NOT NULL,
       amount REAL NOT NULL,
+
+      currency_code TEXT NOT NULL DEFAULT 'USD',
+
       type TEXT NOT NULL,
+      
       note TEXT,
       transaction_date TEXT NOT NULL,
       created_at TEXT,
