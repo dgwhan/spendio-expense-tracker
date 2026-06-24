@@ -30,10 +30,8 @@ class SpendingBreakdownSection extends StatefulWidget {
 }
 
 class _SpendingBreakdownSectionState extends State<SpendingBreakdownSection> {
-  String _activeTab =
-      'Month'; // Mặc định mở app lên chọn tab Month cho chuẩn UI mẫu
+  String _activeTab = 'Month';
 
-  // LOGIC ĐỘNG: Hàm Helper tự động bốc đúng tập dữ liệu dựa trên tab đang kích hoạt
   SpendingBreakdownModel get _currentBreakdownData {
     switch (_activeTab) {
       case 'Week':
@@ -48,15 +46,18 @@ class _SpendingBreakdownSectionState extends State<SpendingBreakdownSection> {
 
   @override
   Widget build(BuildContext context) {
-    // Lấy dữ liệu đã được lọc tự động để render ra dữ liệu
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final activeData = _currentBreakdownData;
+
+    final titleTextColor =
+        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -64,7 +65,7 @@ class _SpendingBreakdownSectionState extends State<SpendingBreakdownSection> {
                 'Spending Breakdown',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimaryLight,
+                      color: titleTextColor,
                     ),
               ),
               AppTextButton(
@@ -76,10 +77,10 @@ class _SpendingBreakdownSectionState extends State<SpendingBreakdownSection> {
           ),
         ),
         HomeSectionContainer(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.symmetric(
+              horizontal: 16.0, vertical: 8.0), // Tối ưu lại khoảng cách đệm
           child: Column(
             children: [
-              //thanh Tab chuyển đổi trạng thái
               BreakdownFilterTabs(
                 activeTab: _activeTab,
                 onTabChanged: (tab) {
@@ -90,11 +91,11 @@ class _SpendingBreakdownSectionState extends State<SpendingBreakdownSection> {
               ),
               const SizedBox(height: 24),
 
-              //biểu đồ vẽ lại các cung màu động theo dữ liệu mới
+              // Biểu đồ hình tròn chứa thông tin động
               BreakdownChart(data: activeData),
               const SizedBox(height: 24),
 
-              //danh sách chú thích tự động cập nhật số tiền rút gọn và % tương ứng
+              // Danh sách chú thích các danh mục chi tiêu
               BreakdownLegend(
                 items: activeData.items,
                 onViewMoreTap: widget.onViewMoreTap,

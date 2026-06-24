@@ -15,13 +15,20 @@ class BreakdownCenterInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final primaryTextColor =
+        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final secondaryTextColor =
+        isDark ? AppColors.textMutedDark : AppColors.textSecondaryLight;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           title,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondaryLight,
+                color: secondaryTextColor,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.5,
               ),
@@ -35,7 +42,7 @@ class BreakdownCenterInfo extends StatelessWidget {
           ),
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: AppColors.textPrimaryLight,
+                color: primaryTextColor,
               ),
         ),
       ],

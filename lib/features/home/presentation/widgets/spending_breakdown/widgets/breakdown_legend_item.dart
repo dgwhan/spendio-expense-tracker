@@ -15,10 +15,10 @@ class BreakdownLegendItem extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = BreakdownColorHelper.getColor(context, item.name);
 
-    // Dynamic màu sắc đồng bộ theo cấu hình hệ thống Light/Dark
     final cardBackgroundColor = isDark ? AppColors.surfaceDark : Colors.white;
-    final cardBorderColor =
-        isDark ? Colors.grey[800]! : AppColors.surfaceSecondaryLight;
+    final cardBorderColor = isDark
+        ? Colors.white.withValues(alpha: 0.12)
+        : AppColors.surfaceSecondaryLight;
     final primaryTextColor =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final secondaryTextColor =
@@ -33,15 +33,12 @@ class BreakdownLegendItem extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Chấm màu đại diện danh mục
           Container(
             width: 10,
             height: 10,
             decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 12),
-
-          // Tên danh mục tự động co dãn chống tràn hàng ngang
           Expanded(
             child: Text(
               item.name,
@@ -55,8 +52,6 @@ class BreakdownLegendItem extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-
-          // Số tiền định dạng compact tương thích đa tiền tệ
           Text(
             CurrencyFormatter.format(
               item.amount,
@@ -70,8 +65,6 @@ class BreakdownLegendItem extends StatelessWidget {
                 ),
           ),
           const SizedBox(width: 16),
-
-          // Phần trăm hiển thị khối lớn
           Text(
             '${(item.percentage * 100).toStringAsFixed(0)}%',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
