@@ -12,14 +12,24 @@ class BreakdownLegendItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = BreakdownColorHelper.getColor(context, item.name);
+
+    // Dynamic màu sắc đồng bộ theo cấu hình hệ thống Light/Dark
+    final cardBackgroundColor = isDark ? AppColors.surfaceDark : Colors.white;
+    final cardBorderColor =
+        isDark ? Colors.grey[800]! : AppColors.surfaceSecondaryLight;
+    final primaryTextColor =
+        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final secondaryTextColor =
+        isDark ? AppColors.textMutedDark : AppColors.textSecondaryLight;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardBackgroundColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surfaceSecondaryLight),
+        border: Border.all(color: cardBorderColor),
       ),
       child: Row(
         children: [
@@ -31,14 +41,14 @@ class BreakdownLegendItem extends StatelessWidget {
           ),
           const SizedBox(width: 12),
 
-          // ✅ ĐÃ SỬA: Bọc Expanded + Giảm size chữ xuống 2px để ép text không đẩy tung lề ngang
+          // Tên danh mục tự động co dãn chống tràn hàng ngang
           Expanded(
             child: Text(
               item.name,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontSize: 12, // Giảm 2px (Mặc định bodyMedium thường là 14)
+                    fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimaryLight,
+                    color: primaryTextColor,
                   ),
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
@@ -46,7 +56,7 @@ class BreakdownLegendItem extends StatelessWidget {
           ),
           const SizedBox(width: 12),
 
-          // Số tiền định dạng compact
+          // Số tiền định dạng compact tương thích đa tiền tệ
           Text(
             CurrencyFormatter.format(
               item.amount,
@@ -54,19 +64,20 @@ class BreakdownLegendItem extends StatelessWidget {
               locale: context.currencyContext.locale,
             ),
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontSize: 12, // Giảm 2px để đồng bộ không gian hàng dọc
-                  color: AppColors.textSecondaryLight,
+                  fontSize: 12,
+                  color: secondaryTextColor,
                   fontWeight: FontWeight.w500,
                 ),
           ),
           const SizedBox(width: 16),
 
+          // Phần trăm hiển thị khối lớn
           Text(
             '${(item.percentage * 100).toStringAsFixed(0)}%',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimaryLight,
+                  color: primaryTextColor,
                 ),
           ),
         ],

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/features/home/data/models/spending_breakdown_model.dart';
-import 'package:spend_io_app/features/home/presentation/widgets/shared/dashboard_section_container.dart';
+import 'package:spend_io_app/features/home/presentation/widgets/home_section_container.dart';
 import 'package:spend_io_app/core/widgets/button/app_text_button.dart';
 
 import 'widgets/breakdown_filter_tabs.dart';
@@ -75,7 +75,7 @@ class _SpendingBreakdownSectionState extends State<SpendingBreakdownSection> {
             ],
           ),
         ),
-        DashboardSectionContainer(
+        HomeSectionContainer(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [

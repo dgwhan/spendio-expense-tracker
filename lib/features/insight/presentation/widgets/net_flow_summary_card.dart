@@ -19,17 +19,8 @@ class NetFlowSummaryCard extends StatelessWidget {
     final preferredCurrency = context.currencyContext.preferredCurrencyCode;
     final preferredLocale = context.currencyContext.locale;
 
-    //AI summary template
-    final netBalanceFormatted = formatCurrency(
-      state.netBalance.abs(),
-      currencyCode: preferredCurrency,
-      locale: preferredLocale,
-    );
     final isPositive = state.netBalance >= 0;
     
-    final aiSummary = isPositive
-        ? "Great job! You saved $netBalanceFormatted this period. Keep maintaining this healthy financial flow."
-        : "You spent $netBalanceFormatted more than you earned. Review your category breakdown below to optimize your budget.";
 
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: AppSizes.sm),

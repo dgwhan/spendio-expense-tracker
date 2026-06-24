@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
-import 'package:spend_io_app/features/home/presentation/widgets/shared/dashboard_section_container.dart';
+import 'package:spend_io_app/features/home/presentation/widgets/home_section_container.dart';
 
 class QuickActionsGrid extends StatelessWidget {
   final VoidCallback? onCreateBudgetTap;
@@ -29,7 +29,7 @@ class QuickActionsGrid extends StatelessWidget {
       data: Theme.of(context).copyWith(
         cardColor: cardBgColor,
       ),
-      child: DashboardSectionContainer(
+      child: HomeSectionContainer(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         child: GridView.count(
           shrinkWrap: true,

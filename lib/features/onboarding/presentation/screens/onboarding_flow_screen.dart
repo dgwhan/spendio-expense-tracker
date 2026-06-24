@@ -34,22 +34,6 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
     });
   }
 
-  String _getStepName(int step) {
-    switch (step) {
-      case 0:
-        return 'Identity';
-      case 1:
-        return 'Profession';
-      case 2:
-        return 'Goals';
-      case 3:
-        return 'Currency';
-      case 4:
-        return 'Balance';
-      default:
-        return 'Unknown';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {

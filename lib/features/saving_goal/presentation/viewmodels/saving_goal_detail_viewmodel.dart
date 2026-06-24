@@ -64,12 +64,17 @@ class SavingGoalDetailViewModel extends ChangeNotifier {
   Future<void> updateGoal({
     required SavingGoalEntity goal,
   }) async {
-    debugPrint('Update goal: ${goal.id}');
+    try {
+      _loading = true;
+      notifyListeners();
 
-    await updateGoalUseCase(goal);
-    _goal = goal;
+      await updateGoalUseCase(goal);
 
-    notifyListeners();
+      _goal = goal;
+    } finally {
+      _loading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> deleteGoal({

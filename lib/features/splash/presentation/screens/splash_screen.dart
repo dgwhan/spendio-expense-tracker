@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:lottie/lottie.dart';
 
+import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/startup/startup_coordinator.dart';
 import 'package:spend_io_app/core/startup/startup_result.dart';
 
@@ -48,7 +50,7 @@ class _SplashScreenState extends State<SplashScreen> {
     final result = await coordinator.resolve(context);
 
     final elapsed = DateTime.now().difference(startTime);
-    const minDuration = Duration(seconds: 2);
+    const minDuration = Duration(seconds: 3);
 
     if (elapsed < minDuration) {
       final wait = minDuration - elapsed;
@@ -89,35 +91,42 @@ class _SplashScreenState extends State<SplashScreen> {
 
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 250),
+        transitionDuration: const Duration(milliseconds: 300),
         pageBuilder: (_, __, ___) => next,
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFF5B5FEF),
+    return Scaffold(
+      // ✅ ĐÃ ĐỒNG BỘ: Sử dụng màu Primary từ hệ thống hệt như màu nền cũ của bồ
+      backgroundColor: AppColors.primary,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Opacity(
-              opacity: 0.12,
-              child: Icon(
-                Icons.account_balance_wallet_rounded,
-                size: 60,
-                color: Colors.white,
+            SizedBox(
+              width: 140,
+              height: 140,
+              child: Lottie.asset(
+                'assets/animations/wallet_animation.json',
+                repeat: true,
+                animate: true,
+                fit: BoxFit.contain,
               ),
             ),
-            SizedBox(height: 32),
-            Text(
+            const SizedBox(height: 24),
+            const Text(
               'Spend IO',
               style: TextStyle(
                 fontSize: 34,
                 fontWeight: FontWeight.w700,
                 color: Colors.white,
+                letterSpacing: -0.5,
               ),
             ),
           ],
