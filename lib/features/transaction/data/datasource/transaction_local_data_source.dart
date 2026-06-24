@@ -5,7 +5,7 @@ import 'package:spend_io_app/core/database/tables/transactions_table.dart';
 import '../models/transaction_model.dart';
 
 abstract class TransactionLocalDataSource {
-  Future<List<TransactionModel>> getAll();
+  Future<List<TransactionModel>> getAll(int userId);
   Future<List<TransactionModel>> getByAccountId(String accountId);
   Future<void> insert(TransactionModel model);
   Future<void> update(TransactionModel model);
@@ -43,10 +43,12 @@ class TransactionLocalDataSourceImpl implements TransactionLocalDataSource {
   Future<Database> get _db async => await AppDatabase.database;
 
   @override
-  Future<List<TransactionModel>> getAll() async {
+  Future<List<TransactionModel>> getAll(int userId) async {
     final db = await _db;
     final result = await db.query(
       TransactionsTable.tableName,
+      where: 'user_id = ?',
+      whereArgs: [userId],
       orderBy: 'transaction_date DESC, created_at DESC',
     );
     return result.map(TransactionModel.fromMap).toList();

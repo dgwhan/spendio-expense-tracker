@@ -63,6 +63,8 @@ class AppDatabase {
     }
   }
 
+  
+
   static Database get databaseInstance {
     if (_database == null) {
       throw StateError(

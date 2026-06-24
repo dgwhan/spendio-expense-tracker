@@ -175,15 +175,37 @@ class OnboardingViewModel extends ChangeNotifier {
     }
   }
 
+  void clear() {
+    _currentStep = 0;
+    _isLoading = false;
+    _hasError = false;
+    _displayName = null;
+    _occupation = null;
+    _goals.clear();
+    _currencyCode = null;
+    _initialBalance = null;
+    notifyListeners();
+  }
+
   Future<void> loadOnboarding({
     required String email,
   }) async {
     _setLoading(true);
+    _currentStep = 0;
+    _displayName = null;
+    _occupation = null;
+    _goals.clear();
+    _currencyCode = null;
+    _initialBalance = null;
+    _hasError = false;
     try {
       final onboarding = await getOnboardingUseCase(
         email: email,
       );
-      if (onboarding == null) return;
+      if (onboarding == null) {
+        notifyListeners();
+        return;
+      }
       _displayName = onboarding.displayName;
       _occupation = onboarding.occupation;
       _goals

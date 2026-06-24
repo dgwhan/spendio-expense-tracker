@@ -39,14 +39,8 @@ class AuthLocalDatasource {
   }
 
   Future<void> logout() async {
-    final db = await AppDatabase.database;
-    try {
-      await db.delete('wallets');
-      debugPrint(
-          '[Auth Local]: Wiped all cached wallet data on logout to prevent cross-user leakage.');
-    } catch (e) {
-      debugPrint('[Auth Local] Error while wiping cached session: $e');
-    }
+    // Không thực hiện xóa database cục bộ trên máy khi logout để giữ offline-first persistence
+    debugPrint('[Auth Local]: Logged out successfully (kept local persistence intact).');
   }
 
   Future<void> updateOnboarding(UserModel user) async {

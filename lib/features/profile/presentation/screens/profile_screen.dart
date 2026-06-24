@@ -4,6 +4,14 @@ import 'package:spend_io_app/core/constants/app_colors.dart';
 import 'package:spend_io_app/core/utils/localization.dart';
 import 'package:spend_io_app/core/widgets/common/app_screen_title.dart';
 import 'package:spend_io_app/features/splash/presentation/screens/splash_screen.dart';
+import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
+import 'package:spend_io_app/features/category/presentation/viewmodels/category_viewmodel.dart';
+import 'package:spend_io_app/features/transaction/presentation/viewmodels/transaction_viewmodel.dart';
+import 'package:spend_io_app/features/budget/presentation/viewmodels/monthly/budget_viewmodel.dart';
+import 'package:spend_io_app/features/budget/presentation/viewmodels/category/budget_category_viewmodel.dart';
+import 'package:spend_io_app/features/saving_goal/presentation/viewmodels/saving_goal_list_viewmodel.dart';
+import 'package:spend_io_app/features/insight/presentation/viewmodels/insight_viewmodel.dart';
+import 'package:spend_io_app/features/onboarding/presentation/viewmodels/onboarding_viewmodel.dart';
 import '../viewmodels/profile_viewmodel.dart';
 import '../widgets/profile_loading_overlay.dart';
 import 'edit_profile_screen.dart';
@@ -22,55 +30,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProfileViewModel>().loadCurrentUser();
     });
-  }
-
-  void _showLanguagePicker(BuildContext context, ProfileViewModel viewModel,
-      Color surfaceColor, Color textPrimary) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: surfaceColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  title: Text('English',
-                      style: TextStyle(
-                          color: textPrimary, fontWeight: FontWeight.w500)),
-                  trailing: viewModel.currentLanguage == 'en'
-                      ? const Icon(Icons.check_rounded,
-                          color: AppColors.primary)
-                      : null,
-                  onTap: () {
-                    viewModel.changeLanguage('en');
-                    Navigator.pop(context);
-                  },
-                ),
-                ListTile(
-                  title: Text('Tiếng Việt',
-                      style: TextStyle(
-                          color: textPrimary, fontWeight: FontWeight.w500)),
-                  trailing: viewModel.currentLanguage == 'vi'
-                      ? const Icon(Icons.check_rounded,
-                          color: AppColors.primary)
-                      : null,
-                  onTap: () {
-                    viewModel.changeLanguage('vi');
-                    Navigator.pop(context);
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
   }
 
   @override
@@ -93,9 +52,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
     final textMuted =
         isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
-
-    final displayLang =
-        viewModel.currentLanguage == 'en' ? 'English' : 'Tiếng Việt';
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -190,26 +146,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   color: dividerColor, height: 1, indent: 56),
                               ListTile(
                                 leading: Icon(Icons.translate_rounded,
-                                    color: textPrimary),
+                                    color: textPrimary.withValues(alpha: 0.5)),
                                 title: Text(
                                     AppLocalizations.translate('language'),
                                     style: TextStyle(
                                         fontWeight: FontWeight.w500,
-                                        color: textPrimary)),
+                                        color: textPrimary.withValues(alpha: 0.5))),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Text(displayLang,
+                                    Text(
+                                        'English',
                                         style: TextStyle(
-                                            color: textSecondary,
+                                            color: textSecondary.withValues(alpha: 0.5),
                                             fontSize: 14)),
                                     const SizedBox(width: 4),
-                                    Icon(Icons.chevron_right_rounded,
-                                        color: textSecondary),
+                                    Icon(Icons.lock_outline_rounded,
+                                        color: textSecondary.withValues(alpha: 0.5),
+                                        size: 16),
                                   ],
                                 ),
-                                onTap: () => _showLanguagePicker(context,
-                                    viewModel, surfaceColor, textPrimary),
+                                onTap: null, // Khóa đổi ngôn ngữ
                               ),
                               Divider(
                                   color: dividerColor, height: 1, indent: 56),
@@ -252,6 +209,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             onPressed: viewModel.isLoading
                                 ? null
                                 : () async {
+                                    // Clear providers trước khi điều hướng Login để tránh dính cache trên RAM
+                                    context.read<WalletViewModel>().updateUser(null);
+                                    context.read<CategoryViewModel>().clear();
+                                    context.read<TransactionViewModel>().clearTransactions();
+                                    context.read<BudgetViewModel>().clear();
+                                    context.read<BudgetCategoryViewModel>().clear();
+                                    context.read<SavingGoalListViewModel>().clearGoals();
+                                    context.read<InsightViewModel>().clear();
+                                    context.read<OnboardingViewModel>().clear();
+
                                     final success = await context
                                         .read<ProfileViewModel>()
                                         .handleLogout();

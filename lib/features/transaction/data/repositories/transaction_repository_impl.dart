@@ -23,8 +23,8 @@ class TransactionRepositoryImpl implements TransactionRepository {
   });
 
   @override
-  Future<List<TransactionEntity>> getAllTransactions() async {
-    final models = await localDataSource.getAll();
+  Future<List<TransactionEntity>> getAllTransactions(int userId) async {
+    final models = await localDataSource.getAll(userId);
     return models.map((model) => model.toEntity()).toList();
   }
 

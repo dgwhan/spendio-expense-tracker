@@ -20,7 +20,7 @@ extension CurrencyContextExtension on BuildContext {
 
       final preferredCode =
           profileVM.user?.currencyCode ?? AppCurrencies.vndCode;
-      final locale = profileVM.currentLanguage == 'vi' ? 'vi_VN' : 'en_US';
+      const locale = 'en_US';
 
       return CurrencyContext(
         preferredCurrencyCode: preferredCode,
@@ -29,7 +29,7 @@ extension CurrencyContextExtension on BuildContext {
     } catch (_) {
       return const CurrencyContext(
         preferredCurrencyCode: AppCurrencies.vndCode,
-        locale: 'vi_VN',
+        locale: 'en_US',
       );
     }
   }

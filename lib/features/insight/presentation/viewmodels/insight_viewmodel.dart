@@ -20,6 +20,12 @@ class InsightViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void clear() {
+    _activeFilter = 'Month';
+    _customRange = null;
+    notifyListeners();
+  }
+
   // Pure logic mapping to compute the dynamic state to be consumed by the view
   InsightState getCalculatedState(BuildContext context,
       List<TransactionEntity> transactions, List<CategoryEntity> categories) {

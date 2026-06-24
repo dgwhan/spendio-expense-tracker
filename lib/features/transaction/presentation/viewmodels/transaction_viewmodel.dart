@@ -17,6 +17,17 @@ class TransactionViewModel extends ChangeNotifier {
   TransactionState _state = const TransactionState();
   TransactionState get state => _state;
   String? _currentAccountId;
+  int? _userId;
+
+  int? get userId => _userId;
+
+  void updateUserId(int? userId) {
+    if (_userId == userId) return;
+    _userId = userId;
+    if (userId != null) {
+      loadAllTransactions();
+    }
+  }
 
   // Callback duoc DI lop ngoai gan vao, dung de bao cho module Budget
   // tinh lai progress moi khi so du giao dich thay doi. TransactionViewModel
@@ -36,11 +47,15 @@ class TransactionViewModel extends ChangeNotifier {
   }
 
   Future<void> loadAllTransactions() async {
+    if (_userId == null) {
+      debugPrint('[TransactionVM]: loadAllTransactions aborted. No active userId found.');
+      return;
+    }
     _currentAccountId = null;
     _setState(_state.copyWith(isLoading: true, error: null));
 
     try {
-      final data = await repository.getAllTransactions();
+      final data = await repository.getAllTransactions(_userId!);
       _setState(_state.copyWith(isLoading: false, transactions: data));
     } catch (e) {
       _setState(_state.copyWith(isLoading: false, error: e.toString()));
@@ -68,6 +83,8 @@ class TransactionViewModel extends ChangeNotifier {
     } finally {
       if (_currentAccountId != null) {
         await loadByAccount(_currentAccountId!);
+      } else {
+        await loadAllTransactions();
       }
     }
   }
@@ -96,6 +113,8 @@ class TransactionViewModel extends ChangeNotifier {
     } finally {
       if (_currentAccountId != null) {
         await loadByAccount(_currentAccountId!);
+      } else {
+        await loadAllTransactions();
       }
     }
   }
@@ -111,6 +130,8 @@ class TransactionViewModel extends ChangeNotifier {
     } finally {
       if (_currentAccountId != null) {
         await loadByAccount(_currentAccountId!);
+      } else {
+        await loadAllTransactions();
       }
     }
   }

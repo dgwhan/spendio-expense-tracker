@@ -111,6 +111,12 @@ class BudgetCategoryViewModel extends ChangeNotifier {
     if (!_disposed) notifyListeners();
   }
 
+  void clear() {
+    _categories = [];
+    _progressList = [];
+    _safeNotify();
+  }
+
   @override
   void dispose() {
     _disposed = true;

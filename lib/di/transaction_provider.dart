@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
+import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:spend_io_app/features/account/domain/repositories/account_repository.dart';
 
 // DATA LAYER
@@ -58,18 +59,24 @@ class TransactionProvider {
         // BudgetViewModel se khong co thu tu khai bao nao hop le).
         // Callback onTransactionBalanceChanged duoc gan o tang App widget,
         // xem app.dart.
-        ChangeNotifierProxyProvider2<CreateTransaction, TransactionRepository,
-            TransactionViewModel>(
+        ChangeNotifierProxyProvider3<CreateTransaction, TransactionRepository,
+            AuthProvider, TransactionViewModel>(
           create: (context) => TransactionViewModel(
             repository: context.read<TransactionRepository>(),
             createTransactionUseCase: context.read<CreateTransaction>(),
           ),
-          update: (_, createTx, txRepo, previous) =>
-              previous ??
-              TransactionViewModel(
-                repository: txRepo,
-                createTransactionUseCase: createTx,
-              ),
+          update: (_, createTx, txRepo, authProvider, previous) {
+            final vm = previous ??
+                TransactionViewModel(
+                  repository: txRepo,
+                  createTransactionUseCase: createTx,
+                );
+            vm.updateUserId(authProvider.currentUser?.id);
+            if (authProvider.currentUser == null) {
+              vm.clearTransactions();
+            }
+            return vm;
+          },
         ),
       ];
 }

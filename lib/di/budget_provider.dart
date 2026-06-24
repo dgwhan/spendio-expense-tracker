@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
+import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:spend_io_app/features/budget/domain/usecase/monthly/delete_budget_usecase.dart';
 import 'package:spend_io_app/features/budget/domain/usecase/monthly/update_budget_usecase.dart';
 import 'package:spend_io_app/features/budget/domain/usecase/category/create_budget_category_usecase.dart';
@@ -104,22 +105,28 @@ class BudgetModuleProvider {
     // =========================
     // VIEWMODELS
     // =========================
-    ChangeNotifierProxyProvider2<BudgetRepository, BudgetProgressCalculator,
-        BudgetViewModel>(
+    ChangeNotifierProxyProvider3<BudgetRepository, BudgetProgressCalculator,
+        AuthProvider, BudgetViewModel>(
       create: (context) => BudgetViewModel(
         repository: context.read<BudgetRepository>(),
         calculator: context.read<BudgetProgressCalculator>(),
       ),
-      update: (_, repo, calc, previous) =>
-          previous ?? BudgetViewModel(repository: repo, calculator: calc),
+      update: (_, repo, calc, authProvider, previous) {
+        final vm = previous ?? BudgetViewModel(repository: repo, calculator: calc);
+        if (authProvider.currentUser == null) {
+          vm.clear();
+        }
+        return vm;
+      },
     ),
 
-    ChangeNotifierProxyProvider5<
+    ChangeNotifierProxyProvider6<
         CreateBudgetCategoryUseCase,
         GetBudgetCategoriesUseCase,
         UpdateBudgetCategoryUseCase,
         DeleteBudgetCategoryUseCase,
         BudgetProgressCalculator,
+        AuthProvider,
         BudgetCategoryViewModel>(
       create: (context) => BudgetCategoryViewModel(
         createUseCase: context.read<CreateBudgetCategoryUseCase>(),
@@ -128,15 +135,20 @@ class BudgetModuleProvider {
         deleteUseCase: context.read<DeleteBudgetCategoryUseCase>(),
         calculator: context.read<BudgetProgressCalculator>(),
       ),
-      update: (_, create, get, update, delete, calc, previous) =>
-          previous ??
-          BudgetCategoryViewModel(
-            createUseCase: create,
-            getUseCase: get,
-            updateUseCase: update,
-            deleteUseCase: delete,
-            calculator: calc,
-          ),
+      update: (_, create, get, update, delete, calc, authProvider, previous) {
+        final vm = previous ??
+            BudgetCategoryViewModel(
+              createUseCase: create,
+              getUseCase: get,
+              updateUseCase: update,
+              deleteUseCase: delete,
+              calculator: calc,
+            );
+        if (authProvider.currentUser == null) {
+          vm.clear();
+        }
+        return vm;
+      },
     ),
 
     ChangeNotifierProvider<BudgetCategoryFormViewModel>(

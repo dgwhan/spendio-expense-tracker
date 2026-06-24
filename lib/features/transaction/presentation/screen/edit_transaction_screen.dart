@@ -79,19 +79,6 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     _selectedType = widget.transaction.type;
     _selectedDate = widget.transaction.transactionDate;
 
-    // ✅ FIX NGHẼN 6 SỐ TỪ XA: Ép bộ lắng nghe Controller dọn sạch dấu trước khi con bị digitsOnly chặn đứng
-    _amountController.addListener(() {
-      final text = _amountController.text;
-      if (text.contains('.') || text.contains(',')) {
-        final cleanText = text.replaceAll(RegExp(r'[^0-9]'), '');
-        if (cleanText != text) {
-          _amountController.value = _amountController.value.copyWith(
-            text: cleanText,
-            selection: TextSelection.collapsed(offset: cleanText.length),
-          );
-        }
-      }
-    });
 
     final accountVM = context.read<AccountViewModel>();
     if (accountVM.accounts.isNotEmpty) {

@@ -62,6 +62,11 @@ class WalletViewModel extends ChangeNotifier {
 
     if (user != null) {
       initialize();
+    } else {
+      _summary = WalletSummaryEntity.empty;
+      _categories = [];
+      _errorMessage = null;
+      notifyListeners();
     }
   }
 

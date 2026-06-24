@@ -32,7 +32,7 @@ class _CurrencyPhaseScreenState extends State<CurrencyPhaseScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       viewModel.updateCurrency('VND');
       final profileVM = context.read<ProfileViewModel>();
-      profileVM.changeLanguage('vi');
+      profileVM.changeLanguage('en');
     });
   }
 

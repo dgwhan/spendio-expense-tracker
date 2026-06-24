@@ -39,6 +39,10 @@ class CategoryViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void clear() {
+    clearCategories();
+  }
+
   Future<String?> deleteCategory({
     required String categoryId,
     required String remoteUid,

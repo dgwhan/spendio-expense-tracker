@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
+import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'package:spend_io_app/features/saving_goal/data/datasource/saving_goal_local_datasource.dart';
@@ -92,15 +93,20 @@ class SavingGoalModuleProvider {
       // VIEWMODELS
       // =====================================================
 
-      ChangeNotifierProxyProvider<GetGoalsUseCase, SavingGoalListViewModel>(
+      ChangeNotifierProxyProvider2<GetGoalsUseCase, AuthProvider,
+          SavingGoalListViewModel>(
         create: (context) => SavingGoalListViewModel(
           getGoalsUseCase: context.read<GetGoalsUseCase>(),
         ),
-        update: (_, useCase, vm) {
-          return vm ??
+        update: (_, useCase, authProvider, vm) {
+          final activeVm = vm ??
               SavingGoalListViewModel(
                 getGoalsUseCase: useCase,
               );
+          if (authProvider.currentUser == null) {
+            activeVm.clearGoals();
+          }
+          return activeVm;
         },
       ),
 

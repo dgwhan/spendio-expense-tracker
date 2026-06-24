@@ -4,6 +4,8 @@ import 'package:spend_io_app/features/splash/presentation/screens/splash_screen.
 import 'package:spend_io_app/features/transaction/presentation/viewmodels/transaction_viewmodel.dart';
 import 'package:spend_io_app/features/budget/presentation/viewmodels/monthly/budget_viewmodel.dart';
 import 'package:spend_io_app/features/profile/presentation/viewmodels/profile_viewmodel.dart';
+import 'package:spend_io_app/features/wallet/presentation/viewmodels/wallet_viewmodel.dart';
+import 'package:spend_io_app/features/account/presentation/viewmodels/account_viewmodel.dart';
 import 'core/theme/app_theme.dart';
 
 class SpendIOApp extends StatefulWidget {
@@ -21,9 +23,13 @@ class _SpendIOAppState extends State<SpendIOApp> {
 
     final transactionVM = context.read<TransactionViewModel>();
     final budgetVM = context.read<BudgetViewModel>();
+    final walletVM = context.read<WalletViewModel>();
+    final accountVM = context.read<AccountViewModel>();
 
     transactionVM.onTransactionBalanceChanged = (userId) async {
       await budgetVM.loadBudget(userId);
+      await walletVM.refreshBudgetProgress();
+      await accountVM.loadAccounts(userId, userId.toString(), forceRefresh: true);
     };
 
     _budgetLinkWired = true;

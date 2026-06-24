@@ -32,4 +32,9 @@ class SavingGoalListViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  void clearGoals() {
+    _goals = [];
+    notifyListeners();
+  }
 }

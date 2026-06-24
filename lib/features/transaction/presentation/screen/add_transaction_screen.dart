@@ -71,18 +71,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       _selectedAccount = null;
     }
 
-    _amountController.addListener(() {
-      final text = _amountController.text;
-      if (text.contains('.') || text.contains(',')) {
-        final cleanText = text.replaceAll(RegExp(r'[^0-9]'), '');
-        if (cleanText != text) {
-          _amountController.value = _amountController.value.copyWith(
-            text: cleanText,
-            selection: TextSelection.collapsed(offset: cleanText.length),
-          );
-        }
-      }
-    });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CategoryViewModel>().loadCategories(widget.userId);

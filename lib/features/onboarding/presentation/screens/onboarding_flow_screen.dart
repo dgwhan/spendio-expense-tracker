@@ -9,6 +9,7 @@ import 'package:spend_io_app/features/onboarding/presentation/screens/phases/ide
 import 'package:spend_io_app/features/onboarding/presentation/screens/phases/profession_phase_screen.dart';
 import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
+import 'package:spend_io_app/features/profile/presentation/viewmodels/profile_viewmodel.dart';
 import '../viewmodels/onboarding_viewmodel.dart';
 
 class OnboardingFlowScreen extends StatefulWidget {
@@ -96,6 +97,9 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
           } else {
             FocusScope.of(context).unfocus();
             await viewModel.completeOnboarding(email: widget.userEmail);
+
+            if (!context.mounted) return;
+            await context.read<ProfileViewModel>().changeLanguage('en');
 
             if (!context.mounted) return;
             await context.read<AuthProvider>().reloadUser();

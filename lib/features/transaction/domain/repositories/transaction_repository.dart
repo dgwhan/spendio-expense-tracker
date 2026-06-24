@@ -5,7 +5,7 @@ abstract class TransactionRepository {
   // CRUD
   // =========================================================
 
-  Future<List<TransactionEntity>> getAllTransactions();
+  Future<List<TransactionEntity>> getAllTransactions(int userId);
 
   Future<List<TransactionEntity>> getTransactionsByAccount(
     String accountId,
