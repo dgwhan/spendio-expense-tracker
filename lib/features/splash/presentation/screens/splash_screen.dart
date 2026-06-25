@@ -103,7 +103,6 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // ✅ ĐÃ ĐỒNG BỘ: Sử dụng màu Primary từ hệ thống hệt như màu nền cũ của bồ
       backgroundColor: AppColors.primary,
       body: Center(
         child: Column(
