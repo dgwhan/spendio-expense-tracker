@@ -55,7 +55,6 @@ class AuthRepositoryImpl implements AuthRepository {
         return true;
       }
 
-      // Các lỗi cứng khác của Firebase thì tiến hành gỡ rác cục bộ
       if (firebaseUser != null) {
         await remoteDatasource.rollbackUser(user: firebaseUser);
       }
@@ -64,7 +63,6 @@ class AuthRepositoryImpl implements AuthRepository {
     } catch (e) {
       debugPrint("[AuthRepositoryImpl] General / Timeout Error: $e");
 
-      // Nếu dính TimeoutException, TUYỆT ĐỐI không xóa SQLite local, vì Firebase có thể sẽ tạo xong user sau vài giây ngầm
       if (e.toString().contains('TimeoutException')) {
         debugPrint(
             " [AuthRepositoryImpl] Timeout detected. Keeping local cache alive for potential ghost creation on Cloud.");
@@ -96,7 +94,6 @@ class AuthRepositoryImpl implements AuthRepository {
           )
           .timeout(const Duration(seconds: 5));
     } catch (e) {
-      // Offline fallback: Query local database directly if network invocation fails
       final localResult = await localDatasource.loginUser(
         email: email,
         password: password,

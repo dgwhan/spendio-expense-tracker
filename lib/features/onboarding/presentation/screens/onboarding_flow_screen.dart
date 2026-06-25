@@ -63,7 +63,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
             final balance = viewModel.initialBalance ?? 0.0;
             if (balance > 999999999) {
               viewModel.setError(true);
-              viewModel.triggerShake(); // Kích hoạt hiệu ứng qua ViewModel
+              viewModel.triggerShake();
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: const Text('Amount cannot exceed 999.999.999'),

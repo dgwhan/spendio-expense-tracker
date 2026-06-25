@@ -26,9 +26,7 @@ class BudgetModuleProvider {
   BudgetModuleProvider._();
 
   static List<SingleChildWidget> providers = [
-    // =========================
-    // DATA SOURCE
-    // =========================
+    //DATA SOURCE
     Provider<BudgetLocalDataSource>(
       create: (context) {
         final db = context.read<Database>();
@@ -42,9 +40,7 @@ class BudgetModuleProvider {
       ),
     ),
 
-    // =========================
-    // REPOSITORY
-    // =========================
+    //REPOSITORY
     ProxyProvider2<BudgetLocalDataSource, BudgetRemoteDataSource,
         BudgetRepository>(
       update: (_, local, remote, __) {
@@ -55,9 +51,7 @@ class BudgetModuleProvider {
       },
     ),
 
-    // =========================
-    // MONTHLY BUDGET USE CASES
-    // =========================
+    //MONTHLY BUDGET USE CASES
     ProxyProvider<BudgetRepository, UpdateBudgetUseCase>(
       update: (_, repo, previous) => previous ?? UpdateBudgetUseCase(repo),
     ),
@@ -66,9 +60,7 @@ class BudgetModuleProvider {
       update: (_, repo, previous) => previous ?? DeleteBudgetUseCase(repo),
     ),
 
-    // =========================
-    // CATEGORY BUDGET USE CASES
-    // =========================
+    //CATEGORY BUDGET USE CASES
     ProxyProvider<BudgetRepository, CreateBudgetCategoryUseCase>(
       update: (_, repo, previous) =>
           previous ?? CreateBudgetCategoryUseCase(repo),
@@ -89,9 +81,7 @@ class BudgetModuleProvider {
           previous ?? DeleteBudgetCategoryUseCase(repo),
     ),
 
-    // =========================
-    // DOMAIN SERVICE
-    // =========================
+    //DOMAIN SERVICE
     ProxyProvider2<BudgetRepository, TransactionRepository,
         BudgetProgressCalculator>(
       update: (_, repo, txRepo, __) {
@@ -102,9 +92,7 @@ class BudgetModuleProvider {
       },
     ),
 
-    // =========================
-    // VIEWMODELS
-    // =========================
+    //VIEWMODELS
     ChangeNotifierProxyProvider3<BudgetRepository, BudgetProgressCalculator,
         AuthProvider, BudgetViewModel>(
       create: (context) => BudgetViewModel(

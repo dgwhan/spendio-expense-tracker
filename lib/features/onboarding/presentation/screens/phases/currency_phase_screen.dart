@@ -23,7 +23,7 @@ class _CurrencyPhaseScreenState extends State<CurrencyPhaseScreen> {
 
     final viewModel = context.read<OnboardingViewModel>();
     
-    // Tạm thời mặc định là VND
+    //Tạm thời mặc định là VND
     _selectedCurrency = supportedCurrencies.firstWhere(
       (element) => element.code == 'VND',
       orElse: () => supportedCurrencies.first,

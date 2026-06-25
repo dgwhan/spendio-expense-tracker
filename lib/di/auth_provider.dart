@@ -1,20 +1,14 @@
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
-
-// DATA LAYER
 import 'package:spend_io_app/features/auth/data/datasource/auth_local_datasource.dart';
 import 'package:spend_io_app/features/auth/data/datasource/auth_remote_datasource.dart';
 import 'package:spend_io_app/features/auth/data/datasource/google_auth_datasource.dart';
 import 'package:spend_io_app/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:spend_io_app/features/auth/data/services/auth_sync_service.dart';
 import 'package:spend_io_app/features/auth/data/services/google_signin_service.dart';
-
-// DOMAIN LAYER
 import 'package:spend_io_app/features/auth/domain/usecases/check_email_usecase.dart';
 import 'package:spend_io_app/features/auth/domain/usecases/get_current_user_usecase.dart';
 import 'package:spend_io_app/features/auth/domain/usecases/sign_in_with_google_usecase.dart';
-
-// PRESENTATION LAYER
 import 'package:spend_io_app/features/auth/presentation/viewmodels/register_form_viewmodel.dart';
 import 'package:spend_io_app/features/auth/presentation/viewmodels/login_form_viewmodel.dart';
 import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
