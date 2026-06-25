@@ -1,7 +1,7 @@
 class UserEntity {
   final int? id;
   final String email;
-  final String password;
+  final String? password;
   final String? occupation;
   final String? financialGoal;
   final String? preferredCurrencyCode;
@@ -11,7 +11,7 @@ class UserEntity {
   UserEntity({
     this.id,
     required this.email,
-    required this.password,
+    this.password,
     this.occupation,
     this.financialGoal,
     this.preferredCurrencyCode,
@@ -19,9 +19,10 @@ class UserEntity {
     this.displayNameField,
   });
 
-  String get displayName => (displayNameField != null && displayNameField!.isNotEmpty)
-      ? displayNameField!
-      : email.split('@').first;
+  String get displayName =>
+      (displayNameField != null && displayNameField!.isNotEmpty)
+          ? displayNameField!
+          : email.split('@').first;
 
   String? get currencyCode => preferredCurrencyCode;
 
@@ -41,10 +42,10 @@ class UserEntity {
       password: password ?? this.password,
       occupation: occupation ?? this.occupation,
       financialGoal: financialGoal ?? this.financialGoal,
-      preferredCurrencyCode: preferredCurrencyCode ?? this.preferredCurrencyCode,
+      preferredCurrencyCode:
+          preferredCurrencyCode ?? this.preferredCurrencyCode,
       onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
       displayNameField: displayNameField ?? this.displayNameField,
     );
   }
 }
-

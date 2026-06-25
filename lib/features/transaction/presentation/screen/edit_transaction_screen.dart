@@ -79,7 +79,6 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     _selectedType = widget.transaction.type;
     _selectedDate = widget.transaction.transactionDate;
 
-
     final accountVM = context.read<AccountViewModel>();
     if (accountVM.accounts.isNotEmpty) {
       _selectedAccount = accountVM.accounts.firstWhere(
@@ -365,7 +364,6 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                 ),
               ),
 
-              // ✅ FIX TRIỆT ĐỂ RENDERSLIVER & SNACKBAR OFF SCREEN: Ghìm chặt khối nút dưới đáy CustomScrollView chống nổ layout
               SliverFillRemaining(
                 hasScrollBody: false,
                 child: Align(

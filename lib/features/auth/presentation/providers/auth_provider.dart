@@ -6,7 +6,18 @@ import '../../domain/repositories/auth_repository.dart';
 class AuthProvider extends ChangeNotifier {
   final AuthRepository repository;
 
-  bool isLoading = false;
+  bool _isEmailLoading = false;
+  bool _isGoogleLoading = false;
+  bool _isSessionLoading = false;
+  bool _isLogoutLoading = false;
+
+  bool get isEmailLoading => _isEmailLoading;
+  bool get isGoogleLoading => _isGoogleLoading;
+  bool get isSessionLoading => _isSessionLoading;
+  bool get isLogoutLoading => _isLogoutLoading;
+  bool get isLoading =>
+      _isEmailLoading || _isGoogleLoading || _isSessionLoading || _isLogoutLoading;
+
   UserModel? currentUser;
 
   AuthProvider({
@@ -18,10 +29,8 @@ class AuthProvider extends ChangeNotifier {
     required String password,
   }) async {
     try {
-      isLoading = true;
+      _isEmailLoading = true;
       notifyListeners();
-
-      debugPrint("===> AuthProvider registration request email: $email");
 
       final userEntity = UserEntity(
         email: email,
@@ -32,34 +41,33 @@ class AuthProvider extends ChangeNotifier {
       final success = await repository.register(userEntity);
 
       if (success) {
-        final loginSuccess = await login(email: email, password: password);
-        isLoading = false;
+        final loginError = await login(email: email, password: password);
+        _isEmailLoading = false;
         notifyListeners();
 
-        if (loginSuccess) {
+        if (loginError == null) {
           return null;
         } else {
-          return "Account created successfully, but auto-login session initialization failed.";
+          return loginError;
         }
       } else {
-        isLoading = false;
+        _isEmailLoading = false;
         notifyListeners();
-        return "Registration failed. Email might already exist or local SQLite storage was rejected.";
+        return "Registration failed. Email might already exist.";
       }
     } catch (e) {
-      debugPrint("Error inside AuthProvider.register: $e");
-      isLoading = false;
+      _isEmailLoading = false;
       notifyListeners();
       return e.toString();
     }
   }
 
-  Future<bool> login({
+  Future<String?> login({
     required String email,
     required String password,
   }) async {
     try {
-      isLoading = true;
+      _isEmailLoading = true;
       notifyListeners();
 
       final result = await repository.login(email, password);
@@ -69,7 +77,7 @@ class AuthProvider extends ChangeNotifier {
           id: result.id,
           email: result.email,
           password: result.password,
-          displayName: result.email.split('@').first,
+          displayName: result.displayName,
           occupation: result.occupation,
           financialGoal: result.financialGoal,
           preferredCurrencyCode: result.preferredCurrencyCode,
@@ -77,25 +85,26 @@ class AuthProvider extends ChangeNotifier {
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );
+        _isEmailLoading = false;
+        notifyListeners();
+        return null;
       } else {
         currentUser = null;
+        _isEmailLoading = false;
+        notifyListeners();
+        return "Invalid email or password.";
       }
-
-      isLoading = false;
-      notifyListeners();
-      return result != null;
     } catch (e) {
-      debugPrint("===> Error inside AuthProvider.login: $e");
       currentUser = null;
-      isLoading = false;
+      _isEmailLoading = false;
       notifyListeners();
-      return false;
+      return e.toString();
     }
   }
 
   Future<void> loadSession() async {
     try {
-      isLoading = true;
+      _isSessionLoading = true;
       notifyListeners();
 
       final result = await repository.getCurrentUser();
@@ -105,7 +114,7 @@ class AuthProvider extends ChangeNotifier {
           id: result.id,
           email: result.email,
           password: result.password,
-          displayName: result.email.split('@').first,
+          displayName: result.displayName,
           occupation: result.occupation,
           financialGoal: result.financialGoal,
           preferredCurrencyCode: result.preferredCurrencyCode,
@@ -120,7 +129,7 @@ class AuthProvider extends ChangeNotifier {
       debugPrint("Error inside AuthProvider.loadSession: $e");
       currentUser = null;
     } finally {
-      isLoading = false;
+      _isSessionLoading = false;
       notifyListeners();
     }
   }
@@ -144,8 +153,8 @@ class AuthProvider extends ChangeNotifier {
     currentUser = UserModel(
       id: user.id,
       email: user.email,
-      password: user.password,
-      displayName: user.email.split('@').first,
+      password: user.password ?? '',
+      displayName: user.displayName,
       occupation: user.occupation,
       financialGoal: user.financialGoal,
       preferredCurrencyCode: user.preferredCurrencyCode,
@@ -159,14 +168,13 @@ class AuthProvider extends ChangeNotifier {
   Future<void> reloadUser() async {
     if (currentUser == null) return;
     try {
-      final result =
-          await repository.login(currentUser!.email, currentUser!.password);
+      final result = await repository.getCurrentUser();
       if (result != null) {
         currentUser = UserModel(
           id: result.id,
           email: result.email,
           password: result.password,
-          displayName: result.email.split('@').first,
+          displayName: result.displayName,
           occupation: result.occupation,
           financialGoal: result.financialGoal,
           preferredCurrencyCode: result.preferredCurrencyCode,
@@ -182,13 +190,60 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
-    isLoading = true;
+    _isLogoutLoading = true;
     notifyListeners();
 
     await repository.logout();
     currentUser = null;
 
-    isLoading = false;
+    _isLogoutLoading = false;
     notifyListeners();
+  }
+
+  /// Signs in the user with Google.
+  ///
+  /// Returns `null` on success, or an error message string on failure.
+  /// Returns `null` silently when the user cancels the Google picker
+  /// (no error dialog should be shown in that case — check [currentUser]).
+  Future<String?> signInWithGoogle() async {
+    if (isLoading) return null;
+
+    try {
+      _isGoogleLoading = true;
+      notifyListeners();
+
+      final result = await repository.signInWithGoogle();
+
+      // User cancelled the picker — not an error
+      if (result == null) {
+        _isGoogleLoading = false;
+        notifyListeners();
+        return null;
+      }
+
+      // Success — set current user exactly like login() does
+      currentUser = UserModel(
+        id: result.id,
+        email: result.email,
+        password: result.password,
+        displayName: result.displayName,
+        occupation: result.occupation,
+        financialGoal: result.financialGoal,
+        preferredCurrencyCode: result.preferredCurrencyCode,
+        onboardingCompleted: result.onboardingCompleted,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      _isGoogleLoading = false;
+      notifyListeners();
+      return null; // null = success
+    } catch (e) {
+      currentUser = null;
+      _isGoogleLoading = false;
+      notifyListeners();
+      debugPrint('[AuthProvider] Google Sign-In error: $e');
+      return e.toString();
+    }
   }
 }

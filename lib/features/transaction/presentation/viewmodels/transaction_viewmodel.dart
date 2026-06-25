@@ -30,8 +30,7 @@ class TransactionViewModel extends ChangeNotifier {
   }
 
   // Callback duoc DI lop ngoai gan vao, dung de bao cho module Budget
-  // tinh lai progress moi khi so du giao dich thay doi. TransactionViewModel
-  // khong import truc tiep BudgetViewModel de giu tach biet tang feature.
+  // tinh lai progress moi khi so du giao dich thay doi.
   Future<void> Function(int userId)? onTransactionBalanceChanged;
 
   Future<void> loadByAccount(String accountId) async {
@@ -48,7 +47,8 @@ class TransactionViewModel extends ChangeNotifier {
 
   Future<void> loadAllTransactions() async {
     if (_userId == null) {
-      debugPrint('[TransactionVM]: loadAllTransactions aborted. No active userId found.');
+      debugPrint(
+          '[TransactionVM]: loadAllTransactions aborted. No active userId found.');
       return;
     }
     _currentAccountId = null;

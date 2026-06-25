@@ -1,5 +1,3 @@
-//btn cho chức năng add transaction
-
 import 'package:flutter/material.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
 

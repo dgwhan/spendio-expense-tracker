@@ -55,7 +55,7 @@ class BudgetRepositoryImpl implements BudgetRepository {
   }
 
   // =========================================================
-  // 🔥 FIXED DELETE (stateless, deterministic)
+  // DELETE 
   // =========================================================
 
   @override
@@ -63,10 +63,10 @@ class BudgetRepositoryImpl implements BudgetRepository {
     required String budgetId,
     required int userId,
   }) async {
-    // 1. delete local first (source of truth)
+    //xóa trong local trước
     await localDataSource.deleteBudget(budgetId);
 
-    // 2. sync remote using explicit identity
+    //đồng bộ hóa remote
     try {
       await remoteDataSource
           .deleteBudget(budgetId, userId)

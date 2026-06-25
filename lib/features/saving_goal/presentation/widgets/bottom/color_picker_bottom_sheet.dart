@@ -22,14 +22,12 @@ class ColorPickerBottomSheet {
               left: 16,
               right: 16,
               top: 16,
-              // FIX: Chống đè hoàn toàn bằng cách cộng thêm độ cao cản của Navigation Bar / Bàn phím ảo
               bottom: MediaQuery.of(context).viewInsets.bottom + 16,
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Thanh kéo gạch xám trên đầu BottomSheet
                 Center(
                   child: Container(
                     width: 44,
@@ -49,8 +47,6 @@ class ColorPickerBottomSheet {
                   ),
                 ),
                 const SizedBox(height: 20),
-
-                // Hiển thị FULL màu lấy từ AppColorPickerGrid
                 Wrap(
                   spacing: 12,
                   runSpacing: 12,

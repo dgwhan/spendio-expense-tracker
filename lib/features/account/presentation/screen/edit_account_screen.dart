@@ -150,7 +150,6 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
-            // ĐỒNG BỘ SLIVER: Đưa AccountForm vào cuộn mượt mà chống tràn bàn phím ảo
             SliverToBoxAdapter(
               child: AccountForm(
                 account: widget.account,

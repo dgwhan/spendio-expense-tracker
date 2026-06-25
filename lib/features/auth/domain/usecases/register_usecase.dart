@@ -1,7 +1,5 @@
-//chứa nhiệm vụ của chức năng đó, file này sẽ gọi đến auth_repository để thực hiện lệnh dky 
-
-import '../repositories/auth_repository.dart';
-import '../entities/user_entity.dart';
+import 'package:spend_io_app/features/auth/domain/entities/user_entity.dart';
+import 'package:spend_io_app/features/auth/domain/repositories/auth_repository.dart';
 
 class RegisterUseCase {
   final AuthRepository repository;

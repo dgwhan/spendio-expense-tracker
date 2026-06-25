@@ -146,7 +146,6 @@ class _AddCategoryBudgetScreenState extends State<AddCategoryBudgetScreen> {
                               ),
                               enabled: !isAlreadyCreated,
                               onTap: () {
-                                // FIX ĐỘNG: Đọc instance bằng context.read để giữ đúng vùng nhớ data
                                 final formVM =
                                     context.read<BudgetCategoryFormViewModel>();
                                 formVM.setCategory(category);

@@ -3,7 +3,7 @@ import '../../domain/entities/user_entity.dart';
 class UserModel {
   final int? id;
   final String email;
-  final String password;
+  final String? password;
   final String displayName;
   final String? fullName;
   final String? occupation;
@@ -16,7 +16,7 @@ class UserModel {
   const UserModel({
     this.id,
     required this.email,
-    required this.password,
+    this.password,
     required this.displayName,
     this.fullName,
     this.occupation,
@@ -33,7 +33,7 @@ class UserModel {
     return {
       'id': id,
       'email': email,
-      'password': password,
+      'password': password ?? '',
       'display_name': displayName,
       'full_name': fullName,
       'occupation': occupation,
@@ -49,12 +49,14 @@ class UserModel {
     return UserModel(
       id: map['id'],
       email: map['email'] ?? '',
-      password: map['password'] ?? '',
+      password: map['password'],
       displayName: map['display_name'] ?? '',
       fullName: map['full_name'],
       occupation: map['occupation'],
       financialGoal: map['financial_goal'],
-      preferredCurrencyCode: map['preferred_currency_code'] ?? map['currency_code'] ?? map['currency'],
+      preferredCurrencyCode: map['preferred_currency_code'] ??
+          map['currency_code'] ??
+          map['currency'],
       onboardingCompleted: map['onboarding_completed']?.toString() == '1' ||
           map['onboarding_completed']?.toString() == 'true',
       createdAt: map['created_at'] != null
@@ -87,7 +89,8 @@ class UserModel {
       fullName: fullName ?? this.fullName,
       occupation: occupation ?? this.occupation,
       financialGoal: financialGoal ?? this.financialGoal,
-      preferredCurrencyCode: preferredCurrencyCode ?? this.preferredCurrencyCode,
+      preferredCurrencyCode:
+          preferredCurrencyCode ?? this.preferredCurrencyCode,
       onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

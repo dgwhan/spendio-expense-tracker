@@ -18,7 +18,6 @@ class AccountTransactionFeed extends StatelessWidget {
   final List<CategoryEntity> categories;
   final String? walletId;
 
-  // THÊM: Nạp các biến trạng thái lọc từ Chips vào để xử lý đồng bộ
   final TransactionType? selectedType;
   final CategoryEntity? selectedCategory;
   final AccountEntity? selectedAccount;

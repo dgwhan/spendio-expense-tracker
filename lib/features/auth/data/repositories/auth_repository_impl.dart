@@ -1,17 +1,27 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../domain/entities/user_entity.dart';
-import '../../domain/repositories/auth_repository.dart';
-import '../datasource/auth_local_datasource.dart';
-import '../datasource/auth_remote_datasource.dart';
-import '../models/user_model.dart';
+import 'package:spend_io_app/features/auth/data/datasource/auth_local_datasource.dart';
+import 'package:spend_io_app/features/auth/data/datasource/auth_remote_datasource.dart';
+import 'package:spend_io_app/features/auth/data/models/user_model.dart';
+import 'package:spend_io_app/features/auth/data/services/google_signin_service.dart';
+import 'package:spend_io_app/features/auth/data/services/auth_sync_service.dart';
+import 'package:spend_io_app/features/auth/data/mappers/user_mapper.dart';
+import 'package:spend_io_app/features/auth/domain/entities/user_entity.dart';
+import 'package:spend_io_app/features/auth/domain/repositories/auth_repository.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final AuthLocalDatasource localDatasource;
   final AuthRemoteDatasource remoteDatasource;
+  final GoogleSigninService googleSigninService;
+  final AuthSyncService authSyncService;
 
-  AuthRepositoryImpl(this.localDatasource, this.remoteDatasource);
+  AuthRepositoryImpl(
+    this.localDatasource,
+    this.remoteDatasource,
+    this.googleSigninService,
+    this.authSyncService,
+  );
 
   @override
   Future<bool> register(UserEntity user) async {
@@ -19,19 +29,8 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       final displayName = user.email.split('@').first;
 
-      // 1. Ghi nhận thông tin vào SQLite Local TRƯỚC để làm điểm tựa dữ liệu offline
-      final model = UserModel(
-        id: user.id,
-        email: user.email,
-        password: user.password,
-        occupation: user.occupation,
-        financialGoal: user.financialGoal,
-        preferredCurrencyCode: user.preferredCurrencyCode,
-        onboardingCompleted: user.onboardingCompleted,
-        displayName: displayName,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
+      // Ghi nhận thông tin vào SQLite Local TRƯỚC để làm điểm tựa dữ liệu offline
+      final model = user.toModel(displayName: displayName);
 
       await localDatasource.registerUser(model);
 
@@ -39,7 +38,7 @@ class AuthRepositoryImpl implements AuthRepository {
       final credential = await remoteDatasource
           .registerUser(
             email: user.email,
-            password: user.password,
+            password: user.password ?? '',
             displayName: displayName,
           )
           .timeout(const Duration(seconds: 8));
@@ -48,7 +47,7 @@ class AuthRepositoryImpl implements AuthRepository {
       return true;
     } on fb.FirebaseAuthException catch (firebaseError) {
       debugPrint(
-          "===> [AuthRepositoryImpl] Firebase Specific Error: ${firebaseError.code}");
+          "[AuthRepositoryImpl] Firebase Specific Error: ${firebaseError.code}");
 
       if (firebaseError.code == 'email-already-in-use') {
         debugPrint(
@@ -63,7 +62,7 @@ class AuthRepositoryImpl implements AuthRepository {
       await _cleanLocalTrash(user.email);
       return false;
     } catch (e) {
-      debugPrint("===> [AuthRepositoryImpl] General / Timeout Error: $e");
+      debugPrint("[AuthRepositoryImpl] General / Timeout Error: $e");
 
       // Nếu dính TimeoutException, TUYỆT ĐỐI không xóa SQLite local, vì Firebase có thể sẽ tạo xong user sau vài giây ngầm
       if (e.toString().contains('TimeoutException')) {
@@ -105,15 +104,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
       if (localResult == null) return null;
 
-      return UserEntity(
-        id: localResult.id,
-        email: localResult.email,
-        password: localResult.password,
-        occupation: localResult.occupation,
-        financialGoal: localResult.financialGoal,
-        preferredCurrencyCode: localResult.preferredCurrencyCode,
-        onboardingCompleted: localResult.onboardingCompleted,
-      );
+      return localResult.toEntity();
     }
 
     final user = credential.user;
@@ -157,7 +148,8 @@ class AuthRepositoryImpl implements AuthRepository {
       displayName: userData['display_name'] ?? email.split('@').first,
       occupation: userData['occupation'] as String?,
       financialGoal: userData['financial_goal'] as String?,
-      preferredCurrencyCode: userData['preferred_currency_code'] ?? userData['currency_code'] as String?,
+      preferredCurrencyCode: userData['preferred_currency_code'] ??
+          userData['currency_code'] as String?,
       onboardingCompleted: userData['onboarding_completed'] == 1,
       createdAt: userData['created_at'] != null
           ? DateTime.parse(userData['created_at'] as String)
@@ -166,24 +158,13 @@ class AuthRepositoryImpl implements AuthRepository {
     );
 
     // Secure database cache write: Prevents ghost rows from generating during login sync
-    await localDatasource.syncUserFromFirebase(
-      localModel,
+    await authSyncService.syncUser(
+      userModel: localModel,
       walletBalance: walletBalance,
       firestoreWalletId: firestoreWalletId,
     );
 
-    final dbUsers = await localDatasource.getAllUsers();
-    final loggedInUser = dbUsers.firstWhere((u) => u.email == email);
-
-    return UserEntity(
-      id: loggedInUser.id,
-      email: loggedInUser.email,
-      password: loggedInUser.password,
-      occupation: loggedInUser.occupation,
-      financialGoal: loggedInUser.financialGoal,
-      preferredCurrencyCode: loggedInUser.preferredCurrencyCode,
-      onboardingCompleted: loggedInUser.onboardingCompleted,
-    );
+    return authSyncService.getUserByEmail(email);
   }
 
   @override
@@ -261,7 +242,8 @@ class AuthRepositoryImpl implements AuthRepository {
       displayName: userData['display_name'] ?? email.split('@').first,
       occupation: userData['occupation'] as String?,
       financialGoal: userData['financial_goal'] as String?,
-      preferredCurrencyCode: userData['preferred_currency_code'] ?? userData['currency_code'] as String?,
+      preferredCurrencyCode: userData['preferred_currency_code'] ??
+          userData['currency_code'] as String?,
       onboardingCompleted: userData['onboarding_completed'] == 1,
       createdAt: userData['created_at'] != null
           ? DateTime.parse(userData['created_at'] as String)
@@ -269,19 +251,13 @@ class AuthRepositoryImpl implements AuthRepository {
       updatedAt: DateTime.now(),
     );
 
-    await localDatasource.syncUserFromFirebase(
-      localModel,
+    await authSyncService.syncUser(
+      userModel: localModel,
       walletBalance: walletBalance,
       firestoreWalletId: firestoreWalletId,
     );
 
-    final dbUsers = await localDatasource.getAllUsers();
-    final syncedUser = dbUsers.cast<UserModel?>().firstWhere(
-          (u) => u?.email == email,
-          orElse: () => null,
-        );
-
-    return syncedUser?.toEntity();
+    return authSyncService.getUserByEmail(email);
   }
 
   @override
@@ -295,19 +271,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> updateOnboarding({required UserEntity user}) async {
-    final model = UserModel(
-      id: user.id,
-      email: user.email,
-      password: user.password,
-      occupation: user.occupation,
-      financialGoal: user.financialGoal,
-      preferredCurrencyCode: user.preferredCurrencyCode,
-      onboardingCompleted: user.onboardingCompleted,
-      displayName: user.email.split('@').first,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
-
+    final model = user.toModel();
     await localDatasource.updateOnboarding(model);
   }
 
@@ -322,5 +286,11 @@ class AuthRepositoryImpl implements AuthRepository {
           "[AuthRepositoryImpl] Error executing remote checkWalletExists check validation: $e");
       return false;
     }
+  }
+
+  //Google Sign-In
+  @override
+  Future<UserEntity?> signInWithGoogle() {
+    return googleSigninService.signIn();
   }
 }

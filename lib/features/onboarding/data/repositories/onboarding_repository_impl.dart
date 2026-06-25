@@ -132,8 +132,7 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
   @override
   Future<void> completeOnboarding({
     required String email,
-    required OnboardingEntity
-        entity, // 🟢 Đã sửa: Nhận trực tiếp entity từ ViewModel
+    required OnboardingEntity entity,
   }) async {
     final updatedEntity = OnboardingEntity(
       displayName: entity.displayName,
@@ -141,7 +140,7 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
       goals: entity.goals,
       currencyCode: entity.currencyCode,
       initialBalance: entity.initialBalance,
-      onboardingCompleted: true, // Khóa cứng trạng thái hoàn thành
+      onboardingCompleted: true,
       walletId: entity.walletId,
     );
 

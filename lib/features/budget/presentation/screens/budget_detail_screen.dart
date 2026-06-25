@@ -44,7 +44,6 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
   @override
   void initState() {
     super.initState();
-    // ✅ FIX TRIỆT ĐỂ: Hoãn tiến trình gọi dữ liệu bất đồng bộ cho đến khi Widget dựng xong hoàn toàn khung xương UI
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _handleRefreshData();

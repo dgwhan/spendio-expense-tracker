@@ -53,7 +53,6 @@ class AccountDetailFilterCapsule extends StatelessWidget {
           width: 1,
         ),
       ),
-      // FIX LỖI TẠI ĐÂY: Thay 'backgroundColor' bằng 'color' để set màu nền cho PopupMenu
       color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
 
       child: Container(

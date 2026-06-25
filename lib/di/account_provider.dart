@@ -4,6 +4,7 @@ import 'package:provider/single_child_widget.dart';
 import 'package:spend_io_app/features/account/data/datasource/account_local_data_source.dart';
 import 'package:spend_io_app/features/account/data/datasource/account_remote_data_source.dart';
 import 'package:spend_io_app/features/account/data/repositories/account_repository_impl.dart';
+import 'package:spend_io_app/features/account/data/services/account_sync_service.dart';
 import 'package:spend_io_app/features/account/domain/repositories/account_repository.dart';
 import 'package:spend_io_app/features/account/domain/usecase/get_accounts_usecase.dart';
 import 'package:spend_io_app/features/account/domain/usecase/create_account_usecase.dart';
@@ -26,10 +27,18 @@ class AccountModuleProvider {
           create: (_) => AccountRemoteDataSourceImpl(),
         ),
         ProxyProvider2<AccountLocalDataSource, AccountRemoteDataSource,
-            AccountRepository>(
-          update: (_, local, remote, __) => AccountRepositoryImpl(
+            AccountSyncService>(
+          update: (_, local, remote, __) => AccountSyncService(
             localDataSource: local,
             remoteDataSource: remote,
+          ),
+        ),
+        ProxyProvider3<AccountLocalDataSource, AccountRemoteDataSource,
+            AccountSyncService, AccountRepository>(
+          update: (_, local, remote, syncService, __) => AccountRepositoryImpl(
+            localDataSource: local,
+            remoteDataSource: remote,
+            accountSyncService: syncService,
           ),
         ),
 

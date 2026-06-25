@@ -34,7 +34,6 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
     });
   }
 
-
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<OnboardingViewModel>();
@@ -100,8 +99,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
           }
         } else {
           viewModel.setError(true);
-          viewModel
-              .triggerShake(); // Kích hoạt Stream phát tín hiệu lắc khẽ cho các card con lắng nghe
+          viewModel.triggerShake();
         }
       },
       nextButtonText:
@@ -121,8 +119,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
         },
         child: Container(
           key: ValueKey<int>(currentStep),
-          child: steps[
-              currentStep], // Sạch sẽ, không bọc cấu trúc ShakeWidget toàn cục ở đây nữa
+          child: steps[currentStep],
         ),
       ),
     );

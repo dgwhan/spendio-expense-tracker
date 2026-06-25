@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:spend_io_app/core/constants/app_colors.dart';
+import 'package:spend_io_app/core/constants/app_strings.dart';
 import 'package:spend_io_app/core/dialogs/app_dialogs.dart';
 import 'package:spend_io_app/core/theme/text_styles.dart';
 import 'package:spend_io_app/core/widgets/app_header.dart';
@@ -43,7 +44,58 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> register() async {
-    if (!_formKey.currentState!.validate()) {
+    final authProvider = context.read<AuthProvider>();
+
+    // Chặn double-click và multiple submit
+    if (authProvider.isLoading) {
+      return;
+    }
+
+    final emailText = emailController.text.trim();
+    final passwordText = passwordController.text.trim();
+    final confirmPasswordText = confirmPasswordController.text.trim();
+
+    // 1. Kiểm tra tất cả field trước khi submit
+    // Field rỗng => hiện AppDialogs.warning
+    if (emailText.isEmpty || passwordText.isEmpty || confirmPasswordText.isEmpty) {
+      await AppDialogs.warning(
+        context: context,
+        title: AppStrings.warningTitle,
+        content: AppStrings.errorEmptyFields,
+      );
+      return;
+    }
+
+    // Email sai format => AppDialogs.warning
+    final emailRegex = RegExp(
+      r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
+    );
+    if (!emailRegex.hasMatch(emailText)) {
+      await AppDialogs.warning(
+        context: context,
+        title: AppStrings.warningTitle,
+        content: AppStrings.errorInvalidEmail,
+      );
+      return;
+    }
+
+    // Password không đạt yêu cầu => AppDialogs.warning
+    if (passwordText.length < 6) {
+      await AppDialogs.warning(
+        context: context,
+        title: AppStrings.warningTitle,
+        content: AppStrings.errorPasswordLength,
+      );
+      return;
+    }
+
+    // Confirm password không khớp => AppDialogs.warning
+    if (passwordText != confirmPasswordText) {
+      await AppDialogs.warning(
+        context: context,
+        title: AppStrings.warningTitle,
+        content: AppStrings.errorPasswordMismatch,
+      );
       return;
     }
 
@@ -53,17 +105,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
+    // Email đã tồn tại => hiện AppDialogs.emailExists
     if (formVM.isEmailTaken) {
       await AppDialogs.emailExists(context);
       return;
     }
 
-    final authProvider = context.read<AuthProvider>();
-    final emailText = emailController.text.trim();
-
+    // 2. Thực hiện đăng ký (gọi usecase/repository qua authProvider)
     final String? errorMessage = await authProvider.register(
       email: emailText,
-      password: passwordController.text.trim(),
+      password: passwordText,
     );
 
     if (!mounted) {
@@ -71,25 +122,38 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     if (errorMessage == null) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (_) => OnboardingFlowScreen(userEmail: emailText),
-        ),
-        (route) => false,
+      // Thành công => AppDialogs.success
+      await AppDialogs.success(
+        context: context,
+        title: AppStrings.successTitle,
+        content: AppStrings.successRegister,
+        onConfirm: () {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (_) => OnboardingFlowScreen(userEmail: emailText),
+            ),
+            (route) => false,
+          );
+        },
       );
     } else {
+      // Thất bại => AppDialogs.error hoặc networkError
       if (errorMessage.contains('email-already-in-use') ||
           errorMessage.contains('exists')) {
         await AppDialogs.emailExists(context);
+      } else if (errorMessage.contains('network') ||
+          errorMessage.contains('SocketException')) {
+        await AppDialogs.networkError(
+          context: context,
+          title: AppStrings.networkErrorTitle,
+          content: AppStrings.networkErrorMessage,
+        );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage.isNotEmpty
-                ? errorMessage
-                : 'Registration failed. Please try again.'),
-            backgroundColor: Colors.redAccent,
-          ),
+        await AppDialogs.error(
+          context: context,
+          title: AppStrings.errorTitle,
+          content: errorMessage,
         );
       }
     }
@@ -139,9 +203,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   title: 'Sign Up',
                   isLoading: authProvider.isLoading,
                   variant: AppButtonVariant.primary,
-                  onPressed: (!formVM.isFormValid || authProvider.isLoading)
-                      ? null
-                      : register,
+                  onPressed: register,
                 ),
                 const SizedBox(height: 24),
                 _buildFooter(context),

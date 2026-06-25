@@ -42,7 +42,7 @@ class _BudgetCategoryDetailScreenState
     extends State<BudgetCategoryDetailScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  AccountSortOption _transactionSort = AccountSortOption.newest;
+  final AccountSortOption _transactionSort = AccountSortOption.newest;
 
   @override
   void dispose() {

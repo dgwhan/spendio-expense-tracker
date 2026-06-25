@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import '../models/account_model.dart';
+import 'package:spend_io_app/features/account/data/models/account_model.dart';
 
 abstract class AccountRemoteDataSource {
   Future<List<AccountModel>> getAccounts(String userId);

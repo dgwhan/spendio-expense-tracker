@@ -149,7 +149,6 @@ class TransactionTile extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 12.0),
         child: Row(
-          // ĐÃ SỬA LỖI: Thêm đầy đủ thuộc tính children để bọc mảng widget con
           children: [
             // 1. Icon danh mục tròn phẳng
             Container(

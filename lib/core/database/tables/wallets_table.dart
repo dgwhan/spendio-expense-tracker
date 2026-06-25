@@ -19,6 +19,8 @@ class WalletsTable {
 
       icon_font_family TEXT,
 
+      color INTEGER,
+
       created_at TEXT,
 
       updated_at TEXT,

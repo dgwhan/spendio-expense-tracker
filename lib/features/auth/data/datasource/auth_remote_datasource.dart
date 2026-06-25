@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:flutter/cupertino.dart';
+import 'package:spend_io_app/features/auth/data/models/auth_profile_result.dart';
 
 class AuthRemoteDatasource {
   final fb.FirebaseAuth _auth = fb.FirebaseAuth.instance;
@@ -133,5 +134,60 @@ class AuthRemoteDatasource {
       debugPrint("Error checking wallet existence: $e");
       return false;
     }
+  }
+
+  Future<AuthProfileResult> loadUserProfile({
+    required String uid,
+  }) async {
+    Map<String, dynamic> userData = {};
+
+    double? walletBalance;
+    String? firestoreWalletId;
+
+    final profileSnap = await _firestore.collection('users').doc(uid).get();
+
+    if (profileSnap.exists) {
+      userData = profileSnap.data()!;
+
+      final walletQuery = await _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('wallets')
+          .where('deleted_at', isNull: true)
+          .limit(1)
+          .get();
+
+      if (walletQuery.docs.isNotEmpty) {
+        final walletDoc = walletQuery.docs.first;
+
+        firestoreWalletId = walletDoc.id;
+
+        walletBalance = (walletDoc.data()['balance'] as num?)?.toDouble();
+      }
+    }
+
+    return AuthProfileResult(
+      userData: userData,
+      walletBalance: walletBalance,
+      firestoreWalletId: firestoreWalletId,
+    );
+  }
+
+  Future<void> createGoogleUserIfNotExists({
+    required String uid,
+    required String email,
+    required String displayName,
+  }) async {
+    final doc = await _firestore.collection('users').doc(uid).get();
+
+    if (doc.exists) return;
+
+    await _firestore.collection('users').doc(uid).set({
+      'email': email,
+      'display_name': displayName,
+      'provider': 'google',
+      'onboarding_completed': 0,
+      'created_at': DateTime.now().toIso8601String(),
+    });
   }
 }

@@ -141,12 +141,11 @@ class FilterDropdownRow extends StatelessWidget {
         checkmarkColor: AppColors.primary,
         deleteIconColor: AppColors.primary,
         showCheckmark: false,
-        // SỬA TẠI ĐÂY: Hủy bỏ triệt để mọi loại elevation ngầm định gây đổ bóng mờ xung quanh viền
+       
         elevation: 0,
         pressElevation: 0,
         shadowColor: Colors.transparent,
         selectedShadowColor: Colors.transparent,
-        // SỬA TẠI ĐÂY: Triệt tiêu viền xám mờ mặc định của InputChip bằng cách chỉ định rõ Colors.transparent
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
           side: const BorderSide(

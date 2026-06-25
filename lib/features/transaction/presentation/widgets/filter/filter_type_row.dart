@@ -57,7 +57,6 @@ class FilterTypeRow extends StatelessWidget {
                 ),
                 elevation: 0,
                 pressElevation: 0,
-                // SỬA TẠI ĐÂY: Triệt tiêu viền ẩn Material 3 cho ActionChip
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadius.xl),
                   side: const BorderSide(
@@ -94,7 +93,6 @@ class FilterTypeRow extends StatelessWidget {
         },
         backgroundColor: unselectedBg,
         selectedColor: selectedBg,
-        // SỬA TẠI ĐÂY: Xóa sạch bóng mờ lúc unselect lẫn khi bấm giữ
         elevation: 0,
         pressElevation: 0,
         shadowColor: Colors.transparent,

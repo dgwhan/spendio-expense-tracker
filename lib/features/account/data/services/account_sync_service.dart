@@ -22,14 +22,14 @@ class AccountSyncService {
       final remoteMap = {for (var a in remoteAccounts) a.id: a};
 
       // =========================
-      // 1. PULL (REMOTE → LOCAL)
+      // 1. PULL (REMOTE -> LOCAL)
       // =========================
       for (final remote in remoteAccounts) {
         if (remote.id.trim().isEmpty) continue;
 
         final local = localMap[remote.id];
 
-        // missing locally → insert
+        // missing locally -> insert
         if (local == null) {
           if (remote.deletedAt == null) {
             await localDataSource.saveAccount(localUserId, remote);
@@ -48,7 +48,7 @@ class AccountSyncService {
       }
 
       // =========================
-      // 2. PUSH (LOCAL → REMOTE)
+      // 2. PUSH (LOCAL -> REMOTE)
       // =========================
       for (final local in localAccounts) {
         if (local.id.trim().isEmpty) continue;
@@ -63,7 +63,7 @@ class AccountSyncService {
           continue;
         }
 
-        // local newer → push metadata
+        // local newer -> push metadata
         if (local.updatedAt.isAfter(remote.updatedAt)) {
           await remoteDataSource.saveAccount(remoteUid, local);
         }

@@ -1,6 +1,6 @@
+import 'package:spend_io_app/core/database/app_database.dart';
+import 'package:spend_io_app/features/account/data/models/account_model.dart';
 import 'package:sqflite/sqflite.dart';
-import '../../../../core/database/app_database.dart';
-import '../models/account_model.dart';
 
 abstract class AccountLocalDataSource {
   Future<List<AccountModel>> getAccounts(int userId);

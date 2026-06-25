@@ -6,10 +6,8 @@ import 'package:spend_io_app/core/constants/app_sizes.dart';
 
 class AppDatePickerSheet extends StatefulWidget {
   final DateTimeRange? initialRange;
-  final bool
-      isSingleDateMode;
-  final DateTime?
-      maxDate; 
+  final bool isSingleDateMode;
+  final DateTime? maxDate;
 
   const AppDatePickerSheet({
     super.key,
@@ -53,7 +51,6 @@ class _AppDatePickerSheetState extends State<AppDatePickerSheet> {
         isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    // Xác định ngày cuối cùng được phép hiển thị trên lịch (Mặc định năm 2040)
     final DateTime calendarLastDay = widget.maxDate ?? DateTime(2040);
 
     return Container(
@@ -221,18 +218,16 @@ class _AppDatePickerSheetState extends State<AppDatePickerSheet> {
                   onPressed: () {
                     if (widget.isSingleDateMode) {
                       if (_selectedSingleDate != null) {
-                        // 🌟 TỰ ĐỘNG BỐC GIỜ HIỆN TẠI CỦA HỆ THỐNG NÈ MÁ:
                         final now = DateTime.now();
                         final gopNgayGio = DateTime(
                           _selectedSingleDate!.year,
                           _selectedSingleDate!.month,
                           _selectedSingleDate!.day,
-                          now.hour, // Giờ hệ thống
-                          now.minute, // Phút hệ thống
-                          now.second, // Giây hệ thống luôn cho chắc bài
+                          now.hour,
+                          now.minute,
+                          now.second,
                         );
 
-                        // Trả về dải trùng nhau chứa cả ngày đã chọn lẫn giờ hệ thống mượt mà
                         Navigator.pop(context,
                             DateTimeRange(start: gopNgayGio, end: gopNgayGio));
                       }

@@ -187,7 +187,6 @@ class _AccountFormState extends State<AccountForm> {
                     currencyCode: _selectedCurrency);
                 if (amount == null) return 'Invalid balance';
 
-                // ✅ UPDATE HẠN MỨC: Cho gõ tẹt ga ngoài UI nhưng vi phạm mốc 10 tỷ là báo đỏ chặn đứng không cho lưu
                 if (amount > 10000000000) {
                   return 'Amount cannot exceed 10.000.000.000';
                 }

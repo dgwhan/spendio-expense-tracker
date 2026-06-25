@@ -82,7 +82,6 @@ class _EditBudgetScreenState extends State<EditBudgetScreen> {
         userId: widget.userId,
       );
 
-      // ✅ FIX TRIỆT ĐỂ ASYNC GAP: Kiểm tra Widget còn mounted trước khi gọi context liên quan
       if (!mounted) return;
 
       if (success) {
@@ -118,7 +117,6 @@ class _EditBudgetScreenState extends State<EditBudgetScreen> {
       preferredCurrencyCode: widget.existingBudget.currencyCode,
     );
 
-    // ✅ FIX TRIỆT ĐỂ ASYNC GAP: Đảm bảo không gọi Navigator hay hàm cha nếu State đã bị unmount khỏi tree
     if (!mounted) return;
 
     if (success) {

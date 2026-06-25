@@ -120,7 +120,7 @@ class GoalsSection extends StatelessWidget {
                           color: AppColors.primary,
                           fontWeight: FontWeight.w600,
                           fontSize:
-                              14, // Đồng bộ nhãn xem thêm 14px với AccountsSection
+                              14, 
                         ),
                       ),
                       const SizedBox(width: 4),

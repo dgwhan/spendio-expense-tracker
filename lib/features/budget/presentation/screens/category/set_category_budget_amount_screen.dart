@@ -51,7 +51,7 @@ class _SetCategoryBudgetAmountScreenState
           isDark ? AppColors.backgroundDark : const Color(0xFFF8F9FB),
       appBar: AppHeader(title: AppLocalizations.translate('Set Budget')),
       body: SafeArea(
-        // ✅ ĐÃ SỬA: Bọc Form ở đây để cung cấpcurrentState cho _formKey.currentState!.validate() trong ViewModel không bị null
+       
         child: Form(
           key: formVM.formKey,
           child: CustomScrollView(

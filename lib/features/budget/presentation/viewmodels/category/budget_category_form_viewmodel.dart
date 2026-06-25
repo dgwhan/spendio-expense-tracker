@@ -28,7 +28,6 @@ class BudgetCategoryFormViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ✅ ĐÃ SỬA: Thêm notifyListeners() để bắn data sang màn Edit lập tức
   void setupEditMode(
       BudgetCategoryEntity budgetCategory, CategoryEntity categoryDetails) {
     _editingCategoryBudget = budgetCategory;

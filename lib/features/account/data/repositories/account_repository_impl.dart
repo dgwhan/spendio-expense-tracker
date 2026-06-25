@@ -2,16 +2,19 @@ import 'package:flutter/foundation.dart';
 import 'package:spend_io_app/features/account/data/datasource/account_local_data_source.dart';
 import 'package:spend_io_app/features/account/data/datasource/account_remote_data_source.dart';
 import 'package:spend_io_app/features/account/data/models/account_model.dart';
+import 'package:spend_io_app/features/account/data/services/account_sync_service.dart';
 import 'package:spend_io_app/features/account/domain/entities/account_entity.dart';
 import 'package:spend_io_app/features/account/domain/repositories/account_repository.dart';
 
 class AccountRepositoryImpl implements AccountRepository {
   final AccountLocalDataSource localDataSource;
   final AccountRemoteDataSource remoteDataSource;
+  final AccountSyncService accountSyncService;
 
   AccountRepositoryImpl({
     required this.localDataSource,
     required this.remoteDataSource,
+    required this.accountSyncService,
   });
 
   @override
@@ -22,31 +25,8 @@ class AccountRepositoryImpl implements AccountRepository {
 
     // 🌟 2. CORE SYNC CRITERIA: Nếu local trống HOẶC ép buộc đồng bộ (forceSync)
     if ((localAccounts.isEmpty || forceSync) && remoteUid.trim().isNotEmpty) {
-      try {
-        debugPrint(
-            '[Account Repo]: Local data missing or forceSync active. Fetching from Firestore...');
-
-        // Lấy danh sách ví từ Firestore Remote
-        final remoteModels = await remoteDataSource
-            .getAccounts(remoteUid)
-            .timeout(const Duration(seconds: 4));
-
-        if (remoteModels.isNotEmpty) {
-          // Lưu đè/cập nhật toàn bộ ví từ Remote xuống SQLite Local
-          for (final model in remoteModels) {
-            // Đảm bảo model mapping đúng localUserId
-            final updatedModel =
-                model.userId == 0 ? model.copyWith(userId: localUserId) : model;
-
-            await localDataSource.saveAccount(localUserId, updatedModel);
-          }
-
-          localAccounts = await localDataSource.getAccounts(localUserId);
-        }
-      } catch (e) {
-        debugPrint(
-            '[Account Repo]: Failed to sync from cloud ($e). Falling back to existing local state.');
-      }
+      await accountSyncService.sync(localUserId, remoteUid);
+      localAccounts = await localDataSource.getAccounts(localUserId);
     }
 
     // 3. Trả về kết quả sạch sau lọc trùng/xóa mềm

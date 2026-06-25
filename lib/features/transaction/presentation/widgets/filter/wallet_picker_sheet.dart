@@ -31,9 +31,7 @@ class WalletPickerSheet extends StatelessWidget {
         top: AppSizes.md,
         left: AppSizes.md,
         right: AppSizes.md,
-        bottom: MediaQuery.of(context).padding.bottom +
-            AppSizes
-                .md, // Đè lên nav nhưng cộng thêm padding để không bị dính sát chữ vào cạnh dưới screen
+        bottom: MediaQuery.of(context).padding.bottom + AppSizes.md,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

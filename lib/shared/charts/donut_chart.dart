@@ -93,7 +93,6 @@ class _DonutChartPainter extends CustomPainter {
         canvas.drawArc(rect, startAngle, adjustedSweep, false, paint);
       }
 
-      // Cập nhật góc bắt đầu cho phần tiếp theo
       startAngle += sweepAngle;
     }
   }

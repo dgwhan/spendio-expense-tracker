@@ -55,7 +55,7 @@ class _AccountDetailsScreenBody extends StatefulWidget {
 class _AccountDetailsScreenBodyState extends State<_AccountDetailsScreenBody> {
   bool _hasBeenUpdated = false;
   late final TextEditingController _searchController;
-  AccountSortOption _transactionSort = AccountSortOption.newest;
+  final AccountSortOption _transactionSort = AccountSortOption.newest;
 
   @override
   void initState() {

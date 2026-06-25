@@ -3,17 +3,11 @@ import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 import 'package:spend_io_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:spend_io_app/features/account/domain/repositories/account_repository.dart';
-
-// DATA LAYER
 import 'package:spend_io_app/features/transaction/data/datasource/transaction_local_data_source.dart';
 import 'package:spend_io_app/features/transaction/data/datasource/transaction_remote_data_source.dart';
 import 'package:spend_io_app/features/transaction/data/repositories/transaction_repository_impl.dart';
 import 'package:spend_io_app/features/transaction/domain/repositories/transaction_repository.dart';
-
-// DOMAIN LAYER
 import 'package:spend_io_app/features/transaction/domain/usecases/create_transaction.dart';
-
-// PRESENTATION LAYER
 import 'package:spend_io_app/features/transaction/presentation/viewmodels/transaction_viewmodel.dart';
 
 class TransactionProvider {
@@ -27,8 +21,6 @@ class TransactionProvider {
         Provider<TransactionRemoteDataSource>(
           create: (_) => TransactionRemoteDataSourceImpl(),
         ),
-
-        // TransactionRepository receives the use case via ProxyProvider3.
         ProxyProvider3<TransactionLocalDataSource, TransactionRemoteDataSource,
             AccountRepository, TransactionRepository>(
           update: (
@@ -47,18 +39,11 @@ class TransactionProvider {
             );
           },
         ),
-
         ProxyProvider<TransactionRepository, CreateTransaction>(
           update: (_, txRepo, previous) =>
               previous ?? CreateTransaction(transactionRepository: txRepo),
         ),
 
-        // Khong tiem truc tiep BudgetViewModel o day vi se tao dependency
-        // cycle giua module Transaction va Budget (BudgetProgressCalculator
-        // can doc TransactionRepository, neu Transaction lai doc nguoc
-        // BudgetViewModel se khong co thu tu khai bao nao hop le).
-        // Callback onTransactionBalanceChanged duoc gan o tang App widget,
-        // xem app.dart.
         ChangeNotifierProxyProvider3<CreateTransaction, TransactionRepository,
             AuthProvider, TransactionViewModel>(
           create: (context) => TransactionViewModel(

@@ -39,7 +39,6 @@ class AppMoreMenuButton extends StatelessWidget {
                     const SizedBox(width: 10),
                     Text(
                       action.label,
-                      // SỬ DỤNG BỘ STYLE HỆ THỐNG Ở ĐÂY
                       style: AppTextStyles.bodyNormal.copyWith(
                         fontSize: 14,
                         color: action.isDestructive ? AppColors.error : null,

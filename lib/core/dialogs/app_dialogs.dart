@@ -177,4 +177,144 @@ class AppDialogs {
       ),
     );
   }
+
+  static Future<void> success({
+    required BuildContext context,
+    required String title,
+    required String content,
+    String? buttonText,
+    VoidCallback? onConfirm,
+  }) {
+    return _showStatusDialog(
+      context: context,
+      title: title,
+      content: content,
+      statusColor: AppColors.success,
+      icon: Icons.check_circle_outline_rounded,
+      buttonText: buttonText,
+      onConfirm: onConfirm,
+    );
+  }
+
+  static Future<void> error({
+    required BuildContext context,
+    required String title,
+    required String content,
+    String? buttonText,
+    VoidCallback? onConfirm,
+  }) {
+    return _showStatusDialog(
+      context: context,
+      title: title,
+      content: content,
+      statusColor: AppColors.error,
+      icon: Icons.error_outline_rounded,
+      buttonText: buttonText,
+      onConfirm: onConfirm,
+    );
+  }
+
+  static Future<void> warning({
+    required BuildContext context,
+    required String title,
+    required String content,
+    String? buttonText,
+    VoidCallback? onConfirm,
+  }) {
+    return _showStatusDialog(
+      context: context,
+      title: title,
+      content: content,
+      statusColor: AppColors.warning,
+      icon: Icons.warning_amber_rounded,
+      buttonText: buttonText,
+      onConfirm: onConfirm,
+    );
+  }
+
+  static Future<void> networkError({
+    required BuildContext context,
+    required String title,
+    required String content,
+    String? buttonText,
+    VoidCallback? onConfirm,
+  }) {
+    return _showStatusDialog(
+      context: context,
+      title: title,
+      content: content,
+      statusColor: AppColors.info,
+      icon: Icons.wifi_off_rounded,
+      buttonText: buttonText,
+      onConfirm: onConfirm,
+    );
+  }
+
+  static Future<void> _showStatusDialog({
+    required BuildContext context,
+    required String title,
+    required String content,
+    required Color statusColor,
+    required IconData icon,
+    String? buttonText,
+    VoidCallback? onConfirm,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dialogBgColor =
+        isDark ? AppColors.surfaceSecondaryDark : Colors.white;
+    final titleColor = isDark ? AppColors.textPrimaryDark : Colors.black;
+    final bodyColor =
+        isDark ? AppColors.textSecondaryDark : const Color(0xFF524F55);
+
+    return showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.6),
+      builder: (dialogContext) => Dialog(
+        backgroundColor: dialogBgColor,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: statusColor, size: 28),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.headingMedium.copyWith(color: titleColor),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                content,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.bodyNormal
+                    .copyWith(color: bodyColor, height: 1.4),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: AppActionButton(
+                  title: buttonText ?? 'OK',
+                  variant: AppActionButtonVariant.primary,
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                    onConfirm?.call();
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

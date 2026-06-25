@@ -29,7 +29,6 @@ class CategoryPickerSheet extends StatelessWidget {
         top: AppSizes.md,
         left: AppSizes.md,
         right: AppSizes.md,
-        // Ép tràn ra sau thanh điều hướng hệ thống nhưng cộng thêm đệm để chữ không dính sát rạt đáy screen
         bottom: bottomPadding + AppSizes.sm,
       ),
       constraints: BoxConstraints(
@@ -90,8 +89,7 @@ class CategoryPickerSheet extends StatelessWidget {
                           ? catColor.withValues(alpha: 0.12)
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(AppSizes.md),
-                      border:
-                          null, // ĐỒNG BỘ: Gỡ bỏ hoàn toàn Border viền cứng ở đây
+                      border: null,
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
